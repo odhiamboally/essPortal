@@ -1,0 +1,369 @@
+﻿@model LeaveApplicationFormResponse
+
+@{
+    ViewData["Title"] = "Apply for Leave";
+}
+
+@section Styles {
+    <link href="~/custom/leave/css/leave-application.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="page-icon">📝</i>
+            Apply for Leave
+        </h1>
+        <nav class="breadcrumb-nav">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Dashboard</a></li>
+                <li class="breadcrumb-item active">Apply for Leave</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    <form id="leaveApplicationForm" method="post" enctype="multipart/form-data" asp-antiforgery="true" asp-action="ApplyForLeave">
+
+        <!-- Application Details Card -->
+        <div class="form-card">
+            <div class="form-card-header">
+                <h3 class="form-card-title">
+                    <i class="form-card-icon">👤</i>
+                    Application Details
+                </h3>
+            </div>
+            <div class="form-card-body">
+                <div class="row compact-row">
+
+                    <div class="col compact-col">
+                        <label for="DateOfApplication" class="form-label">Date of Application</label>
+                        <div class="date-input-group">
+                            <input name="ApplicationDate" type="text" class="form-control calculated-field"
+                                   value="@DateTime.Now.ToString("dddd, MMMM dd, yyyy")" readonly>
+                            <i class="date-icon">📅</i>
+                        </div>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="EmployeeNo" class="form-label">Employee No</label>
+                        <input name="EmployeeNo" type="text" class="form-control calculated-field"
+                               value="@Model.Employee.EmployeeNo" readonly>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="EmployeeName" class="form-label">Employee Name</label>
+                        <input name="EmployeeName" type="text" class="form-control calculated-field"
+                               value="@Model.Employee.EmployeeName" readonly>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="EmailAddress" class="form-label">Email Address</label>
+                        <input name="EmailAddress" type="email" class="form-control calculated-field"
+                               value="@Model.Employee.EmailAddress" readonly>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="mobileNo" class="form-label">Mobile No <span class="text-danger">*</span></label>
+                        <input id="mobileNo" name="MobileNo" type="tel" class="form-control"
+                               value="@Model.Employee.MobileNo"
+                               placeholder="e.g. +254720688685 or 0720688685"
+                               required
+                               readonly
+                               pattern="[0-9+\-\s\(\)]+" title="Please enter a valid mobile number">
+                        <div class="invalid-feedback">Please enter a valid mobile number</div>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="ResponsibilityCenter" class="form-label">Responsibility Center</label>
+                        <input name="ResponsibilityCenter" type="text" class="form-control calculated-field"
+                               value="@Model.Employee.ResponsibilityCenter" readonly>
+                    </div>
+
+                   
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Details Card -->
+        <div class="form-card">
+            <div class="form-card-header">
+                <h3 class="form-card-title">
+                    <i class="form-card-icon">🏖️</i>
+                    Leave Details
+                </h3>
+            </div>
+            <div class="form-card-body">
+
+                <div class="alert alert-info"
+                     data-annual-earned="@Model.AnnualLeaveSummary.LeaveEarnedToDate"
+                     data-annual-balance="@Model.AnnualLeaveSummary.MonthlyBalance"
+                     data-sick-balance="@Model.LeaveSummary.SickLeave.CurrentBalance"
+                     data-adoption-balance="@Model.LeaveSummary.AdoptionLeave.CurrentBalance"
+                     data-compassion-balance="@Model.LeaveSummary.CompassionLeave.CurrentBalance"
+                     data-maternity-balance="@Model.LeaveSummary.MaternityLeave.CurrentBalance"
+                     data-paternity-balance="@Model.LeaveSummary.PaternityLeave.CurrentBalance"
+                     data-study-balance="@Model.LeaveSummary.StudyLeave.CurrentBalance"
+                     data-unpaid-balance="@Model.LeaveSummary.UnpaidLeave.CurrentBalance">
+
+                    <strong>📊 Balance:</strong>
+                    <span id="leaveBalanceInfo">
+                        Select a leave type to view your available balance
+                    </span>
+                </div>
+
+                <div class="row compact-row">
+                    <div class="col compact-col">
+                        <label for="BranchCode" class="form-label">Branch Code</label>
+                        <input name="BranchCode" type="text" class="form-control calculated-field"
+                               value="@Model.Employee.BranchCode" readonly>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label class="form-label">Leave Period</label>
+                        <input name="LeavePeriod" type="hidden" value="@DateTime.Now.Year">
+                        <input type="text" class="form-control calculated-field"
+                               value="@DateTime.Now.Year Leave Year" readonly>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="LeaveType" class="form-label">Leave Type <span class="text-danger">*</span></label>
+                        <select name="LeaveType" class="form-select" required>
+                            <option value="">Select type</option>
+                            @foreach (var type in Model.LeaveTypes)
+                            {
+                                var maxDays = type.Code switch
+                                {
+                                    "ADOPTION" => type.MaxDays,
+                                    "COMPASSIONATE" => type.MaxDays,
+                                    "MATERNITY" => type.MaxDays,
+                                    "PATERNITY" => type.MaxDays,
+                                    "SICK" => type.MaxDays,
+                                    "STUDY" => type.MaxDays,
+                                    "UNPAID" => type.MaxDays,
+                                    _ => (decimal?) null
+                                };
+
+                                if (maxDays.HasValue)
+                                {
+                                    <option value="@type.Code"
+                                            data-max-days="@maxDays"
+                                            data-uses-calendar="@(new[] 
+                                            {
+                                               "ADOPTION", 
+                                               "COMPASSIONATE", 
+                                               "MATERNITY", 
+                                               "PATERNITY", 
+                                               "SICK"
+
+                                            }.Contains(type.Code) ? "true" : "false")"
+
+                                            data-is-annual="@(type.Code == "ANNUAL" ? "true" : "false")">
+                                        @type.Description
+                                        (Max: @maxDays days)
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="@type.Code"
+                                            data-is-annual="@(type.Code == "ANNUAL" ? "true" : "false")">
+                                        @type.Description
+                                    </option>
+                                }
+
+                            }
+                        </select>
+
+                        <div class="invalid-feedback">Please select a leave type</div>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="Status" class="form-label">Status</label>
+                        <input name="Status" type="text" class="form-control calculated-field"
+                               value="Open" readonly>
+                    </div>
+
+
+                    @* ToDo: We also need to handle this with regard to leavetype *@
+                    <div class="col compact-col">
+                        <label for="LeaveEarnedToDate" class="form-label">Leave Earned to Date</label>
+                        <input name="LeaveEarnedToDate" type="text" class="form-control calculated-field"
+                               value="@Model.AnnualLeaveSummary.LeaveEarnedToDate" readonly>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="daysApplied" class="form-label">Days Applied <span class="text-danger">*</span></label>
+                        <input name="DaysApplied" type="number" class="form-control" id="daysApplied"
+                               step="0.5" min="0.5" required readonly
+                               placeholder="Auto Calculated"
+                               title="Number of days will be auto calculated">
+                        <div class="invalid-feedback">Please enter valid value</div>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="FromDate" class="form-label">From Date <span class="text-danger">*</span></label>
+                        <div class="date-input-group">
+                            <input name="FromDate" type="date" class="form-control"
+                                   min="@DateTime.Now.ToString("yyyy-MM-dd")" required>
+                            <i class="date-icon">📅</i>
+                        </div>
+                        <div class="invalid-feedback">Please select a valid from date</div>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="ToDate" class="form-label">To Date <span class="text-danger">*</span></label>
+                        <div class="date-input-group">
+                            <input name="ToDate" type="date" class="form-control"
+                                   min="@DateTime.Now.ToString("yyyy-MM-dd")" required>
+                            <i class="date-icon">📅</i>
+                        </div>
+                        <div class="invalid-feedback">Please select a valid to date</div>
+                    </div>
+
+                    <div class="col compact-col">
+                        <label for="ResumptionDate" class="form-label">Resumption Date</label>
+                        <div class="date-input-group">
+                            <input name="ResumptionDate" type="text" class="form-control calculated-field" readonly>
+                            <i class="date-icon">📅</i>
+                        </div>
+                    </div>
+
+                    @* ToDo: Add Toggle for Half Day *@
+                    <div class="col compact-col">
+                        <label class="form-label" style="opacity: 0;">Toggle Options</label>
+
+                        <!-- Half Day Toggle -->
+                        <div class="form-check form-switch mb-2">
+                            <input name="HalfDay" class="form-check-input" type="checkbox" value="true" id="halfDayToggle">
+                            <input name="HalfDay" type="hidden" value="false">
+                            <label class="form-check-label" for="halfDayToggle" style="font-size: 0.75rem;">
+                                Half Day Leave (0.5 days)
+                            </label>
+                        </div>
+
+                        <!-- Leave Allowance Toggle -->
+                        <div class="form-check form-switch">
+                            <input name="LeaveAllowancePayable" class="form-check-input" type="checkbox" value="true" id="leaveAllowanceToggle">
+                            <input name="LeaveAllowancePayable" type="hidden" value="false">
+                            <label class="form-check-label" for="leaveAllowanceToggle" style="font-size: 0.75rem;">
+                                Leave Allowance Payable
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Relievers and Attachments Row -->
+        <div class="row equal-height-row">
+            <!-- Leave Relievers Card -->
+            <div class="col-lg-7">
+                <div class="form-card equal-height-card">
+                    <div class="form-card-header">
+                        <h3 class="form-card-title">
+                            <i class="form-card-icon">👥</i>
+                            Leave Reliever
+                        </h3>
+                        <div class="form-card-subtitle">
+                            Select a colleague who will handle your duties during your absence
+                        </div>
+                    </div>
+                    <div class="form-card-body reliever-card-body">
+                        <!-- Search Input -->
+                        <div class="reliever-search-container">
+                            <div class="search-input-group">
+                                <input type="text" id="relieverSearch" class="form-control"
+                                       placeholder="Search by name or employee number...">
+                                <i class="search-icon">🔍</i>
+                            </div>
+                        </div>
+
+                        <!-- Available Relievers List -->
+                        <div class="available-relievers">
+                            <div class="available-relievers-header">
+                                <strong>Available Colleagues</strong>
+                                <span class="reliever-count">(@Model.AvailableRelievers.Count available)</span>
+                            </div>
+                            <div class="reliever-list" id="relieverList">
+                                @foreach (var reliever in Model.AvailableRelievers)
+                                {
+                                    <div class="reliever-item"
+                                         data-employee-no="@reliever.EmployeeNo"
+                                         data-name="@reliever.EmployeeName.ToLowerInvariant()"
+                                         data-department="@reliever.Department.ToLowerInvariant()"
+                                         data-email="@reliever.EmailAddress.ToLowerInvariant()">
+                                        <div class="reliever-checkbox">
+                                            <input type="checkbox"
+                                                   name="SelectedRelieverEmployeeNos"
+                                                   value="@reliever.EmployeeNo"
+                                                   id="reliever_@reliever.EmployeeNo">
+                                        </div>
+                                        <div class="reliever-info">
+                                            <div class="reliever-main">
+                                                <div class="reliever-name">@reliever.EmployeeName</div>
+                                                <div class="reliever-employee-no">@reliever.EmployeeNo</div>
+                                            </div>
+                                            <div class="reliever-details">
+                                                <div class="reliever-department">@reliever.Department</div>
+                                                <div class="reliever-job-title">@reliever.JobTitle</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attachments Card -->
+            <div class="col-lg-5">
+                <div class="form-card equal-height-card">
+                    <div class="form-card-header">
+                        <h3 class="form-card-title">
+                            <i class="form-card-icon">📎</i>
+                            Attachments
+                        </h3>
+                        <div class="form-card-subtitle">
+                            Upload supporting documents (optional)
+                        </div>
+                    </div>
+                    <div class="form-card-body attachment-card-body">
+                        <div class="file-upload-area">
+                            <div class="file-upload-icon">📁</div>
+                            <div class="file-upload-text">Select files to upload</div>
+                            <div class="file-upload-hint">Supports: PDF, DOC, XLS, Images, ZIP (Max: 10MB each)</div>
+                            <input name="Attachments" type="file" class="form-control mt-3" multiple
+                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar"
+                                   title="Select files to attach to your leave application">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <div class="d-flex gap-2 justify-content-end">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                    <i class="me-2">❌</i>
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="me-2">📤</i>
+                    Submit Application
+                </button>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="~/custom/leave/js/leave-application.js" asp-append-version="true"></script>
+}

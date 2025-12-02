@@ -1,0 +1,89 @@
+﻿
+@model P9RequestViewModel
+
+@{
+    ViewData["Title"] = "Generate P9 Certificate";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link href="~/custom/payroll/css/p9-modal.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<!-- P9 Generation Modal -->
+<div class="modal fade" id="p9Modal" tabindex="-1" aria-labelledby="p9ModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="p9ModalLabel">
+                    <i class="modal-icon">📊</i>
+                    Generate P9 Tax Certificate
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="p9GenerationForm" asp-action="GenerateP9" asp-controller="Payroll" method="post">
+                <div class="modal-body">
+
+                    <div class="row compact-row">
+                        <div class="col">
+                            <label asp-for="Year" class="form-label">Tax Year <span class="text-danger">*</span></label>
+                            <select asp-for="Year" asp-items="Model.AvailableYears" class="form-select" required>
+                                <option value="">Select tax year</option>
+                            </select>
+                            <span asp-validation-for="Year" class="invalid-feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <strong>📈 P9 Tax Certificate:</strong>
+                        <span id="p9PeriodDisplay">Select year to generate your P9 tax certificate (January - December)</span>
+                    </div>
+
+                    <div class="alert alert-warning mt-2">
+                        <strong>💡 Note:</strong> The P9 certificate will open in a new window where you can print it or save as PDF using your browser's print function.
+                    </div>
+
+                    <div class="p9-info-card mt-3">
+                        <div class="info-header">
+                            <i class="info-icon">ℹ️</i>
+                            <h6 class="info-title">About P9 Certificate</h6>
+                        </div>
+                        <div class="info-content">
+                            <ul class="info-list">
+                                <li>Official tax certificate for KRA filing</li>
+                                <li>Contains annual tax deductions and gross pay</li>
+                                <li>Required for personal tax returns</li>
+                                <li>Covers full calendar year (January - December)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="p9LoadingState" class="loading-state" style="display: none;">
+                        <div class="loading-content">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">
+                                <h6>Generating your P9 certificate...</h6>
+                                <p>This may take a few moments. Please wait.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="p9CancelBtn">
+                        <i class="me-2">❌</i>Cancel/Close
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="p9SubmitBtn">
+                        <i class="me-2">🖨️</i>Generate & Download
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+

@@ -1,0 +1,33 @@
+﻿namespace ESSPortal.Web.Mvc.Dtos.Profile;
+
+public record UserProfileResponse(
+    string UserId,
+    string? EmployeeNumber,
+    string? FirstName,
+    string? MiddleName,
+    string? LastName,
+    string? Email,
+    string? PhoneNumber,
+    string? Gender,
+    string? ProfilePictureUrl,
+    string? Department,
+    string? JobTitle,
+    string? ManagerId,
+    string? ManagerName,
+    DateTimeOffset? LastLoginAt,
+    DateTimeOffset CreatedAt,
+    bool IsActive,
+    string? No,
+    string? CountryRegionCode,
+    string? PhysicalAddress,
+    string? TelephoneNo,
+    string? MobileNo,
+    string? PostalAddress,
+    string? PostCode,
+    string? City,
+    string? ContactEMailAddress,
+    string? BankAccountType,
+    string? KBABankCode,
+    string? KBABranchCode,
+    string? BankAccountNo
+);

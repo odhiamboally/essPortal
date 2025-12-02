@@ -1,0 +1,239 @@
+﻿@model List<LeaveHistoryResponse>
+
+@{
+    ViewData["Title"] = "Leave History";
+}
+
+@section Styles {
+    <link href="~/custom/leave/css/leave-history.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="page-icon">📊</i>
+            Leave History
+        </h1>
+        <nav class="breadcrumb-nav">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Dashboard</a></li>
+                <li class="breadcrumb-item active">Leave History</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Search and Filters Card -->
+    <div class="form-card mb-4">
+        <div class="form-card-header">
+            <h3 class="form-card-title">
+                <i class="form-card-icon">🔍</i>
+                Search & Filters
+            </h3>
+        </div>
+        <div class="form-card-body">
+            <div class="filter-row">
+                <!-- Search Input -->
+                <div class="filter-item">
+                    <label class="filter-label">Search Applications</label>
+                    <div class="search-input-group">
+                        <input type="text" id="searchInput" class="form-control"
+                               placeholder="Search by application number, leave type, status...">
+                        <i class="search-icon">🔍</i>
+                    </div>
+                </div>
+
+                <!-- Application Number Filter -->
+                <div class="filter-item">
+                    <label class="filter-label">Application Number</label>
+                    <input type="text" id="applicationNoFilter" class="form-control"
+                           placeholder="e.g. LV-01184">
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="filter-item">
+                    <label class="filter-label">Date Range</label>
+                    <div class="date-range-group">
+                        <input type="date" id="dateFromFilter" class="form-control" placeholder="From">
+                        <span class="date-separator">to</span>
+                        <input type="date" id="dateToFilter" class="form-control" placeholder="To">
+                    </div>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="filter-item">
+                    <label class="filter-label">Status</label>
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="filter-actions">
+                    <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                        <i class="btn-icon">🔍</i>
+                        Search
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                        <i class="btn-icon">🔄</i>
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Card -->
+    <div class="form-card">
+        <div class="form-card-header">
+            <h3 class="form-card-title">
+                <i class="form-card-icon">📋</i>
+                Leave Applications
+                <span class="results-count" id="resultsCount">(@Model.Count applications)</span>
+            </h3>
+            <div class="header-actions">
+                <a asp-controller="Leave" asp-action="ApplyForLeave" class="btn btn-primary btn-sm">
+                    <i class="btn-icon">📝</i>
+                    New Application
+                </a>
+            </div>
+        </div>
+        <div class="form-card-body">
+            <!-- Table Container -->
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table class="table leave-table" id="leaveTable">
+                        <thead>
+                            <tr>
+                                <th>Leave Type</th>
+                                <th>Application No</th>
+                                <th>Application Date</th>
+                                <th>Days Applied</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaveTableBody">
+                            @foreach (var item in Model.OrderByDescending(lh => lh.ApplicationDate))
+                            {
+                                <tr class="leave-row"
+                                    data-application-no="@item.ApplicationNo"
+                                    data-leave-type="@item.LeaveType.ToLowerInvariant()"
+                                    data-status="@item.StatusDisplayText.ToLowerInvariant()"
+                                    data-application-date="@item.ApplicationDate.ToString("yyyy-MM-dd")"
+                                    data-start-date="@item.StartDate.ToString("yyyy-MM-dd")"
+                                    data-end-date="@item.EndDate.ToString("yyyy-MM-dd")">
+
+                                    <td class="leave-type">@item.LeaveType</td>
+                                    <td class="application-no">@item.ApplicationNo</td>
+                                    <td class="application-date">@item.ApplicationDate.ToString("MMM dd, yyyy")</td>
+                                    <td class="days-applied">@item.DaysApplied</td>
+                                    <td class="start-date">@item.StartDate.ToString("MMM dd, yyyy")</td>
+                                    <td class="end-date">@item.EndDate.ToString("MMM dd, yyyy")</td>
+                                    <td class="reliever">@item.DutiesTakenOverBy</td>
+                                    <td class="status">
+                                        <span class="status-badge @item.StatusCssClass">@item.StatusDisplayText</span>
+                                    </td>
+                                    <td class="actions">
+                                        <button class="btn btn-primary btn-sm view-btn"
+                                                onclick="loadLeaveDetailModal('@item.ApplicationNo')"
+                                                title="View Details">
+                                            <i class="btn-icon">👁️</i>
+                                            View
+                                        </button>
+
+                                        @if (item.StatusDisplayText == "Draft" )
+                                        {
+                                            <button class="btn btn-outline-secondary btn-sm view-btn"
+                                                    onclick="loadEditLeaveModal('@item.ApplicationNo')"
+                                                    title="Edit">
+                                                <i class="btn-icon">✏️</i>
+                                                Edit
+                                            </button>
+                                        }
+                                        
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- No Results Message -->
+                <div class="no-results" id="noResults" style="display: none;">
+                    <div class="no-results-content">
+                        <i class="no-results-icon">🔍</i>
+                        <h6>No Applications Found</h6>
+                        <p>No leave applications match your search criteria.</p>
+                        <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-container" id="paginationContainer">
+                <div class="pagination-info">
+                    <span id="paginationInfo">Showing 1-10 of @Model.Count applications</span>
+                </div>
+                <div class="pagination-controls">
+                    <button class="btn btn-outline-secondary btn-sm" id="prevBtn" onclick="previousPage()" disabled>
+                        <i class="btn-icon">◀️</i>
+                        Previous
+                    </button>
+                    <span class="page-numbers" id="pageNumbers"></span>
+                    <button class="btn btn-outline-secondary btn-sm" id="nextBtn" onclick="nextPage()">
+                        Next
+                        <i class="btn-icon">▶️</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="dynamicModalContainer"></div>
+
+@section Scripts {
+
+    <script src="~/custom/dashboard/js/dashboard-modals.js" asp-append-version="true"></script>
+    <script src="~/custom/leave/js/leave-history.js" asp-append-version="true"></script>
+    <script src="~/custom/leave/js/edit-leave-modal.js" asp-append-version="true"></script>
+
+    <script>
+
+        // Global function for leave detail modal
+        window.loadLeaveDetailModal = function(applicationNo) { 
+            console.log('Loading leave detail modal for:', applicationNo);
+
+            if (typeof DashboardModals !== 'undefined') {
+                DashboardModals.loadLeaveDetailModal(applicationNo);
+            } else {
+                console.error('DashboardModals not available');
+            }
+        };
+    </script>
+
+    <script>
+
+        // Global function for leave detail modal
+        window.loadEditLeaveModal = function(applicationNo) {
+            console.log('Loading edit leave modal for:', applicationNo);
+
+            if (typeof DashboardModals !== 'undefined') {
+                DashboardModals.loadEditLeaveModal(applicationNo);
+            } else {
+                console.error('DashboardModals not available');
+            }
+        };
+    </script>
+}

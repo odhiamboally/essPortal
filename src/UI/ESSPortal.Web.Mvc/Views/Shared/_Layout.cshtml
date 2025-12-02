@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ESS Portal</title>
+
+    <!-- Toast messages as meta tags (alternative method) -->
+    @if (TempData["__ToastSuccess"] != null)
+    {
+        <meta name="toast-success" content="@TempData["__ToastSuccess"]" />
+    }
+    @if (TempData["__ToastError"] != null)
+    {
+        <meta name="toast-error" content="@TempData["__ToastError"]" />
+    }
+    @if (TempData["__ToastWarning"] != null)
+    {
+        <meta name="toast-warning" content="@TempData["__ToastWarning"]" />
+    }
+    @if (TempData["__ToastInfo"] != null)
+    {
+        <meta name="toast-info" content="@TempData["__ToastInfo"]" />
+    }
+    @if (TempData["__ToastSession"] != null)
+    {
+        <meta name="toast-session" content="@TempData["__ToastSession"]" />
+    }
+
+    
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/custom/dashboard/css/dashboard.css" asp-append-version="true" />
+    <link href="~/custom/auth/css/2fa-modal.css" rel="stylesheet" asp-append-version="true" />
+  
+    @await RenderSectionAsync("Styles", required: false)
+
+
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top border-bottom box-shadow">
+            <div class="container-fluid">
+                <!-- Brand Logo and Title -->
+                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="~/custom/common/images/unlogo.png" alt="UN Logo" class="navbar-logo me-2" />
+                    <div class="brand-text">
+                        <div class="brand-title">ESS Portal</div>
+                        <div class="brand-subtitle">Empowering Members Financially</div>
+                    </div>
+                </a>
+
+                <!-- Mobile Toggle Button -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+                        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Navigation Content -->
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <!-- Main Navigation Menu -->
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="nav-icon">📊</i>
+                                Dashboard
+                            </a>
+                        </li>
+
+                        <!-- Human Resource Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="hrDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="nav-icon">👥</i>
+                                Human Resource
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="hrDropdown">
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="Leave" asp-action="ApplyForLeave">
+                                        <i class="dropdown-icon">📝</i>
+                                        Leave Application
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- Payroll Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="payrollDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="nav-icon">💰</i>
+                                Payroll
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="payrollDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="loadPayslipModal()">
+                                        <i class="dropdown-icon">📄</i>
+                                        Payslip
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="loadP9Modal()">
+                                        <i class="dropdown-icon">📋</i>
+                                        P9
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <!-- User Profile Section -->
+                    <div class="navbar-nav">
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle user-profile" href="#" id="userDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar">
+                                    @if (!string.IsNullOrWhiteSpace(ViewBag.UserProfilePicture))
+                                    {
+                                        <img src="@ViewBag.UserProfilePicture" alt="Profile" class="avatar-image" />
+                                    }
+                                    else
+                                    {
+                                        <div class="avatar-initials">
+                                            @(ViewBag.UserInitials ?? "UN")
+                                        </div>
+                                    }
+                                </div>
+                                <span class="user-name">@(ViewBag.UserDisplayName ?? "User")</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <div class="dropdown-header">
+                                        <div class="user-info">
+                                            <strong>@(ViewBag.UserDisplayName ?? "User")</strong>
+                                            <small class="text-muted d-block">@(ViewBag.UserEmail ?? "")</small>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="Profile" asp-action="Index">
+                                        <i class="dropdown-icon">👤</i>
+                                        My Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="load2FAModal()">
+                                        <i class="dropdown-icon">⚙️</i>
+                                        2FA
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-area="" asp-controller="Auth" asp-action="SignOut" method="post" class="d-inline">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="dropdown-icon">🚪</i>
+                                            Sign Out
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content with proper spacing for fixed navbar -->
+    <main class="main-content">
+        <div class="container-fluid">
+            @RenderBody()
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer border-top text-muted">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <!-- Empty col to push copyright to the right -->
+                </div>
+                <div class="col-auto">
+                    &copy; 2025 United Nations. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Libraries -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jose/4.14.4/index.umd.min.js"></script>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script src="~/custom/layout/js/layout.js" asp-append-version="true"></script>
+
+    <script src="~/custom/common/js/session-manager.js" asp-append-version="true"></script>
+
+    <script src="~/custom/common/js/payload-encryption.js" asp-append-version="true"></script>
+    
+    <script src="~/custom/dashboard/js/dashboard-quick-actions.js" asp-append-version="true"></script>
+
+    <script src="~/custom/payroll/js/payslip-modal.js" asp-append-version="true"></script>
+
+    <script src="~/custom/payroll/js/p9-modal.js" asp-append-version="true"></script>
+
+    <script src="~/custom/auth/js/2fa-modal.js" asp-append-version="true"></script>
+
+    <script src="~/custom/common/js/toast-system.js" asp-append-version="true"></script>
+
+    
+
+    <!-- Page-specific Scripts -->
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Container for dynamically loaded modals -->
+    <div id="dynamicModalContainer"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize encryption with server-side key
+            initializeEncryption('@PayloadEncryption.Value.Key');
+        });
+    </script>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @* Calculate user info *@
+        var fullName = User.Identity.Name ??
+        User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ??
+        "User";
+
+        var nameParts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var initials = nameParts.Length >= 2
+        ? $"{nameParts[0][0]}{nameParts[^1][0]}".ToUpper()
+        : (nameParts.Length == 1 && nameParts[0].Length >= 2)
+        ? nameParts[0].Substring(0, 2).ToUpper()
+        : "U";
+
+        <!-- Hidden element with user info for JavaScript -->
+        <div id="user-session-info"
+             style="display: none;"
+             aria-hidden="true"
+             data-user-name="@fullName"
+             data-user-initials="@initials"
+             data-user-id="@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value"
+             data-user-email="@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value">
+        </div>
+    }
+
+</body>
+</html>

@@ -1,0 +1,278 @@
+﻿@model LeaveApplicationFormResponse
+
+
+@{
+    ViewData["Title"] = $"Edit Leave Application - {ViewBag.ApplicationNo}";
+    Layout = "_Layout";
+
+    // Get existing values from ViewBag
+    var existingLeaveType = ViewBag.ExistingLeaveType?.ToString() ?? "";
+    var existingFromDate = ViewBag.ExistingFromDate?.ToString() ?? "";
+    var existingToDate = ViewBag.ExistingToDate?.ToString() ?? "";
+    var existingDaysApplied = ViewBag.ExistingDaysApplied?.ToString() ?? "";
+    var existingHalfDay = ViewBag.ExistingHalfDay == true;
+    var existingLeaveAllowancePayable = ViewBag.ExistingLeaveAllowancePayable == true;
+    var existingSelectedRelieverEmployeeNo = ViewBag.ExistingSelectedRelieverEmployeeNo?.ToString() ?? "";
+    var applicationNo = ViewBag.ApplicationNo?.ToString() ?? "";
+}
+
+@section Styles {
+
+    <link href="~/custom/leave/css/leave-application.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="modal fade" id="editLeaveModal" tabindex="-1" aria-labelledby="editLeaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editLeaveModalLabel">
+                    ✏️ Edit Leave Application - @applicationNo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <form id="editLeaveApplicationForm" method="post" enctype="multipart/form-data" asp-antiforgery="true" asp-controller="Leave" asp-action="UpdateLeaveApplication">
+                    
+                    <!-- Hidden field for edit mode -->
+                    <input type="hidden" name="ApplicationNo" value="@applicationNo" />
+
+                    <!-- Application Details Card - Compact for modal -->
+                    <div class="form-card">
+                        <div class="form-card-header">
+                            <h3 class="form-card-title">
+                                👤 Application Details
+                            </h3>
+                        </div>
+                        <div class="form-card-body">
+                            <div class="row compact-row">
+                                <div class="col compact-col">
+                                    <label for="EmployeeNo" class="form-label">Employee No</label>
+                                    <input name="EmployeeNo" type="text" class="form-control calculated-field"
+                                           value="@Model.Employee.EmployeeNo" readonly>
+                                </div>
+
+                                <div class="col compact-col">
+                                    <label for="EmployeeName" class="form-label">Employee Name</label>
+                                    <input name="EmployeeName" type="text" class="form-control calculated-field"
+                                           value="@Model.Employee.EmployeeName" readonly>
+                                </div>
+
+                                <div class="col compact-col">
+                                    <label for="EmailAddress" class="form-label">Email Address</label>
+                                    <input name="EmailAddress" type="email" class="form-control calculated-field"
+                                           value="@Model.Employee.EmailAddress" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leave Details Card -->
+                    <div class="form-card">
+                        <div class="form-card-header">
+                            <h3 class="form-card-title">
+                                🏖️ Leave Details
+                            </h3>
+                        </div>
+                        <div class="form-card-body">
+
+                            <!-- Balance Display -->
+                            <div class="alert alert-info"
+                                 data-annual-earned="@Model.AnnualLeaveSummary.LeaveEarnedToDate"
+                                 data-annual-balance="@Model.AnnualLeaveSummary.MonthlyBalance"
+                                 data-sick-balance="@Model.LeaveSummary.SickLeave.CurrentBalance"
+                                 data-adoption-balance="@Model.LeaveSummary.AdoptionLeave.CurrentBalance"
+                                 data-compassion-balance="@Model.LeaveSummary.CompassionLeave.CurrentBalance"
+                                 data-maternity-balance="@Model.LeaveSummary.MaternityLeave.CurrentBalance"
+                                 data-paternity-balance="@Model.LeaveSummary.PaternityLeave.CurrentBalance"
+                                 data-study-balance="@Model.LeaveSummary.StudyLeave.CurrentBalance"
+                                 data-unpaid-balance="@Model.LeaveSummary.UnpaidLeave.CurrentBalance">
+
+                                <strong>📊 Balance:</strong>
+                                <span id="leaveBalanceInfo">
+                                    Select a leave type to view your available balance
+                                </span>
+                            </div>
+
+                            <div class="row compact-row">
+                                <div class="col compact-col">
+                                    <label for="LeaveType" class="form-label">Leave Type <span class="text-danger">*</span></label>
+                                    <select name="LeaveType" class="form-select" required>
+                                        <option value="">Select type</option>
+                                        @foreach (var type in Model.LeaveTypes)
+                                        {
+                                            var isSelected = type.Code.Equals(existingLeaveType, StringComparison.OrdinalIgnoreCase);
+                                            var maxDays = type.MaxDays;
+                                            var usesCalendar = new[] { "ADOPTION", "COMPASSIONATE", "MATERNITY", "PATERNITY", "SICK" }.Contains(type.Code);
+
+                                            <option value="@type.Code"
+                                                    data-max-days="@(maxDays > 0 ? maxDays.ToString() : "")"
+                                                    data-uses-calendar="@(usesCalendar ? "true" : "false")"
+                                                    data-is-annual="@(type.Code == "ANNUAL" ? "true" : "false")"
+                                                    selected="@isSelected">
+                                                @type.Description @(maxDays > 0 ? $"(Max: {maxDays} days)" : "")
+                                            </option>
+                                        }
+                                    </select>
+                                    <div class="invalid-feedback">Please select a leave type</div>
+                                </div>
+
+                                <!-- Days Applied -->
+                                <div class="col compact-col">
+                                    <label for="DaysApplied" class="form-label">Days Applied <span class="text-danger">*</span></label>
+                                    <input name="DaysApplied" type="number" class="form-control calculated-field" id="editDaysApplied"
+                                           step="0.5" min="0.5" required readonly
+                                           placeholder="Auto-calculated"
+                                           value="@existingDaysApplied"
+                                           title="Number of days will be Auto-calculated">
+                                    <div class="invalid-feedback">Please enter valid value</div>
+                                </div>
+
+                                <!-- From Date -->
+                                <div class="col compact-col">
+                                    <label for="FromDate" class="form-label">From Date <span class="text-danger">*</span></label>
+                                    <div class="date-input-group">
+                                        <input name="FromDate" type="date" id="editFromDate" class="form-control" value="@existingFromDate" required>
+                                    </div>
+                                    <div class="invalid-feedback">Please select a start date</div>
+                                </div>
+
+                                <!-- To Date -->
+                                <div class="col compact-col">
+                                    <label for="ToDate" class="form-label">To Date <span class="text-danger">*</span></label>
+                                    <div class="date-input-group">
+                                        <input name="ToDate" type="date" id="editToDate" class="form-control" value="@existingToDate" required>
+                                    </div>
+                                    <div class="invalid-feedback">Please select a valid to date</div>
+                                </div>
+
+                                <!-- Resumption Date -->
+                                <div class="col compact-col">
+                                    <label for="ResumptionDate" class="form-label">Resumption Date</label>
+                                    <div class="date-input-group">
+                                        <input name="ResumptionDate" type="text" id="editResumptionDate" class="form-control calculated-field" placeholder="Auto-calculated" readonly>
+                                        
+                                    </div>
+                                </div>
+
+                                <!-- Toggle Options -->
+                                <div class="col compact-col">
+                                    <label class="form-label" style="opacity: 0;">Options</label>
+
+                                    <!-- Half Day Toggle -->
+                                    <div class="form-check form-switch mb-2">
+                                        <input name="HalfDay" id="halfDayToggle" class="form-check-input" type="checkbox" value="true" @(existingHalfDay ? "checked" : "")>
+                                        <input name="HalfDay" type="hidden" value="false">
+                                        <label class="form-check-label" for="halfDayToggle" style="font-size: 0.75rem;">
+                                            Half Day Leave (0.5 days)
+                                        </label>
+                                    </div>
+
+                                    <!-- Leave Allowance Toggle -->
+                                    <div class="form-check form-switch">
+                                        <input name="LeaveAllowancePayable" id="leaveAllowanceToggle" class="form-check-input" type="checkbox" value="true" @(existingLeaveAllowancePayable ? "checked" : "")>
+                                        <input name="LeaveAllowancePayable" type="hidden" value="false">
+                                        <label class="form-check-label" for="leaveAllowanceToggle" style="font-size: 0.75rem;">
+                                            Leave Allowance Payable (Annual Leave Only)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Half Day Helper (shown/hidden by JS) -->
+                            <div id="halfDayHelper" class="alert alert-info mt-2 py-2" style="display: @(existingHalfDay ? "block" : "none");">
+                                <small><strong>Half Day Leave:</strong> Start and end date must be the same. This will automatically calculate as 0.5 days.</small>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Leave Relievers - Compact for modal -->
+                    <div class="form-card">
+                        <div class="form-card-header">
+                            <h3 class="form-card-title">
+                                👥 Leave Reliever
+                            </h3>
+                        </div>
+                        <div class="form-card-body">
+
+                            <!-- Search Input -->
+                            <div class="reliever-search-container">
+                                <div class="search-input-group">
+                                    <input type="text" id="relieverSearch" class="form-control" placeholder="Search by name or employee number..."> 🔍
+                                </div>
+                            </div>
+
+                            <!-- Available Relievers List - Compact -->
+                            <div class="available-relievers">
+                                <div class="available-relievers-header">
+                                    <strong>Available Colleagues</strong>
+                                    <span class="reliever-count">(@Model.AvailableRelievers.Count available)</span>
+                                </div>
+                                <div class="reliever-list" id="relieverList" style="max-height: 200px; overflow-y: auto;">
+
+                                    @foreach (var reliever in Model.AvailableRelievers)
+                                    {
+                                        var isSelectedReliever = reliever.EmployeeNo.Equals(existingSelectedRelieverEmployeeNo, StringComparison.OrdinalIgnoreCase);
+
+                                        <div class="reliever-item p-2 border rounded mb-2 @(isSelectedReliever ? "selected" : "")"
+
+                                             data-employee-no="@reliever.EmployeeNo"
+                                             data-name="@reliever.EmployeeName.ToLowerInvariant()"
+                                             data-department="@reliever.Department.ToLowerInvariant()"
+                                             data-email="@reliever.EmailAddress.ToLowerInvariant()">
+                                            <div class="reliever-checkbox">
+                                                <input type="checkbox"
+                                                       name="SelectedRelieverEmployeeNos"
+                                                       value="@reliever.EmployeeNo"
+                                                       id="reliever_@reliever.EmployeeNo"
+                                                       class="form-check-input"
+                                                       @(isSelectedReliever ? "checked" : "")>
+                                            </div>
+                                            <div class="reliever-info">
+                                                <div class="reliever-main">
+                                                    <div class="reliever-name">@reliever.EmployeeName</div>
+                                                    <div class="reliever-employee-no">@reliever.EmployeeNo</div>
+                                                </div>
+                                                <div class="reliever-details">
+                                                    <div class="reliever-department">@reliever.Department</div>
+                                                    <div class="reliever-job-title">@reliever.JobTitle</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden fields -->
+                    <input name="LeavePeriod" type="hidden" value="@DateTime.Now.Year">
+                    <input name="BranchCode" type="hidden" value="@Model.Employee.BranchCode">
+                    <input name="ResponsibilityCenter" type="hidden" value="@Model.Employee.ResponsibilityCenter">
+                    <input name="MobileNo" type="hidden" value="@Model.Employee.MobileNo">
+
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    ❌ Cancel
+                </button>
+                <button type="submit" form="leaveApplicationForm" class="btn btn-primary">
+                    💾 Update Application
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script src="~/custom/leave/js/edit-leave-modal.js" asp-append-version="true"></script>
+
+
+}
+
+                

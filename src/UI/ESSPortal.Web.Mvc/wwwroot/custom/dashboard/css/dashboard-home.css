@@ -1,0 +1,1241 @@
+﻿/* ========================================
+   UN Portal - Modern Dashboard CSS
+   ======================================== */
+
+/* CSS Custom Properties */
+:root {
+    --un-blue: #009edb;
+    --un-dark-blue: #1f4788;
+    --un-light-blue: #e3f2fd;
+    --un-white: #ffffff;
+    --un-gray-50: #f8f9fa;
+    --un-gray-100: #e9ecef;
+    --un-gray-200: #dee2e6;
+    --un-gray-300: #ced4da;
+    --un-gray-400: #adb5bd;
+    --un-gray-500: #6c757d;
+    --un-gray-600: #495057;
+    --un-gray-700: #343a40;
+    --un-gray-800: #212529;
+    --un-acc-green: #4CAF50; /* Green for earned days */
+    --un-acc-blue: #2196F3; /* Blue for available balance */
+    --un-acc-dark: #343a40; /* Dark for annual entitlement */
+}
+
+/* ========================================
+   PAGE HEADER (Simplified)
+   ======================================== */
+.page-header {
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--un-gray-200);
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--un-dark-blue);
+    margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+    color: var(--un-gray-600);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* ========================================
+   STAT CARDS (Modern Styling)
+   ======================================== */
+
+.stat-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+
+.stat-card {
+    background: var(--un-white);
+    border-radius: 12px;
+    border: 1px solid var(--un-gray-200);
+    padding: 1rem;
+    height: 160px; /*height: 100%;*/
+    min-height: 160px; /* Uniform height */
+    display: flex;
+    flex-direction: column;
+    /*justify-content: center;*/
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    overflow: hidden;
+}
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.25rem;
+}
+
+.stat-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+    .stat-icon .icon {
+        font-size: 1.2rem;
+    }
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--un-gray-600);
+    font-weight: 500;
+    margin: 0 0 0.5rem 0;
+    line-height: 1;
+    margin-top: auto;
+    margin-bottom: 0.25rem;
+}
+
+.stat-meta {
+    font-size: 0.7rem;
+    color: var(--un-gray-500);
+    line-height: 1;
+    margin: 0;
+    margin-bottom: 0.5rem;
+}
+
+.stat-content {
+    padding: 0 1rem 1rem;
+    overflow-y: auto;
+}
+
+/* Stat card color variants */
+.stat-primary .stat-number {
+    color: var(--un-blue);
+}
+
+.stat-primary .stat-icon {
+    background: rgba(0, 158, 219, 0.1);
+    color: var(--un-blue);
+}
+
+.stat-info .stat-number {
+    color: #17a2b8;
+}
+
+.stat-info .stat-icon {
+    background: rgba(23, 162, 184, 0.1);
+    color: #17a2b8;
+}
+
+/*Added*/
+/* Narrower first two stat cards */
+.stat-card:nth-child(1),
+.stat-card:nth-child(2) {
+    width: 90%; /* Reduced width */
+    max-width: 220px; /* Maximum width */
+}
+
+
+/* ========================
+   SCROLLABLE CARD LAYOUT
+   ======================== */
+/* Card Header - Fixed height */
+.card-header,
+.actions-header,
+.leave-history-header {
+    padding: 1rem 1.25rem 0.75rem;
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+/* Card Body - Scrollable content */
+.card-body,
+.actions-grid-wrapper,
+.accumulation-content,
+.leave-history-content {
+    flex: 1; /* Take remaining space */
+    overflow-y: auto; /* Enable vertical scrolling */
+    padding: 0 1.25rem 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--un-gray-300) transparent;
+}
+
+    /* Custom scrollbar for Webkit browsers */
+    .card-body::-webkit-scrollbar,
+    .actions-grid-wrapper::-webkit-scrollbar,
+    .accumulation-content::-webkit-scrollbar,
+    .leave-history-content::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .card-body::-webkit-scrollbar-thumb,
+    .actions-grid-wrapper::-webkit-scrollbar-thumb,
+    .accumulation-content::-webkit-scrollbar-thumb,
+    .leave-history-content::-webkit-scrollbar-thumb {
+        background-color: var(--un-gray-300);
+        border-radius: 2px;
+    }
+
+
+/* ========================================
+   QUICK ACTIONS (Modern Styling)
+   ======================================== */
+.quick-actions-card {
+    background: var(--un-white);
+    border-radius: 12px;
+    border: 1px solid var(--un-gray-200);
+    padding: 1rem 1.5rem 1.5rem;
+    height: 160px; 
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    flex: 1;
+    min-width: 280px;
+    overflow: hidden;
+}
+
+    .quick-actions-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+.actions-header {
+    margin-bottom: 0.75rem;
+    padding-top: 0.25rem;
+}
+
+.actions-title {
+    color: var(--un-dark-blue);
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.actions-icon {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.actions-grid {
+    display: flex; 
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    flex: 1; 
+}
+
+.action-item {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    padding: 0.75rem;
+    background: #e4e4e4;
+    text-decoration: none;
+    color: var(--un-gray-800);
+    transition: all 0.3s ease;
+    gap: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+    .action-item:hover {
+        background: var(--un-white);
+        color: var(--un-gray-800);
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: var(--un-blue);
+    }
+
+.action-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--un-white);
+    flex-shrink: 0;
+    margin-top: 0.15rem; /* Fine-tuned alignment */
+}
+
+    .action-icon .icon {
+        font-size: 0.9rem;
+    }
+
+.action-text-container {
+    display: flex;
+    flex-direction: column;
+    /*justify-content: center;*/
+    gap: 0.1rem;
+}
+
+.action-text {
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    
+}
+
+.action-subtext { 
+    font-size: 0.6rem; 
+    color: var(--un-gray-600);
+    font-weight: 400;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+}
+
+/* Background colors for icons */
+.bg-primary {
+    background-color: var(--un-blue);
+}
+
+.bg-success {
+    background-color: #28a745;
+}
+
+.bg-info {
+    background-color: #17a2b8;
+}
+
+.bg-warning {
+    background-color: #ffc107;
+}
+
+/* ========================================
+   LEAVE ACCUMULATION SUMMARY CARD
+   ======================================== */
+.accumulation-card {
+    flex: 1;
+    background: var(--un-white);
+    border-radius: 12px;
+    border: 1px solid var(--un-gray-200);
+    padding: 1rem;
+    height: 160px; /* Fixed height */
+    min-height: 160px;
+    min-height: 120px; /* Match other cards */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.accumulation-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 1rem 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--un-gray-300) transparent;
+}
+    .accumulation-content::-webkit-scrollbar {
+        width: 4px;
+    }
+    .accumulation-content::-webkit-scrollbar-thumb {
+        background-color: var(--un-gray-300);
+        border-radius: 2px;
+    }
+
+.accumulation-header {
+    flex-shrink: 0; /* Prevent header from scrolling */
+    margin-bottom: 0.5rem;
+}
+
+.accumulation-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+    margin-bottom: 0.5rem;
+}
+
+.accumulation-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+}
+
+.accumulation-label {
+    color: var(--un-gray-600);
+}
+
+.accumulation-value {
+    font-weight: 500;
+}
+
+/* Update the accumulation value styles */
+.accumulation-row:nth-child(1) .accumulation-value {
+    color: var(--un-acc-dark); 
+    font-weight: 600;
+}
+
+.accumulation-row:nth-child(2) .accumulation-value {
+    color: var(--un-acc-blue); 
+    font-weight: 600;
+}
+
+.accumulation-row:nth-child(3) .accumulation-value {
+    color: var(--un-acc-green); 
+    font-weight: 600;
+}
+
+.accumulation-progress {
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--un-gray-500);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ========================================
+   LEAVE HISTORY (Optimized Version)
+   ======================================== */
+.leave-history-card {
+    background: var(--un-white);
+    border-radius: 12px;
+    border: 1px solid var(--un-gray-200);
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    margin-top: 1.5rem;
+}
+
+.leave-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.leave-history-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.view-all-link {
+    color: var(--un-blue);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: color 0.3s ease;
+}
+
+    .view-all-link:hover {
+        color: var(--un-dark-blue);
+    }
+
+/* No Applications State */
+.no-leave-content {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.no-leave-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.7;
+    color: var(--un-gray-400);
+}
+
+.no-leave-content h6 {
+    color: var(--un-gray-700);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.no-leave-text {
+    margin-bottom: 0.75rem;
+    color: var(--un-gray-600);
+    font-size: 0.85rem;
+}
+
+.leave-balance {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+    padding: 0.3rem 0.75rem;
+    background: rgba(0, 158, 219, 0.1);
+    color: var(--un-blue);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.apply-leave-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+/* With Applications State */
+.leave-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: calc(100% - 40px); /* Account for header */
+    overflow-y: auto;
+    padding-bottom: 0.5rem;
+}
+
+.leave-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+    .leave-item:hover {
+        background: var(--un-white);
+        border-color: var(--un-blue);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+.leave-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.leave-main-info {
+    flex: 1;
+}
+
+.leave-type {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--un-gray-800);
+    margin-bottom: 0.4rem;
+}
+
+.leave-inline-details {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.leave-dates {
+    font-size: 0.8rem;
+    color: var(--un-gray-600);
+    font-weight: 500;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--un-gray-600);
+    gap: 0.25rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.view-leave-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+
+
+
+
+
+
+
+/*Added*/
+@media (max-width: 1199.98px) {
+
+    .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-card {
+        min-width: 160px;
+    }
+
+    .quick-actions-card {
+        min-width: 240px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-main-row .row > [class*="col-"] > div {
+        height: auto;
+        min-height: 120px;
+        margin-bottom: 1rem;
+    }
+
+
+    .page-header {
+        margin-bottom: 1.5rem;
+        padding: 1rem 0;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+    }
+
+    .actions-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .stat-card,
+    .accumulation-card {
+        max-width: 100%;
+    }
+}
+
+
+@media (max-width: 767.98px) {
+    .page-header {
+        padding: 0.75rem 0;
+        margin-bottom: 1rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+
+    .page-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+
+
+    /*Added*/
+    .stat-card,
+    .accumulation-card,
+    .quick-actions-card {
+        min-height: auto;
+        margin-bottom: 1rem;
+    }
+
+    .action-item {
+        flex-direction: row;
+        text-align: left;
+        padding: 0.75rem;
+        justify-content: flex-start;
+    }
+
+    .leave-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .leave-status-actions {
+        align-self: stretch;
+        justify-content: space-between;
+    }
+}
+
+
+/* ========================================
+   ENHANCED LEAVE STATISTICS CARD
+   ======================================== */
+
+/* Enhanced stats card - wider to accommodate 3 columns */
+.enhanced-stats-card {
+    min-width: 100%;
+    max-width: 100%;
+    flex: 1;
+}
+
+/* Three-column grid layout */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stats-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+/* Section headers for each column */
+.stats-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--un-gray-200);
+}
+
+.section-icon {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Enhanced accumulation rows for tighter spacing */
+.stats-column .accumulation-row {
+    margin-bottom: 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+
+.stats-column .accumulation-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.stats-column .accumulation-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Color coding for different value types */
+.annual-entitlement {
+    color: var(--un-gray-700);
+}
+
+.earned-to-date {
+    color: var(--un-blue);
+}
+
+.brought-forward {
+    color: #17a2b8;
+}
+
+.total-available {
+    color: var(--un-dark-blue);
+    font-weight: 700;
+}
+
+.taken-this-year {
+    color: #dc3545;
+}
+
+.available-balance {
+    color: var(--un-acc-green);
+    font-weight: 700;
+}
+
+.usage-percentage {
+    color: #fd7e14;
+    font-weight: 700;
+}
+
+.pending-apps {
+    color: #6f42c1;
+}
+
+.monthly-earned {
+    color: var(--un-acc-blue);
+}
+
+.monthly-taken {
+    color: #e83e8c;
+}
+
+.monthly-balance {
+    color: var(--un-acc-green);
+}
+
+.approved-this-month {
+    color: #20c997;
+}
+
+/* Enhanced progress bar at bottom */
+.enhanced-progress {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--un-gray-200);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.progress-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--un-gray-600);
+}
+
+    .progress-item .icon {
+        font-size: 0.8rem;
+        opacity: 0.8;
+    }
+
+/* Responsive adjustments */
+@media (max-width: 1199.98px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .stats-column:nth-child(3) {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+        .stats-column:nth-child(3) .stats-section-header {
+            grid-column: 1 / -1;
+        }
+}
+
+@media (max-width: 991.98px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .stats-column:nth-child(3) {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .enhanced-stats-card {
+        height: auto;
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .stats-column .accumulation-row {
+        font-size: 0.7rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .stats-column .accumulation-label {
+        font-size: 0.65rem;
+    }
+
+    .stats-column .accumulation-value {
+        font-size: 0.7rem;
+    }
+
+    .section-title {
+        font-size: 0.7rem;
+    }
+
+    .enhanced-progress {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+    }
+
+    .progress-item {
+        font-size: 0.65rem;
+    }
+}
+
+/* Remove the old stat cards that are no longer needed */
+.stat-card:nth-child(1),
+.stat-card:nth-child(2) {
+    display: none;
+}
+
+/* Ensure the enhanced card takes full width */
+.stat-grid {
+    display: block;
+}
+
+/* Optional: Add subtle animations */
+.stats-column {
+    transition: transform 0.2s ease;
+}
+
+.enhanced-stats-card:hover .stats-column {
+    transform: translateY(-1px);
+}
+
+/* Hover effects for individual stat values */
+.accumulation-value {
+    transition: all 0.2s ease;
+}
+
+.accumulation-row:hover .accumulation-value {
+    transform: scale(1.05);
+    font-weight: 700;
+}
+
+
+/* ========================================
+   COMPACT LEAVE BALANCE TABLE LAYOUT
+   ======================================== */
+
+/* Replace the existing leave-balance-overview-section styles with these: */
+
+.leave-balance-overview-section {
+    margin: 2rem 0;
+}
+
+.form-card {
+    background: var(--un-white);
+    border-radius: 12px;
+    border: 1px solid var(--un-gray-200);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.form-card-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--un-gray-200);
+    background: linear-gradient(135deg, var(--un-light-blue) 0%, var(--un-white) 100%);
+}
+
+.form-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.form-card-icon {
+    font-size: 1.2rem;
+}
+
+.form-card-subtitle {
+    color: var(--un-gray-600);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.form-card-body {
+    padding: 0;
+}
+
+/* Compact table-like layout */
+.leave-balance-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leave-balance-header {
+    background: var(--un-gray-50);
+    border-bottom: 2px solid var(--un-gray-200);
+}
+
+    .leave-balance-header th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--un-gray-700);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-right: 1px solid var(--un-gray-200);
+    }
+
+        .leave-balance-header th:last-child {
+            border-right: none;
+        }
+
+.leave-type-row {
+    border-bottom: 1px solid var(--un-gray-100);
+    transition: all 0.2s ease;
+}
+
+    .leave-type-row:hover {
+        background: var(--un-gray-50);
+    }
+
+    .leave-type-row.table-warning {
+        border-left: 4px solid #ffc107;
+        background: rgba(255, 193, 7, 0.05);
+    }
+
+    .leave-type-row.table-danger {
+        border-left: 4px solid #dc3545;
+        background: rgba(220, 53, 69, 0.05);
+    }
+
+    .leave-type-row td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-right: 1px solid var(--un-gray-100);
+        font-size: 0.875rem;
+    }
+
+        .leave-type-row td:last-child {
+            border-right: none;
+        }
+
+.leave-type-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.leave-type-name {
+    font-weight: 600;
+    color: var(--un-gray-800);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.leave-type-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+    /* Keep existing badge colors */
+    .leave-type-badge.annual {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .leave-type-badge.compassion {
+        background: #fce4ec;
+        color: #c2185b;
+    }
+
+    .leave-type-badge.maternity {
+        background: #f3e5f5;
+        color: #7b1fa2;
+    }
+
+    .leave-type-badge.paternity {
+        background: #e8f5e8;
+        color: #388e3c;
+    }
+
+    .leave-type-badge.sick {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .leave-type-badge.study {
+        background: #e0f2f1;
+        color: #00796b;
+    }
+
+    .leave-type-badge.unpaid {
+        background: #fafafa;
+        color: #616161;
+    }
+
+.stat-value {
+    font-weight: 600;
+    color: var(--un-gray-800);
+}
+
+    .stat-value.text-success {
+        color: var(--un-acc-green);
+    }
+
+    .stat-value.text-danger {
+        color: #dc3545;
+    }
+
+    .stat-value.text-warning {
+        color: #f57c00;
+    }
+
+.balance-cell {
+    font-weight: 700;
+    color: var(--un-blue);
+    font-size: 1rem;
+}
+
+/* Progress bar for usage */
+.usage-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.usage-progress {
+    flex: 1;
+    height: 6px;
+    background: var(--un-gray-200);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 60px;
+}
+
+.usage-progress-bar {
+    height: 100%;
+    transition: width 0.6s ease;
+    border-radius: 3px;
+}
+
+    .usage-progress-bar.bg-success {
+        background: #28a745;
+    }
+
+    .usage-progress-bar.bg-warning {
+        background: #ffc107;
+    }
+
+    .usage-progress-bar.bg-danger {
+        background: #dc3545;
+    }
+
+    .usage-progress-bar.bg-primary {
+        background: var(--un-blue);
+    }
+
+.usage-text {
+    font-size: 0.75rem;
+    color: var(--un-gray-600);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Mobile responsive - Mobile First Approach */
+@media (max-width: 768px) {
+    .leave-balance-table,
+    .leave-balance-header,
+    .leave-type-row {
+        display: block;
+    }
+
+    .leave-balance-header {
+        display: none;
+    }
+
+    .leave-type-row {
+        margin-bottom: 1rem;
+        border: 1px solid var(--un-gray-200);
+        border-radius: 8px;
+        padding: 1rem;
+        background: var(--un-white);
+    }
+
+        .leave-type-row td {
+            display: block;
+            padding: 0.5rem 0;
+            border: none;
+            position: relative;
+        }
+
+            .leave-type-row td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--un-gray-600);
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                display: block;
+                margin-bottom: 0.25rem;
+            }
+
+    .leave-type-cell {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .usage-cell {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .usage-progress {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .leave-balance-overview-section {
+        margin: 1.5rem 0;
+    }
+
+    .form-card-header {
+        padding: 1rem;
+    }
+
+    .form-card-title {
+        font-size: 1rem;
+    }
+
+    .form-card-subtitle {
+        font-size: 0.85rem;
+    }
+
+    .leave-type-row {
+        padding: 0.75rem;
+    }
+
+    .leave-type-name {
+        font-size: 0.85rem;
+    }
+
+    .leave-type-badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.4rem;
+    }
+}
+
+/* END LEAVE STATS */

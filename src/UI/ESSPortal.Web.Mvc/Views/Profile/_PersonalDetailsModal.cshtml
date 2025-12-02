@@ -1,0 +1,70 @@
+﻿@model PersonalDetailsViewModel
+
+<!-- Personal Details Modal -->
+<div class="modal fade" id="personalDetailsModal" tabindex="-1" aria-labelledby="personalDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="personalDetailsModalLabel">
+                    <i class="me-2">👤</i>
+                    Edit Personal Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-action="UpdatePersonalDetails" asp-controller="Profile" method="post" id="personalDetailsForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="FirstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input asp-for="FirstName" type="text" class="form-control" placeholder="Enter first name" required>
+                                <span asp-validation-for="FirstName" class="invalid-feedback"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="LastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input asp-for="LastName" type="text" class="form-control" placeholder="Enter last name" required>
+                                <span asp-validation-for="LastName" class="invalid-feedback"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="MiddleName" class="form-label">Middle Name</label>
+                                <input asp-for="MiddleName" type="text" class="form-control" placeholder="Enter middle name (optional)">
+                                <span asp-validation-for="MiddleName" class="invalid-feedback"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Gender" class="form-label">Gender</label>
+                                <select asp-for="Gender" asp-items="@ProfileDropdownOptions.GenderOptions" class="form-select">
+                                </select>
+                                <span asp-validation-for="Gender" class="invalid-feedback"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>💡 Note:</strong> Changes to your personal details may require approval from HR department.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="me-2">❌</i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="me-2">💾</i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

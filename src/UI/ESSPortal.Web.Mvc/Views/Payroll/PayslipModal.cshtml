@@ -1,0 +1,102 @@
+﻿@model PayslipRequestViewModel
+
+@{
+    ViewData["Title"] = "Generate Payslip";
+    Layout = "_Layout";
+
+}
+
+@section Styles {
+    <link href="~/custom/payroll/css/payslip-modal.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<!-- Payslip Generation Modal -->
+<div class="modal fade" id="payslipModal" tabindex="-1" aria-labelledby="payslipModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="payslipModalLabel">
+                    <i class="modal-icon">💰</i>
+                    Generate Payslip
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="payslipGenerationForm" asp-action="GeneratePayslip" asp-controller="Payroll" method="post">
+                
+                @Html.AntiForgeryToken()
+                  
+                <div class="modal-body">
+                    <div class="row compact-row">
+                        <div class="compact-col">
+                            <label asp-for="Month" class="form-label">Month <span class="text-danger">*</span></label>
+                            <select asp-for="Month" asp-items="Model.AvailableMonths" class="form-select" required>
+                                <option value="">Select month</option>
+                            </select>
+                            <span asp-validation-for="Month" class="invalid-feedback"></span>
+                        </div>
+                        <div class="compact-col">
+                            <label asp-for="Year" class="form-label">Year <span class="text-danger">*</span></label>
+                            <select asp-for="Year" asp-items="Model.AvailableYears" class="form-select" required>
+                                <option value="">Select year</option>
+                            </select>
+                            <span asp-validation-for="Year" class="invalid-feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <strong>💰 Payslip:</strong>
+                        <span id="payslipPeriodDisplay">Select month and year to generate your payslip</span>
+                    </div>
+
+                    <div class="alert alert-warning mt-2">
+                        <strong>💡 Note:</strong> The payslip will open in a new window where you can print it or save as PDF using your browser's print function.
+                    </div>
+
+                    <div class="payslip-info-card mt-3">
+                        <div class="info-header">
+                            <i class="info-icon">ℹ️</i>
+                            <h6 class="info-title">About Payslip</h6>
+                        </div>
+                        <div class="info-content">
+                            <ul class="info-list">
+                                <li>Official salary statement for the selected month</li>
+                                <li>Contains gross pay, deductions, and net pay</li>
+                                <li>Required for loan applications and other financial needs</li>
+                                <li>Shows detailed breakdown of earnings and deductions</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="payslipLoadingState" class="loading-state" style="display: none;">
+                        <div class="loading-content">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">
+                                <h6>Generating your payslip...</h6>
+                                <p>This may take a few moments. Please wait.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="payslipCancelBtn">
+                        <i class="me-2">❌</i>Cancel/Close
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="payslipSubmitBtn">
+                        <i class="me-2">📄</i>Generate & Download
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+
+    
+}
+
+

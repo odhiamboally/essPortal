@@ -1,0 +1,103 @@
+﻿@model RegisterEmployeeRequest
+
+@{
+    ViewData["Title"] = "Create Account";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+@section Styles {
+    <link href="~/custom/auth/css/register.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="signin-card">
+    <!-- Brand Header -->
+    <div class="brand-header">
+        <div class="brand-logo">
+            <img src="~/custom/auth/images/unlogo.png" alt="United Nations" class="logo-image" />
+        </div>
+        <h2 class="brand-title">ESS Portal</h2>
+        <p class="brand-subtitle">Empowering Members Financially</p>
+    </div>
+
+    <!-- Welcome Section -->
+    <div class="signin-header">
+        <h3 class="signin-title">Create Your Account</h3>
+        <p class="signin-subtitle">Enter your employee details to get started</p>
+    </div>
+
+    <!-- Registration Form -->
+    <form asp-action="Register" method="post" class="signin-form" novalidate>
+        <input type="hidden" asp-for="ReturnUrl" />
+
+        <!-- All Fields in One Row -->
+        <div class="fields-row">
+            <div class="form-group">
+                <label asp-for="EmployeeNumber" class="form-label">Employee Number</label>
+                <input asp-for="EmployeeNumber"
+                       class="form-control"
+                       placeholder="Enter your employee number"
+                       autocomplete="off" />
+                <span asp-validation-for="EmployeeNumber" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Password" class="form-label">Password</label>
+                <div class="password-input-wrapper">
+                    <input asp-for="Password"
+                           class="form-control"
+                           type="password"
+                           placeholder="Password"
+                           autocomplete="new-password" />
+                    <button type="button" class="password-toggle" id="togglePassword">
+                        <span class="eye-icon">👁️</span>
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
+                <div class="password-input-wrapper">
+                    <input asp-for="ConfirmPassword"
+                           class="form-control"
+                           type="password"
+                           placeholder="Confirm password"
+                           autocomplete="new-password" />
+                    <button type="button" class="password-toggle" id="toggleConfirmPassword">
+                        <span class="eye-icon">👁️</span>
+                    </button>
+                </div>
+                <span asp-validation-for="ConfirmPassword" class="field-validation-error"></span>
+            </div>
+        </div>
+
+        <!-- Password Requirements -->
+        <div class="password-requirements">
+            <p class="requirements-title">Password must contain:</p>
+            <ul class="requirements-list">
+                <li data-requirement="length">At least 8 characters</li>
+                <li data-requirement="uppercase">One uppercase letter (A-Z)</li>
+                <li data-requirement="lowercase">One lowercase letter (a-z)</li>
+                <li data-requirement="number">One number (0-9)</li>
+                <li data-requirement="special">One special character (&#64;&#36;&#33;&#37;&#42;&#63;&#38;)</li>
+            </ul>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="registerSubmitBtn">
+            <span class="btn-text">Sign Up</span>
+        </button>
+
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+    </form>
+
+    <!-- Sign In Link -->
+    <div class="signup-link">
+        <span>Already have an account?</span>
+        <a asp-action="SignIn" class="create-account-link">Sign In</a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/custom/auth/js/register.js" asp-append-version="true"></script>
+}

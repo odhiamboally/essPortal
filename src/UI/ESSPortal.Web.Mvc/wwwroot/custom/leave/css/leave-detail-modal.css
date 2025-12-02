@@ -1,0 +1,287 @@
+﻿/* Leave Detail Modal Styles - Following P9 Modal Pattern */
+:root {
+    --un-blue: #009edb;
+    --un-dark-blue: #0073a8;
+    --un-light-blue: #4fc3f7;
+    --un-gray-50: #f8f9fa;
+    --un-gray-100: #f1f3f4;
+    --un-gray-200: #e9ecef;
+    --un-gray-300: #dee2e6;
+    --un-gray-600: #6c757d;
+    --un-gray-700: #495057;
+    --un-white: #ffffff;
+    --un-success: #28a745;
+    --un-warning: #ffc107;
+    --un-danger: #dc3545;
+}
+
+#leaveDetailModal .modal-dialog {
+    max-width: 550px;
+}
+
+#leaveDetailModal .modal-content {
+    border-radius: 16px;
+    border: 1px solid var(--un-gray-200);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+#leaveDetailModal .modal-header {
+    background: var(--un-white);
+    border-bottom: 1px solid var(--un-gray-200);
+    border-radius: 16px 16px 0 0;
+    padding: 1.25rem 1.5rem;
+}
+
+#leaveDetailModal .modal-title {
+    display: flex;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+    margin: 0;
+}
+
+.modal-icon {
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+}
+
+#leaveDetailModal .modal-body {
+    padding: 1.25rem 1.5rem;
+    background: var(--un-gray-50);
+}
+
+/* Compact Info Grid - FIXED ALIGNMENT */
+.info-grid {
+    background: var(--un-white);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--un-gray-200);
+}
+
+.info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+    .info-row:last-child {
+        margin-bottom: 0;
+    }
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+    .info-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+.info-label {
+    font-size: 0.85rem;
+    color: var(--un-gray-600);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.info-value {
+    font-size: 0.85rem;
+    color: var(--un-gray-700);
+    font-weight: 500;
+    word-break: break-word;
+}
+
+    .info-value.highlight {
+        font-weight: 600;
+        color: var(--un-blue);
+    }
+
+/* Status Badge */
+.status-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+    .status-badge.status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.status-approved {
+        background-color: #d1edff;
+        color: #0c5460;
+    }
+
+    .status-badge.status-rejected {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+/* Status Info Card - Similar to P9's info card */
+.status-info-card {
+    background: linear-gradient(135deg, var(--un-gray-50) 0%, #f0f7ff 100%);
+    border: 1px solid var(--un-gray-200);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0;
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.status-icon {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.status-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+}
+
+.status-content {
+    margin-left: 1.5rem;
+}
+
+.status-description {
+    font-size: 0.85rem;
+    color: var(--un-gray-700);
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Enhanced Button Styles */
+#leaveDetailModal .modal-footer {
+    border-top: 1px solid var(--un-gray-200);
+    border-radius: 0 0 16px 16px;
+    padding: 1rem 1.5rem;
+    background: var(--un-gray-50);
+}
+
+#leaveDetailModal .btn {
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-width: 2px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+}
+
+    #leaveDetailModal .btn i {
+        margin-right: 0.4rem;
+        font-style: normal;
+        font-size: 0.9rem;
+    }
+
+#leaveDetailModal .btn-primary {
+    background-color: var(--un-blue);
+    border-color: var(--un-blue);
+    color: white;
+}
+
+    #leaveDetailModal .btn-primary:hover:not(:disabled) {
+        background-color: var(--un-dark-blue);
+        border-color: var(--un-dark-blue);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 158, 219, 0.3);
+    }
+
+#leaveDetailModal .btn-secondary {
+    background-color: var(--un-gray-600);
+    border-color: var(--un-gray-600);
+    color: white;
+}
+
+    #leaveDetailModal .btn-secondary:hover:not(:disabled) {
+        background-color: var(--un-gray-700);
+        border-color: var(--un-gray-700);
+        transform: translateY(-1px);
+    }
+
+/* Enhanced Close Button */
+#leaveDetailModal .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--un-gray-600);
+    opacity: 0.8;
+    padding: 0.5rem;
+    margin: -0.5rem -0.5rem -0.5rem auto;
+    transition: all 0.2s ease;
+}
+
+    #leaveDetailModal .btn-close:hover {
+        opacity: 1;
+        color: var(--un-gray-700);
+        transform: scale(1.1);
+    }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    #leaveDetailModal .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    #leaveDetailModal .modal-header,
+    #leaveDetailModal .modal-body,
+    #leaveDetailModal .modal-footer {
+        padding: 1rem;
+    }
+
+    .info-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .status-content {
+        margin-left: 1.25rem;
+    }
+
+    #leaveDetailModal .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+        #leaveDetailModal .btn:last-child {
+            margin-bottom: 0;
+        }
+}
+
+@media (max-width: 576px) {
+    #leaveDetailModal .modal-dialog {
+        margin: 0.25rem;
+    }
+
+    #leaveDetailModal .modal-header,
+    #leaveDetailModal .modal-body,
+    #leaveDetailModal .modal-footer {
+        padding: 0.75rem;
+    }
+}

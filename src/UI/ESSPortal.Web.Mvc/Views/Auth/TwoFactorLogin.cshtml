@@ -1,0 +1,148 @@
+﻿@model TwoFactorLoginViewModel
+@{
+    ViewData["Title"] = "Two-Factor Authentication";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+
+    var nonce = Context.Items["ScriptNonce"]?.ToString();
+}
+
+@section Styles {
+
+    <link href="~/custom/auth/css/2fa-login.css" rel="stylesheet" asp-append-version="true" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" asp-append-version="true" />
+}
+
+<div class="auth-card">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="auth-header">
+        <div class="auth-icon">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h1 class="auth-title">Two-Factor Authentication</h1>
+        <p class="auth-subtitle">Enter the 6-digit code from your authenticator app to complete sign in</p>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Provider Info -->
+    <div class="provider-info">
+        <div class="provider-icon">
+            <i class="fas fa-mobile-alt"></i>
+        </div>
+        <div class="provider-text">
+            <div class="provider-name">@Model.ProviderDisplayName</div>
+            <div class="provider-desc">Check your authenticator app for the current code</div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form id="twoFactorForm" asp-action="Verify2FACode" method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="UserId" />
+        <input type="hidden" asp-for="Provider" value="Authenticator" />
+        <input type="hidden" asp-for="ProviderDisplayName" />
+        <input type="hidden" asp-for="ReturnUrl" />
+        <input type="hidden" asp-for="RememberMe" value="false" />
+        <input type="hidden" asp-for="RememberDevice" value="true" />
+        <input type="hidden" asp-for="RememberBrowser" value="true" />
+        <input type="hidden" asp-for="DeviceFingerprint" id="device-fingerprint" name="DeviceFingerprint" />
+
+        <div class="code-input-group">
+            <label class="code-input-label" for="code">Verification Code</label>
+            <input type="text"
+                   id="code"
+                   name="Code"
+                   class="code-input"
+                   placeholder="000000"
+                   maxlength="6"
+                   autocomplete="one-time-code"
+                   inputmode="numeric"
+                   pattern="[0-9]{6}"
+                   required
+                   autofocus />
+        </div>
+
+        <button type="submit" id="verifyBtn" class="verify-btn" disabled>
+            <span>Verify Code</span>
+        </button>
+    </form>
+
+    <!-- Footer -->
+    <div class="auth-footer">
+        <div class="footer-links">
+            <a href="@Url.Action("SignIn", "Auth")" class="footer-link">
+                <i class="fas fa-arrow-left"></i> Back to Sign In
+            </a>
+            <a href="@Url.Action("Setup", "TwoFactor")" class="footer-link">
+                <i class="fas fa-cog"></i> Setup Authenticator
+            </a>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+
+    <script src="~/custom/auth/js/2fa-login.js" asp-append-version="true"></script>
+    <script src="~/custom/common/js/device-fingerprint.js" asp-append-version="true"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Automatically generate and set the fingerprint when the page loads
+            DeviceFingerprint.setOnForm('twoFactorForm', 'DeviceFingerprint');
+        });
+    </script>
+
+
+    @* Fallback script for when FontAwesome fails *@
+    <script nonce="@nonce">
+
+        console.log('This inline script is now allowed by CSP.');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simple fallback check
+            setTimeout(function() {
+                const testIcon = document.querySelector('.fas');
+                if (testIcon && window.getComputedStyle(testIcon).fontFamily.indexOf('Font Awesome') === -1) {
+                    console.warn('FontAwesome failed to load, using Unicode fallbacks');
+
+                    // Replace with Unicode fallbacks
+                    document.querySelectorAll('.fas.fa-shield-alt, .fa-shield-alt').forEach(el => {
+                        el.style.fontFamily = 'inherit';
+                        el.textContent = '🛡️';
+                        el.classList.remove('fas', 'fa-shield-alt');
+                    });
+
+                    document.querySelectorAll('.fas.fa-mobile-alt, .fa-mobile-alt').forEach(el => {
+                        el.style.fontFamily = 'inherit';
+                        el.textContent = '📱';
+                        el.classList.remove('fas', 'fa-mobile-alt');
+                    });
+
+                    document.querySelectorAll('.fas.fa-arrow-left, .fa-arrow-left').forEach(el => {
+                        el.style.fontFamily = 'inherit';
+                        el.textContent = '←';
+                        el.classList.remove('fas', 'fa-arrow-left');
+                    });
+
+                    document.querySelectorAll('.fas.fa-cog, .fa-cog').forEach(el => {
+                        el.style.fontFamily = 'inherit';
+                        el.textContent = '⚙️';
+                        el.classList.remove('fas', 'fa-cog');
+                    });
+                }
+            }, 1000);
+        });
+    </script>
+}

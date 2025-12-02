@@ -1,0 +1,156 @@
+﻿@model TwoFactorSetupViewModel
+@{
+    ViewData["Title"] = "Set Up Two-Factor Authentication";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-gradient text-white text-center py-4" style="background: linear-gradient(135deg, var(--un-blue) 0%, var(--un-dark-blue) 100%);">
+                    <h3 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Set Up Two-Factor Authentication
+                    </h3>
+                    <p class="mb-0 opacity-75">Secure your account with an extra layer of protection</p>
+                </div>
+                <div class="card-body p-5">
+                    <div class="row">
+                        <div class="col-md-6 text-center">
+                            <h5 class="mb-3" style="color: var(--un-dark-blue);">
+                                <i class="fas fa-qrcode me-2"></i>
+                                Step 1: Scan QR Code
+                            </h5>
+                            <div class="qr-code-container p-3 bg-light border rounded mb-3">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@Uri.EscapeDataString(Model.QrCodeUri)"
+                                     alt="QR Code"
+                                     class="img-fluid"
+                                     style="max-width: 200px; height: auto;" />
+                            </div>
+                            <p class="text-muted small">
+                                Scan this QR code with your authenticator app
+                                (Google Authenticator, Authy, Microsoft Authenticator, etc.)
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-3" style="color: var(--un-dark-blue);">
+                                <i class="fas fa-key me-2"></i>
+                                Step 2: Manual Entry (Optional)
+                            </h5>
+                            <div class="alert alert-info border-0" style="background-color: rgba(0, 158, 219, 0.1);">
+                                <h6 class="alert-heading">Manual Entry Key:</h6>
+                                <code class="user-select-all bg-white p-2 rounded d-block">@Model.ManualEntryKey</code>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="copyToClipboard('@Model.ManualEntryKey')">
+                                    <i class="fas fa-copy me-1"></i>
+                                    Copy Key
+                                </button>
+                            </div>
+                            <p class="text-muted small">
+                                If you can't scan the QR code, manually enter this key in your authenticator app.
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3" style="color: var(--un-dark-blue);">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Step 3: Verify Setup
+                    </h5>
+
+                    <form asp-action="Setup" method="post" class="needs-validation" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div class="row justify-content-center">
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <label asp-for="VerificationCode" class="form-label fw-semibold">
+                                        Enter the 6-digit code from your authenticator app:
+                                    </label>
+                                    <input asp-for="VerificationCode"
+                                           class="form-control form-control-lg text-center fw-bold"
+                                           placeholder="000000"
+                                           maxlength="6"
+                                           pattern="[0-9]{6}"
+                                           autocomplete="one-time-code"
+                                           style="letter-spacing: 0.5rem; font-size: 1.5rem;"
+                                           autofocus />
+                                    <span asp-validation-for="VerificationCode" class="text-danger small"></span>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        The code refreshes every 30 seconds
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg" style="background-color: var(--un-blue); border-color: var(--un-blue);">
+                                        <i class="fas fa-shield-check me-2"></i>
+                                        Verify and Enable 2FA
+                                    </button>
+                                    <a asp-controller="Profile" asp-action="Index" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            showToast('Manual entry key copied to clipboard!', 'success');
+        }).catch(function() {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Manual entry key copied to clipboard!', 'success');
+        });
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+
+    // Form validation
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            var validation = Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+</script>

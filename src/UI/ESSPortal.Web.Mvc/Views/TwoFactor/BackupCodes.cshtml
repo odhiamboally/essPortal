@@ -1,0 +1,175 @@
+﻿@model ESSPortal.Web.Mvc.ViewModels.TwoFactor.BackupCodesViewModel
+@{
+    ViewData["Title"] = "Two-Factor Authentication Backup Codes";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-gradient text-white text-center py-4" style="background: linear-gradient(135deg, var(--un-blue) 0%, var(--un-dark-blue) 100%);">
+                    <h3 class="mb-0">
+                        <i class="fas fa-key me-2"></i>
+                        Backup Codes
+                    </h3>
+                    <p class="mb-0 opacity-75">Save these codes in a secure location</p>
+                </div>
+                <div class="card-body p-5">
+                    <div class="alert alert-warning border-0" style="background-color: rgba(255, 193, 7, 0.1);">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Important Security Information
+                        </h6>
+                        <p class="mb-0">
+                            These backup codes can be used to access your account if you lose access to your authenticator app.
+                            <strong>Save them in a secure location</strong> and treat them like passwords.
+                        </p>
+                    </div>
+
+                    <div class="backup-codes-container my-4">
+                        <div class="row g-3">
+                            @foreach (var backupCode in Model.BackupCodes)
+                            {
+                                <div class="col-md-6">
+                                    <div class="backup-code-item p-3 bg-light border rounded text-center">
+                                        <div class="fs-5 fw-bold user-select-all"> @backupCode </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <button type="button" class="btn btn-outline-primary" onclick="downloadBackupCodes()">
+                                <i class="fas fa-download me-2"></i>
+                                Download as Text
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="printBackupCodes()">
+                                <i class="fas fa-print me-2"></i>
+                                Print Codes
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="copyAllCodes()">
+                                <i class="fas fa-copy me-2"></i>
+                                Copy All
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="text-muted mb-3">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Two-factor authentication is now enabled and protecting your account.
+                        </p>
+                        <a asp-controller="Profile" asp-action="Index" class="btn btn-primary" style="background-color: var(--un-blue); border-color: var(--un-blue);">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Return to Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function downloadBackupCodes() {
+        const codes = @Html.Raw(Json.Serialize(Model.BackupCodes));
+        const content = 'UN SACCO ESS Portal - Two-Factor Authentication Backup Codes\n' +
+                       'Generated: ' + new Date().toLocaleString() + '\n\n' +
+                       'IMPORTANT: Keep these codes secure and private.\n\n' +
+                       codes.join('\n') + '\n\n' +
+                       'Each code can only be used once.\n' +
+                       'Generate new codes if you run out or suspect they have been compromised.';
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'un-sacco-2fa-backup-codes.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast('Backup codes downloaded successfully!', 'success');
+    }
+
+    function printBackupCodes() {
+        const codes = @Html.Raw(Json.Serialize(Model.BackupCodes));
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html lang="en">
+            <head>
+                <title>UN SACCO - 2FA Backup Codes</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    h1 { color: #009edb; text-align: center; }
+                    .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; }
+                    .codes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+                    .code { padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; text-align: center; font-family: monospace; font-size: 16px; }
+                    .footer { margin-top: 30px; font-size: 12px; color: #6c757d; }
+                </style>
+            </head>
+            <body>
+                <h1>UN SACCO ESS Portal</h1>
+                <h2>Two-Factor Authentication Backup Codes</h2>
+                <div class="warning">
+                    <strong>IMPORTANT:</strong> Keep these codes secure and private. Each code can only be used once.
+                </div>
+                <div class="codes">
+                    ${codes.map(code => `<div class="code">${code}</div>`).join('')}
+                </div>
+                <div class="footer">
+                    Generated: ${new Date().toLocaleString()}<br>
+                    If you lose access to your authenticator app, you can use these codes to sign in.
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function copyAllCodes() {
+        const codes = @Html.Raw(Json.Serialize(Model.BackupCodes));
+        const text = codes.join('\n');
+
+        navigator.clipboard.writeText(text).then(function() {
+            showToast('All backup codes copied to clipboard!', 'success');
+        }).catch(function() {
+            // Fallback
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('All backup codes copied to clipboard!', 'success');
+        });
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+</script>
+

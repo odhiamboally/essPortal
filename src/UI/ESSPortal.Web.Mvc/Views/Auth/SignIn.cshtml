@@ -1,0 +1,106 @@
+﻿@model LoginRequest
+
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+@section Styles {
+    <link href="~/custom/auth/css/login.css" rel="stylesheet" asp-append-version="true" />
+
+}
+
+<div class="signin-card">
+    <!-- Brand Header -->
+    <div class="brand-header">
+        <div class="brand-logo">
+            <img src="~/custom/auth/images/unlogo.png" alt="United Nations" class="logo-image" />
+        </div>
+        <h2 class="brand-title">ESS Portal</h2>
+        <p class="brand-subtitle">Empowering Members Financially</p>
+    </div>
+
+    <div class="signin-header">
+        <h3 class="signin-title">Welcome Back! 👋</h3>
+    </div>
+
+
+    <!-- Login Form -->
+    <form asp-controller="Auth" asp-action="SignIn" method="post" class="signin-form" id="loginForm" novalidate>
+
+        <input type="hidden" asp-for="DeviceFingerprint" id="device-fingerprint" name="DeviceFingerprint" />
+
+        <div class="form-group">
+            <label asp-for="EmployeeNumber" class="form-label">Employee Number</label>
+            <input asp-for="EmployeeNumber"
+                   class="form-control "
+                   placeholder="Enter your employee number"
+                   autocomplete="username" />
+
+            <span asp-validation-for="EmployeeNumber" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="label-row">
+                <label asp-for="Password" class="form-label">Password</label>
+                <a asp-action="ForgotPassword" class="forgot-link">Forgot Password?</a>
+            </div>
+            <div class="password-input-wrapper">
+                <input asp-for="Password"
+                       class="form-control"
+                       type="password"
+                       placeholder="Enter your password"
+                       autocomplete="current-password" />
+
+                <button type="button" class="password-toggle" id="toggleBtn">
+                    <span class="eye-icon">👁️</span>
+                </button>
+            </div>
+            <span asp-validation-for="Password" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-options">
+            <div class="remember-me">
+                <input asp-for="RememberMe"
+                       type="checkbox"
+                       id="RememberMe"
+                       class="form-check-input" />
+                <label for="RememberMe" class="form-check-label">Remember Me</label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-signin">
+            Sign In
+        </button>
+
+        <!-- Only show validation summary if there are model-level errors -->
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger mt-3"></div>
+
+    </form>
+
+  
+
+    <!-- Create Account Link -->
+    <div class="signup-link">
+        <span>New on our platform?</span>
+        <a asp-action="Register" class="create-account-link">Create an account</a>
+    </div>
+
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="~/custom/common/js/device-fingerprint.js" asp-append-version="true"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Automatically generate and set the fingerprint when the page loads
+            DeviceFingerprint.setOnForm('loginForm', 'DeviceFingerprint');
+        });
+    </script>
+
+    <script src="~/custom/auth/js/login.js" asp-append-version="true"></script>
+    
+}

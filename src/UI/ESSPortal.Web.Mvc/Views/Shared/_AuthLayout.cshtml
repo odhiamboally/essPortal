@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - UN Portal</title>
+
+    <!-- Auth-specific toast messages -->
+    @if (TempData["__ToastError"] != null)
+    {
+        <meta name="toast-error" content="@TempData["__ToastError"]" />
+    }
+    @if (TempData["__ToastSession"] != null)
+    {
+        <meta name="toast-session" content="@TempData["__ToastSession"]" />
+    }
+    @if (TempData["__ToastSuccess"] != null &&
+        (ViewContext.RouteData.Values["action"]?.ToString()?.Contains("SignIn") == true ||
+        ViewContext.RouteData.Values["action"]?.ToString()?.Contains("Register") == true))
+    {
+        <meta name="toast-success" content="@TempData["__ToastSuccess"]" />
+    }
+
+    
+
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="auth-layout">
+        <div class="auth-container">
+            <!-- Main Content -->
+            <main class="auth-content">
+                @RenderBody()
+            </main>
+
+            <!-- Footer -->
+            <footer class="auth-footer">
+                <p>&copy; @DateTime.Now.Year United Nations. All rights reserved.</p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jose/4.14.4/index.umd.min.js"></script>
+
+    <script src="~/custom/common/js/payload-encryption.js" asp-append-version="true"></script>
+    <script src="~/custom/common/js/toast-system.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize encryption with server-side key
+            initializeEncryption('@PayloadEncryption.Value.Key');
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,529 @@
+﻿/* ========================================
+   UN Portal - Dashboard Layout Styles
+   ======================================== */
+
+/* CSS Custom Properties (UN Color Palette) */
+:root {
+    /* UN Brand Colors */
+    --un-blue: #009edb;
+    --un-dark-blue: #1f4788;
+    --un-light-blue: #4dc4ea;
+    --un-white: #ffffff;
+    --un-gray-50: #f8f9fa;
+    --un-gray-100: #e9ecef;
+    --un-gray-200: #dee2e6;
+    --un-gray-300: #ced4da;
+    --un-gray-400: #adb5bd;
+    --un-gray-500: #6c757d;
+    --un-gray-600: #495057;
+    --un-gray-700: #343a40;
+    --un-gray-800: #212529;
+    /* Layout */
+    --navbar-height: 80px;
+    --footer-height: 20px;
+}
+
+/* Body and Layout */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--un-gray-50);
+    padding-top: var(--navbar-height);
+}
+
+/* Fixed Navbar Styling */
+.navbar {
+    height: var(--navbar-height);
+    background: linear-gradient(135deg, var(--un-white) 0%, var(--un-gray-50) 100%);
+    border-bottom: 2px solid var(--un-blue);
+    backdrop-filter: blur(10px);
+    z-index: 1030;
+}
+
+/* Brand Styling */
+.navbar-brand {
+    text-decoration: none !important;
+    padding: 0.5rem 0;
+}
+
+.navbar-logo {
+    height: 50px;
+    width: auto;
+}
+
+.brand-text {
+    line-height: 1.2;
+}
+
+.brand-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--un-dark-blue);
+    margin: 0;
+}
+
+.brand-subtitle {
+    font-size: 0.75rem;
+    color: var(--un-gray-600);
+    margin: 0;
+}
+
+/* Navigation Links */
+.navbar-nav .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: var(--un-gray-700);
+    font-weight: 500;
+    border-radius: 8px;
+    margin: 0 0.25rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+    .navbar-nav .nav-link:hover {
+        background-color: var(--un-gray-100);
+        color: var(--un-blue);
+        transform: translateY(-1px);
+    }
+
+    .navbar-nav .nav-link.active {
+        background-color: var(--un-blue);
+        color: var(--un-white);
+    }
+
+.nav-icon {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+/* Dropdown Menu Styling */
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 0.75rem 0;
+    margin-top: 0.5rem;
+    min-width: 220px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    color: var(--un-gray-700);
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+    .dropdown-item:hover {
+        background-color: var(--un-gray-100);
+        color: var(--un-blue);
+    }
+
+.dropdown-icon {
+    margin-right: 0.75rem;
+    font-size: 0.9rem;
+    width: 20px;
+}
+
+/* User Profile Section */
+.user-profile {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: var(--un-gray-700);
+    text-decoration: none;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+    .user-profile:hover {
+        background-color: var(--un-gray-100);
+        color: var(--un-blue);
+    }
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    overflow: hidden;
+    border: 2px solid var(--un-gray-200);
+    transition: border-color 0.3s ease;
+}
+
+.user-profile:hover .user-avatar {
+    border-color: var(--un-blue);
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-initials {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--un-blue) 0%, var(--un-dark-blue) 100%);
+    color: var(--un-white);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.user-name {
+    font-weight: 500;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* User Dropdown */
+.dropdown-header .user-info {
+    padding: 0.5rem 1.25rem;
+}
+
+/* Main Content */
+.main-content {
+    min-height: calc(100vh - var(--navbar-height) - var(--footer-height));
+    padding: 2rem 0;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--un-gray-50);
+    border-top: 1px solid var(--un-gray-200);
+    padding: 0.25rem 0;
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    height: var(--footer-height);
+    font-size: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 991.98px) {
+    .navbar-logo {
+        height: 40px;
+    }
+
+    .brand-title {
+        font-size: 1.1rem;
+    }
+
+    .brand-subtitle {
+        font-size: 0.7rem;
+    }
+
+    .user-name {
+        display: none;
+    }
+
+    .main-content {
+        padding: 1rem 0;
+    }
+
+    .navbar-toggler {
+        border: 2px solid var(--un-blue);
+        background-color: var(--un-white);
+        padding: 0.5rem;
+    }
+
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.25rem rgba(0, 158, 219, 0.25);
+        }
+
+    .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23009edb' stroke-linecap='round' stroke-miterlimit='10' stroke-width='3' d='m4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        width: 24px;
+        height: 24px;
+    }
+
+    .navbar-collapse {
+        background-color: var(--un-white);
+        border: 1px solid var(--un-gray-200);
+        border-radius: 12px;
+        margin-top: 0.5rem;
+        padding: 1rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar-nav .nav-link {
+        color: var(--un-gray-700) !important;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin: 0.25rem 0;
+        background-color: transparent;
+    }
+
+        .navbar-nav .nav-link:hover {
+            background-color: var(--un-gray-100) !important;
+            color: var(--un-blue) !important;
+        }
+
+    .dropdown-menu {
+        background-color: var(--un-white);
+        border: 1px solid var(--un-gray-200);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        margin-left: 1rem;
+    }
+
+    .dropdown-item {
+        color: var(--un-gray-700);
+        padding: 0.75rem 1rem;
+    }
+
+        .dropdown-item:hover {
+            background-color: var(--un-gray-100);
+            color: var(--un-blue);
+        }
+
+    .user-profile {
+        background-color: var(--un-gray-50);
+        border: 1px solid var(--un-gray-200);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    :root {
+        --navbar-height: 70px;
+    }
+
+    body {
+        padding-top: var(--navbar-height);
+    }
+
+    .navbar {
+        height: var(--navbar-height);
+    }
+
+    .navbar-logo {
+        height: 35px;
+    }
+
+    .brand-title {
+        font-size: 1rem;
+    }
+
+    .brand-subtitle {
+        display: none;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.5rem 1rem;
+        margin: 0.25rem 0;
+    }
+
+    .dropdown-menu {
+        margin-top: 0;
+        border-radius: 8px;
+    }
+}
+
+/* Active Navigation State */
+.navbar-nav .nav-item.active > .nav-link,
+.navbar-nav .nav-item.show > .nav-link {
+    background-color: var(--un-blue);
+    color: var(--un-white);
+}
+
+/* Smooth scrolling for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--un-gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--un-gray-400);
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--un-gray-500);
+    }
+
+/* Loading states and animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.main-content {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Focus states for accessibility */
+.navbar-nav .nav-link:focus,
+.dropdown-item:focus,
+.user-profile:focus {
+    outline: 2px solid var(--un-blue);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .navbar {
+        border-bottom-width: 3px;
+    }
+
+    .navbar-nav .nav-link {
+        border: 1px solid transparent;
+    }
+
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+            border-color: var(--un-blue);
+        }
+}
+
+
+
+/* Additional 2FA specific styles */
+.qr-code-container {
+    background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%), linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f8f9fa 75%), linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.backup-code-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+    .backup-code-item:hover {
+        background-color: var(--un-gray-100) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .backup-code-item code {
+        color: var(--un-dark-blue);
+        font-weight: 600;
+    }
+
+.form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+    .form-check-input:checked {
+        background-color: var(--un-blue) !important;
+        border-color: var(--un-blue) !important;
+    }
+
+.modal-header.bg-gradient {
+    position: relative;
+    overflow: hidden;
+}
+
+    .modal-header.bg-gradient::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="shield" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M10,2 L18,6 L18,14 L10,18 L2,14 L2,6 Z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23shield)"/></svg>') repeat;
+        opacity: 0.1;
+        z-index: 0;
+    }
+
+    .modal-header.bg-gradient > * {
+        position: relative;
+        z-index: 1;
+    }
+
+/* Toast notifications */
+.alert.position-fixed {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    backdrop-filter: blur(10px);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+}
+
+/* Loading overlay */
+.modal-body .position-absolute {
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+}
+
+.spinner-border-sm {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 1rem;
+    }
+
+    .modal-body {
+        padding: 2rem 1.5rem !important;
+    }
+
+    .backup-codes-container .col-md-6 {
+        margin-bottom: 1rem;
+    }
+
+    .d-grid.gap-2.d-md-flex {
+        flex-direction: column;
+    }
+}
+
+/* Accessibility improvements */
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(0, 158, 219, 0.25);
+}
+
+.btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(0, 158, 219, 0.25);
+}
+
+/* Print styles for backup codes */
+@media print {
+    .backup-codes-container {
+        break-inside: avoid;
+    }
+
+    .backup-code-item {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}

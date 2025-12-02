@@ -1,0 +1,485 @@
+﻿/* Enhanced Payslip Modal-specific styles with loading states and UN theme */
+
+/* CSS Variables for UN Theme */
+:root {
+    --un-blue: #009edb;
+    --un-dark-blue: #0073a8;
+    --un-light-blue: #4fc3f7;
+    --un-gray-50: #f8f9fa;
+    --un-gray-100: #f1f3f4;
+    --un-gray-200: #e9ecef;
+    --un-gray-300: #dee2e6;
+    --un-gray-400: #ced4da;
+    --un-gray-500: #adb5bd;
+    --un-gray-600: #6c757d;
+    --un-gray-700: #495057;
+    --un-gray-800: #343a40;
+    --un-gray-900: #212529;
+    --un-white: #ffffff;
+    --un-success: #28a745;
+    --un-warning: #ffc107;
+    --un-danger: #dc3545;
+}
+
+/* Modal Base Styles */
+.modal-content {
+    border-radius: 16px;
+    border: 1px solid var(--un-gray-200);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.modal-header {
+    background: var(--un-white);
+    border-bottom: 1px solid var(--un-gray-200);
+    border-radius: 16px 16px 0 0;
+    padding: 1.5rem;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+    margin: 0;
+}
+
+.modal-icon {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    position: relative;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--un-gray-200);
+    border-radius: 0 0 16px 16px;
+    padding: 1rem 1.5rem;
+    background: var(--un-gray-50);
+}
+
+/* Enhanced Compact Form Layout - Two columns for Payslip */
+.compact-row {
+    --bs-gutter-x: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.compact-col {
+    flex: 1 1 calc(50% - 0.75rem);
+    min-width: 200px;
+}
+
+/* Form Controls Enhanced */
+.form-label {
+    font-weight: 600;
+    color: var(--un-gray-700);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+    .form-label .text-danger {
+        margin-left: 0.25rem;
+        font-size: 0.8rem;
+    }
+
+.form-control, .form-select {
+    border: 2px solid var(--un-gray-200);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    background-color: var(--un-white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    min-height: 48px;
+}
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--un-blue);
+        box-shadow: 0 0 0 0.2rem rgba(0, 158, 219, 0.25);
+        background-color: var(--un-white);
+        outline: none;
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: var(--un-gray-300);
+    }
+
+/* Enhanced Alert Styles */
+.alert {
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.alert-info {
+    border-color: var(--un-blue);
+    background-color: rgba(0, 158, 219, 0.08);
+    color: var(--un-dark-blue);
+}
+
+.alert-warning {
+    border-color: var(--un-warning);
+    background-color: rgba(255, 193, 7, 0.08);
+    color: #856404;
+}
+
+.alert strong {
+    font-weight: 600;
+}
+
+/* Payslip Info Card Enhanced */
+.payslip-info-card {
+    background: linear-gradient(135deg, var(--un-gray-50) 0%, #f0f7ff 100%);
+    border: 1px solid var(--un-gray-200);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 0;
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.info-icon {
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.info-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--un-dark-blue);
+}
+
+.info-content {
+    margin-left: 1.95rem;
+}
+
+.info-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+    .info-list li {
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--un-gray-700);
+        line-height: 1.5;
+    }
+
+        .info-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--un-blue);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .info-list li:last-child {
+            margin-bottom: 0;
+        }
+
+/* Enhanced Button Styles */
+.btn {
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-width: 2px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+}
+
+.btn-primary {
+    background-color: var(--un-blue);
+    border-color: var(--un-blue);
+    color: white;
+}
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: var(--un-dark-blue);
+        border-color: var(--un-dark-blue);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 158, 219, 0.3);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(0, 158, 219, 0.2);
+    }
+
+.btn-secondary {
+    background-color: var(--un-gray-500);
+    border-color: var(--un-gray-500);
+    color: white;
+}
+
+    .btn-secondary:hover:not(:disabled) {
+        background-color: var(--un-gray-600);
+        border-color: var(--un-gray-600);
+        transform: translateY(-1px);
+    }
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.btn i {
+    margin-right: 0.5rem;
+    font-style: normal;
+}
+
+/* Loading State Styles */
+.loading-state {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 0 0 16px 16px;
+}
+
+.loading-content {
+    text-align: center;
+    max-width: 300px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--un-gray-200);
+    border-top: 4px solid var(--un-blue);
+    border-radius: 50%;
+    animation: loading-spin 1s linear infinite;
+    margin: 0 auto 1.5rem;
+}
+
+@keyframes loading-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text h6 {
+    color: var(--un-dark-blue);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.loading-text p {
+    color: var(--un-gray-600);
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Button Spinner */
+.btn-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 0.75s linear infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes btn-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Validation Styles */
+.is-invalid {
+    border-color: var(--un-danger) !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.invalid-feedback {
+    display: block;
+    color: var(--un-danger);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+/* Enhanced Close Button */
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--un-gray-600);
+    opacity: 0.8;
+    padding: 0.5rem;
+    margin: -0.5rem -0.5rem -0.5rem auto;
+    transition: all 0.2s ease;
+}
+
+    .btn-close:hover {
+        opacity: 1;
+        color: var(--un-gray-800);
+        transform: scale(1.1);
+    }
+
+    .btn-close:focus {
+        outline: 2px solid var(--un-blue);
+        outline-offset: 2px;
+    }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-header, .modal-body, .modal-footer {
+        padding: 1.25rem 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+    }
+
+    .compact-col {
+        flex: 1 1 100%;
+        min-width: auto;
+    }
+
+    .compact-row {
+        gap: 0.5rem;
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-secondary {
+        margin-bottom: 0;
+    }
+
+    .info-content {
+        margin-left: 1.5rem;
+    }
+
+    .info-list li {
+        font-size: 0.85rem;
+        padding-left: 1.25rem;
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+    }
+
+    .loading-text h6 {
+        font-size: 1rem;
+    }
+
+    .loading-text p {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 0.25rem;
+    }
+
+    .modal-header, .modal-body, .modal-footer {
+        padding: 1rem 0.75rem;
+    }
+
+    .compact-row {
+        gap: 0.25rem;
+    }
+
+    .form-control, .form-select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px;
+    }
+
+    /* Stack columns on very small screens */
+    .compact-col {
+        flex: 1 1 100%;
+    }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media (prefers-contrast: high) {
+    .form-control, .form-select {
+        border-width: 3px;
+    }
+
+    .btn {
+        border-width: 3px;
+    }
+}
+
+/* Focus Visible */
+.form-control:focus-visible,
+.form-select:focus-visible,
+.btn:focus-visible {
+    outline: 2px solid var(--un-blue);
+    outline-offset: 2px;
+}
+
+/* Screen Reader Only */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}

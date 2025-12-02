@@ -1,0 +1,76 @@
+﻿@model BankingInformationViewModel
+
+<!-- Banking Information Modal -->
+<div class="modal fade" id="bankingInfoModal" tabindex="-1" aria-labelledby="bankingInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bankingInfoModalLabel">
+                    <i class="me-2">🏦</i>
+                    Edit Banking Information
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-action="UpdateBankingInfo" asp-controller="Profile" method="post" id="bankingInfoForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="BankAccountType" class="form-label">Account Type</label>
+                                <select asp-for="BankAccountType" asp-items="@ProfileDropdownOptions.BankAccountTypeOptions" class="form-select">
+                                </select>
+                                <span asp-validation-for="BankAccountType" class="invalid-feedback"></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="BankAccountNo" class="form-label">Account Number</label>
+                                <input asp-for="BankAccountNo" type="text" class="form-control" placeholder="Enter account number">
+                                <span asp-validation-for="BankAccountNo" class="invalid-feedback"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="KBABankCode" class="form-label">Bank Code</label>
+                                <input asp-for="KBABankCode" type="text" class="form-control" placeholder="Enter bank code">
+                                <span asp-validation-for="KBABankCode" class="invalid-feedback"></span>
+                                <div class="form-text">Usually 3-4 digit code identifying your bank</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="KBABranchCode" class="form-label">Branch Code</label>
+                                <input asp-for="KBABranchCode" type="text" class="form-control" placeholder="Enter branch code">
+                                <span asp-validation-for="KBABranchCode" class="invalid-feedback"></span>
+                                <div class="form-text">Branch code where your account is held</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Important:</strong> Banking information is used for salary deposits. Ensure all details are accurate to avoid payment delays.
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>🔒 Security:</strong> Your banking information is encrypted and securely stored. Only authorized personnel can access this data.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="me-2">❌</i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="me-2">💾</i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

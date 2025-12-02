@@ -1,0 +1,86 @@
+﻿@model TwoFactorSettingsViewModel
+
+<div class="modal fade" id="twoFactorSettingsModal" tabindex="-1" aria-labelledby="twoFactorSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-gradient" style="background: linear-gradient(135deg, var(--un-blue) 0%, var(--un-dark-blue) 100%);">
+                <h5 class="modal-title text-white" id="twoFactorSettingsModalLabel">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Security Settings
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="settings-section">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1 me-3">
+                                    <h6 class="fw-bold mb-1" style="color: var(--un-dark-blue);">Two-Factor Authentication</h6>
+                                    <p class="text-muted small mb-0">
+                                        Add an extra layer of security to your account. When enabled, you'll need to enter a code from your authenticator app when signing in.
+                                    </p>
+                                    @if (Model.IsTwoFactorEnabled)
+                                    {
+                                        <div class="mt-2">
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i> Enabled
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="mt-2">
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle me-1"></i> Disabled
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="twoFactorToggle"
+                                               data-enabled="@Model.IsTwoFactorEnabled.ToString().ToLowerInvariant()"
+                                               @(Model.IsTwoFactorEnabled ? "checked" : "")
+                                               data-enable-url="@Url.Action("Enable", "TwoFactor")"
+                                               data-disable-url="@Url.Action("Disable", "TwoFactor")">
+                                        <label class="form-check-label" for="twoFactorToggle"></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Model.IsTwoFactorEnabled)
+                            {
+                                <div class="mt-3 pt-3 border-top">
+                                    <div class="row g-2">
+                                        <div class="col-auto">
+                                            <a href="@Url.Action("BackupCodes", "TwoFactor")" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-download me-1"></i> Backup Codes
+                                            </a>
+                                        </div>
+                                        <div class="col-auto">
+                                            <a href="@Url.Action("Setup", "TwoFactor")" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-cog me-1"></i> Reconfigure
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Changes take effect immediately
+                </small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+

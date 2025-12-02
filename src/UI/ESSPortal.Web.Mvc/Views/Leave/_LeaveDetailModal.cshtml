@@ -1,0 +1,147 @@
+﻿
+@model LeaveHistoryResponse
+
+@{
+    ViewData["Title"] = "Leave Application Details";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link href="~/custom/leave/css/leave-detail-modal.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="modal fade" id="leaveDetailModal" tabindex="-1" aria-labelledby="leaveDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="leaveDetailModalLabel">
+                    <i class="modal-icon">📋</i>
+                    Leave Application Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <!-- Application Info Grid -->
+                <div class="info-grid mb-4">
+                    <div class="info-row mb-2">
+                        <div class="info-item me-4">
+                            <span class="info-label fw-semibold">Application No:</span>
+                            <span class="info-value highlight ms-1">@Model.ApplicationNo</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label fw-semibold">Leave Type:</span>
+                            <span class="info-value ms-1">@Model.LeaveType</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row mb-2">
+                        <div class="info-item me-4">
+                            <span class="info-label fw-semibold">Application Date:</span>
+                            <span class="info-value ms-1">@Model.ApplicationDate.ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label fw-semibold">Status:</span>
+                            <span class="status-badge @Model.StatusCssClass ms-1">@Model.StatusDisplayText</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row mb-2">
+                        <div class="info-item me-4">
+                            <span class="info-label fw-semibold">Start Date:</span>
+                            <span class="info-value ms-1">@Model.StartDate.ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label fw-semibold">End Date:</span>
+                            <span class="info-value ms-1">@Model.EndDate.ToString("MMM dd, yyyy")</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row mb-2">
+                        <div class="info-item me-4">
+                            <span class="info-label fw-semibold">Days Applied:</span>
+                            <span class="info-value highlight ms-1">@Model.DaysApplied day@(Model.DaysApplied != 1 ? "s" : "")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label fw-semibold">Duration:</span>
+                            <span class="info-value ms-1">@Model.DurationText</span>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.LeavePeriod))
+                    {
+                        <div class="info-row mb-2">
+                            <div class="info-item full-width">
+                                <span class="info-label fw-semibold">Leave Period:</span>
+                                <span class="info-value ms-1">@Model.LeavePeriod</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Status Summary -->
+                <div class="status-info-card p-3 rounded shadow-sm mb-2">
+                    <div class="status-header mb-2">
+                        <h6 class="status-title d-flex align-items-center">
+                            <i class="status-icon me-2">
+                                @switch (Model.StatusDisplayText.ToLowerInvariant())
+                                {
+                                    case "pending":
+                                    case "open":
+                                        <span>⏳</span>
+                                        break;
+                                    case "approved":
+                                    case "released":
+                                        <span>✅</span>
+                                        break;
+                                    case "rejected":
+                                        <span>❌</span>
+                                        break;
+                                    default:
+                                        <span>📋</span>
+                                        break;
+                                }
+                            </i>
+                            Application Status
+                        </h6>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-description">
+                            @switch (Model.StatusDisplayText.ToLowerInvariant())
+                            {
+                                case "pending":
+                                case "open":
+                                    <text>Your application is under review and awaiting approval</text>
+                                    break;
+                                case "approved":
+                                case "released":
+                                    <text>Your leave application has been approved and processed</text>
+                                    break;
+                                case "rejected":
+                                    <text>Your leave application was not approved</text>
+                                    break;
+                                default:
+                                    <text>Current status: @Model.StatusDisplayText</text>
+                                    break;
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i>✖️</i>
+                    Cancel/Close
+                </button>
+                <a href="@Url.Action("LeaveHistory", "Leave")" class="btn btn-primary">
+                    <i>📋</i>
+                    View All Applications
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,287 @@
+﻿@model UserProfileViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+    var profilePictureFileName = Model.GetProfilePictureFileName();
+}
+
+@section Styles {
+    <link href="~/custom/profile/css/profile.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/custom/profile/css/profile-picture.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="page-icon">👤</i>
+            My Profile
+        </h1>
+        <nav class="breadcrumb-nav">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item active">My Profile</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Profile Summary Card -->
+    <div class="profile-summary-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                @if (!string.IsNullOrWhiteSpace(Model.ProfilePictureUrl))
+                {
+                    <img src="/Images/ProfilePictures/@profilePictureFileName" alt="Profile Picture" class="avatar-image">
+                }
+                else
+                {
+                    <div class="avatar-placeholder">
+                        <i class="avatar-icon">👤</i>
+                    </div>
+                } 
+                <button type="button" class="avatar-edit-btn" data-bs-toggle="modal" data-bs-target="#profilePictureModal">
+                    <i class="edit-icon">📷</i>
+                </button>
+            </div>
+            <div class="profile-info">
+                <h2 class="profile-name">@Model.DisplayName</h2>
+                <p class="profile-subtitle">@Model.EmploymentDetails.JobTitle</p>
+                <p class="profile-department">@Model.EmploymentDetails.Department</p>
+                <div class="profile-meta">
+                    <span class="meta-item">
+                        <i class="meta-icon">🆔</i>
+                        Employee: @Model.EmployeeNumber
+                    </span>
+                    <span class="meta-item">
+                        <i class="meta-icon">📧</i>
+                        @Model.Email
+                    </span>
+                    @if (Model.LastLoginAt.HasValue)
+                    {
+                        <span class="meta-item">
+                            <i class="meta-icon">🕒</i>
+                            Last login: @Model.LastLoginAt.Value.ToString("MMM dd, yyyy 'at' HH:mm")
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Completion -->
+        <div class="profile-completion">
+            <div class="completion-header">
+                <h6 class="completion-title">Profile Completion</h6>
+                <span class="completion-percentage">@Model.ProfileCompletionPercentage%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: @Model.ProfileCompletionPercentage%"></div>
+            </div>
+            @if (Model.ProfileCompletionPercentage < 100)
+            {
+                <p class="completion-hint">Complete your profile to unlock all features</p>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Profile Content -->
+        <div class="col-lg-8">
+            <!-- Personal Details Section -->
+            <div class="profile-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="section-icon">👤</i>
+                        Personal Details
+                    </h3>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#personalDetailsModal">
+                        <i class="me-1">✏️</i>Edit
+                    </button>
+                </div>
+                <div class="section-content">
+                    <div class="row info-row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">First Name</label>
+                                <div class="info-value">@Model.PersonalDetails.FirstName</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Last Name</label>
+                                <div class="info-value">@Model.PersonalDetails.LastName</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row info-row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Middle Name</label>
+                                <div class="info-value">@(Model.PersonalDetails.MiddleName ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Gender</label>
+                                <div class="info-value">@(Model.PersonalDetails.Gender ?? "Not specified")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information Section -->
+            <div class="profile-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="section-icon">📞</i>
+                        Contact Information
+                    </h3>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#contactInfoModal">
+                        <i class="me-1">✏️</i>Edit
+                    </button>
+                </div>
+                <div class="section-content">
+                    <div class="row info-row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Mobile Number</label>
+                                <div class="info-value">@Model.ContactInfo.MobileNo</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Telephone</label>
+                                <div class="info-value">@(Model.ContactInfo.TelephoneNo ?? "Not specified")</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row info-row">
+                        <div class="col-md-12">
+                            <div class="info-item">
+                                <label class="info-label">Physical Address</label>
+                                <div class="info-value">@(Model.ContactInfo.PhysicalAddress ?? "Not specified")</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row info-row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">City</label>
+                                <div class="info-value">@(Model.ContactInfo.City ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Postal Code</label>
+                                <div class="info-value">@(Model.ContactInfo.PostCode ?? "Not specified")</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row info-row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Country</label>
+                                <div class="info-value">@(Model.ContactInfo.CountryRegionCode ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Contact Email</label>
+                                <div class="info-value">@(Model.ContactInfo.ContactEMailAddress ?? "Not specified")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banking Information Section -->
+            <div class="profile-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="section-icon">🏦</i>
+                        Banking Information
+                    </h3>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bankingInfoModal">
+                        <i class="me-1">✏️</i>Edit
+                    </button>
+                </div>
+                <div class="section-content">
+                    <div class="row info-row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Account Type</label>
+                                <div class="info-value">@(Model.BankingInfo.BankAccountType ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Account Number</label>
+                                <div class="info-value">@(Model.BankingInfo.BankAccountNo ?? "Not specified")</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row info-row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Bank Code</label>
+                                <div class="info-value">@(Model.BankingInfo.KBABankCode ?? "Not specified")</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <label class="info-label">Branch Code</label>
+                                <div class="info-value">@(Model.BankingInfo.KBABranchCode ?? "Not specified")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Employment Details -->
+            <div class="profile-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="section-icon">💼</i>
+                        Employment Details
+                    </h3>
+                </div>
+                <div class="section-content">
+                    <div class="employment-item">
+                        <label class="employment-label">Department</label>
+                        <div class="employment-value">@(Model.EmploymentDetails.Department ?? "Not specified")</div>
+                    </div>
+                    <div class="employment-item">
+                        <label class="employment-label">Job Title</label>
+                        <div class="employment-value">@(Model.EmploymentDetails.JobTitle ?? "Not specified")</div>
+                    </div>
+                    <div class="employment-item">
+                        <label class="employment-label">Manager</label>
+                        <div class="employment-value">@(Model.EmploymentDetails.ManagerName ?? "Not assigned")</div>
+                    </div>
+                    <div class="employment-item">
+                        <label class="employment-label">Member Since</label>
+                        <div class="employment-value">@Model.CreatedAt.ToString("MMMM yyyy")</div>
+                    </div>
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+
+<!-- Include Modal Views -->
+<partial name="_PersonalDetailsModal" model="Model.PersonalDetails" />
+<partial name="_ContactInfoModal" model="Model.ContactInfo" />
+<partial name="_BankingInfoModal" model="Model.BankingInfo" />
+<partial name="_ProfilePictureModal" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/custom/profile/js/profile.js" asp-append-version="true"></script>
+}

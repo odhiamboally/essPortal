@@ -1,0 +1,64 @@
+﻿@section Styles {
+    <link href="~/custom/profile/css/profile-picture.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<!-- Profile Picture Upload Modal -->
+<div class="modal fade" id="profilePictureModal" tabindex="-1" aria-labelledby="profilePictureModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="profilePictureModalLabel">
+                    <i class="me-2">📷</i>
+                    Update Profile Picture
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-action="UpdateProfilePicture" asp-controller="Profile" method="post" enctype="multipart/form-data" id="profilePictureForm">
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <div class="profile-picture-preview">
+                            <img id="imagePreview" src="#" alt="Preview" class="preview-image" style="display: none;">
+                            <div id="imagePlaceholder" class="preview-placeholder">
+                                <i class="placeholder-icon">📷</i>
+                                <p class="placeholder-text">Select an image to preview</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="profilePictureInput" class="form-label">Choose Profile Picture <span class="text-danger">*</span></label>
+                        <input type="file" id="profilePictureInput" name="ProfilePicture" class="form-control"
+                               accept="image/jpeg,image/jpg,image/png,image/gif" required>
+                        <div class="form-text">
+                            Supported formats: JPEG, PNG, GIF. Maximum size: 5MB. Recommended: 400x400 pixels.
+                        </div>
+                    </div>
+
+                    <div class="upload-guidelines">
+                        <h6 class="guidelines-title">
+                            <i class="me-2">📋</i>Photo Guidelines
+                        </h6>
+                        <ul class="guidelines-list">
+                            <li>Use a clear, recent photo of yourself</li>
+                            <li>Ensure good lighting and focus</li>
+                            <li>Professional appearance recommended</li>
+                            <li>Avoid sunglasses or heavy filters</li>
+                            <li>Square format works best</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="me-2">❌</i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
+                        <i class="me-2">📤</i>Upload Picture
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
