@@ -5,6 +5,7 @@ public record UserInfo(
     string? EmployeeNumber,
     string? FirstName,
     string? LastName,
+    string? Gender,
     string? Email,
     string? PhoneNumber,
     string ResponsibilityCenter,

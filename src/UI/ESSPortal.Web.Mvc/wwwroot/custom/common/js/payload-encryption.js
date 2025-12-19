@@ -97,7 +97,6 @@ let encryptionKey = '';
 function initializeEncryption(key) {
     encryptionKey = key;
     window.encryptionService = new FrontendEncryptionService(encryptionKey);
-    console.log('Encryption service initialized');
 }
 
 // Default initialization (will be overridden by server-rendered key)

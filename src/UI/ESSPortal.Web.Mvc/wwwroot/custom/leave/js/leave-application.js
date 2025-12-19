@@ -6,67 +6,170 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeLeaveApplication();
 });
 
+// ===========================================
+// GLOBAL HELPER FUNCTIONS
+// These must be global because they're called from multiple scopes
+// ===========================================
+
+function getCSRFToken() {
+    return document.querySelector('input[name="__RequestVerificationToken"]')?.value ||
+        document.querySelector('meta[name="__RequestVerificationToken"]')?.content ||
+        window.csrfToken || '';
+}
+
+function getHeaders() {
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    const token = getCSRFToken();
+    if (token) {
+        headers['X-CSRF-TOKEN'] = token;
+        headers['RequestVerificationToken'] = token;
+    }
+    return headers;
+}
+
+function getFormDataHeaders() {
+    const headers = {
+        'X-Requested-With': 'XMLHttpRequest'
+        // NO Content-Type - browser sets it automatically!
+    };
+    const token = getCSRFToken();
+    if (token) {
+        headers['RequestVerificationToken'] = token;
+    }
+    return headers;
+}
+
+// Get maximum allowed days for current leave type
+// NOTE: Must do own DOM query since called from multiple scopes
+function getMaxAllowedDays() {
+    const leaveTypeSelect = document.querySelector('select[name="LeaveType"]');
+    if (!leaveTypeSelect || !leaveTypeSelect.value) return null;
+
+    const selectedOption = leaveTypeSelect.querySelector(`option[value="${leaveTypeSelect.value}"]`);
+    const maxDays = selectedOption ? selectedOption.getAttribute('data-max-days') : null;
+
+    return maxDays ? parseInt(maxDays) : null;
+}
+
+// Get leave type display name
+// NOTE: Must do own DOM query since called from multiple scopes
+function getLeaveTypeName() {
+    const leaveTypeSelect = document.querySelector('select[name="LeaveType"]');
+    if (!leaveTypeSelect || !leaveTypeSelect.value) return 'Selected leave type';
+    const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
+    return selectedOption.text.split('(')[0].trim();
+}
+
+// Validate the days applied field
+// NOTE: Must be global - called from both initializeLeaveApplication and setupDateCalculations
+function validateDaysAppliedField(field) {
+    if (!field || !field.value) return true;
+
+    const value = parseFloat(field.value);
+
+    // Basic number validation
+    if (isNaN(value) || value <= 0) {
+        showFieldError(field, 'Please enter a valid number of days');
+        return false;
+    }
+
+    // Check decimal places (should be .5 or whole numbers)
+    if (value % 0.5 !== 0) {
+        showFieldError(field, 'Days must be in increments of 0.5 (half days)');
+        return false;
+    }
+
+    // Get current form elements for validation context
+    const halfDayToggle = document.querySelector('input[name="HalfDay"]');
+
+    // Half-day specific validation
+    const isHalfDay = halfDayToggle && halfDayToggle.checked;
+    if (isHalfDay && value !== 0.5) {
+        showFieldError(field, 'Half-day leave must be exactly 0.5 days');
+        return false;
+    }
+
+    // Check against leave type maximum limits
+    const maxAllowed = getMaxAllowedDays();
+    if (maxAllowed && value > maxAllowed) {
+        const leaveTypeName = getLeaveTypeName();
+        showFieldError(field, `${leaveTypeName} allows maximum ${maxAllowed} days`);
+        return false;
+    }
+
+    // Check against earned days (for annual leave only)
+    if (isAnnualLeave()) {
+        const earnedDaysInput = document.querySelector('input[name="LeaveEarnedToDate"]');
+        const earnedDays = earnedDaysInput ? parseFloat(earnedDaysInput.value) || 0 : 0;
+
+        if (value > earnedDays) {
+            showFieldError(field, `Cannot exceed ${earnedDays} days (earned to date) for annual leave`);
+            return false;
+        }
+    }
+
+    // If we get here, validation passed
+    clearFieldError(field);
+    return true;
+}
+
+// Clear selected reliever info display
+// NOTE: Must be global - called from global clearAllRelieverSelections
+function clearSelectedRelieverInfo() {
+    const selectedDisplay = document.getElementById('selectedRelieverDisplay');
+    if (selectedDisplay) {
+        selectedDisplay.remove();
+    }
+}
+
+// Check if current leave type is annual leave
+function isAnnualLeave() {
+    const leaveTypeSelect = document.querySelector('select[name="LeaveType"]');
+    if (!leaveTypeSelect || !leaveTypeSelect.value) return false;
+    const selectedOption = leaveTypeSelect.querySelector(`option[value="${leaveTypeSelect.value}"]`);
+    return selectedOption ? selectedOption.getAttribute('data-is-annual') === 'true' : false;
+}
+
+function clearAllRelieverSelections() {
+    const allCheckboxes = document.querySelectorAll('input[name="SelectedRelieverEmployeeNos"]');
+    allCheckboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        checkbox.closest('.reliever-item').classList.remove('selected');
+    });
+    clearSelectedRelieverInfo();
+}
+
+function showFieldError(field, message) {
+    if (!field) return;
+
+    field.classList.add('is-invalid');
+
+    let feedback = field.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.textContent = message;
+        feedback.style.display = 'block';
+    }
+}
+
+function clearFieldError(field) {
+    if (!field) return;
+
+    field.classList.remove('is-invalid');
+
+    const feedback = field.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.style.display = 'none';
+    }
+}
+
+// ===========================================
+// MAIN INITIALIZATION
+// ===========================================
+
 function initializeLeaveApplication() {
-
-    function validateDaysAppliedField(field) {
-        if (!field || !field.value) return true;
-
-        const value = parseFloat(field.value);
-
-        // Basic number validation
-        if (isNaN(value) || value <= 0) {
-            showFieldError(field, 'Please enter a valid number of days');
-            return false;
-        }
-
-        // Check decimal places (should be .5 or whole numbers)
-        if (value % 0.5 !== 0) {
-            showFieldError(field, 'Days must be in increments of 0.5 (half days)');
-            return false;
-        }
-
-        // Get current form elements for validation context
-        const leaveTypeSelect = document.querySelector('select[name="LeaveType"]');
-        const halfDayToggle = document.querySelector('input[name="HalfDay"]');
-
-        // Half-day specific validation
-        const isHalfDay = halfDayToggle && halfDayToggle.checked;
-        if (isHalfDay && value !== 0.5) {
-            showFieldError(field, 'Half-day leave must be exactly 0.5 days');
-            return false;
-        }
-
-        // Check against leave type maximum limits
-        const maxAllowed = getMaxAllowedDays();
-        if (maxAllowed && value > maxAllowed) {
-            const leaveTypeName = getLeaveTypeName();
-            showFieldError(field, `${leaveTypeName} allows maximum ${maxAllowed} days`);
-            return false;
-        }
-
-        // Check against earned days (for annual leave only)
-        if (isAnnualLeave()) {
-            const earnedDaysInput = document.querySelector('input[name="LeaveEarnedToDate"]');
-            const earnedDays = earnedDaysInput ? parseFloat(earnedDaysInput.value) || 0 : 0;
-
-            if (value > earnedDays) {
-                showFieldError(field, `Cannot exceed ${earnedDays} days (earned to date) for annual leave`);
-                return false;
-            }
-        }
-
-        // If we get here, validation passed
-        clearFieldError(field);
-        return true;
-    }
-
-    // Check if current leave type is annual leave
-    function isAnnualLeave() {
-        if (!leaveTypeSelect || !leaveTypeSelect.value) return false;
-        const selectedOption = leaveTypeSelect.querySelector(`option[value="${leaveTypeSelect.value}"]`);
-        return selectedOption ? selectedOption.getAttribute('data-is-annual') === 'true' : false;
-    }
-
 
     // ===========================================
     // FORM VALIDATION
@@ -400,15 +503,6 @@ function initializeLeaveApplication() {
         }
     }
 
-    function clearAllRelieverSelections() {
-        const allCheckboxes = document.querySelectorAll('input[name="SelectedRelieverEmployeeNos"]');
-        allCheckboxes.forEach(checkbox => {
-            checkbox.checked = false;
-            checkbox.closest('.reliever-item').classList.remove('selected');
-        });
-        clearSelectedRelieverInfo();
-    }
-
     function showSelectedRelieverInfo(relieverItem) {
         const name = relieverItem.querySelector('.reliever-name').textContent;
         const employeeNo = relieverItem.querySelector('.reliever-employee-no').textContent;
@@ -442,13 +536,6 @@ function initializeLeaveApplication() {
             </button>
         </div>
     `;
-    }
-
-    function clearSelectedRelieverInfo() {
-        const selectedDisplay = document.getElementById('selectedRelieverDisplay');
-        if (selectedDisplay) {
-            selectedDisplay.remove();
-        }
     }
 
     function updateAvailableCount() {
@@ -697,37 +784,19 @@ function setupDateCalculations() {
 
     function formatShortDisplayDate(date) {
         return date.toLocaleDateString('en-US', {
-            weekday: 'short',    
-            month: 'short',      
-            day: 'numeric',      
-            year: 'numeric'      
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
         });
     }
 
     // Check if current leave type uses calendar days
+    // NOTE: This can stay local since it's only called within setupDateCalculations
     function usesCalendarDays() {
         if (!leaveTypeSelect || !leaveTypeSelect.value) return false;
         const selectedOption = leaveTypeSelect.querySelector(`option[value="${leaveTypeSelect.value}"]`);
         return selectedOption ? selectedOption.getAttribute('data-uses-calendar') === 'true' : false;
-    }
-
-    // Get maximum allowed days for selected leave type
-    function getMaxAllowedDays() {
-        if (!leaveTypeSelect || !leaveTypeSelect.value) return null;
-
-        const selectedOption = leaveTypeSelect.querySelector(`option[value="${leaveTypeSelect.value}"]`);
-        const maxDays = selectedOption ? selectedOption.getAttribute('data-max-days') : null;
-
-        return maxDays ? parseInt(maxDays) : null;
-    }
-
-    
-
-    // Get leave type name for display
-    function getLeaveTypeName() {
-        if (!leaveTypeSelect || !leaveTypeSelect.value) return 'Selected leave type';
-        const selectedOption = leaveTypeSelect.options[leaveTypeSelect.selectedIndex];
-        return selectedOption.text.split('(')[0].trim();
     }
 
     // Auto-calculate when dates change
@@ -778,6 +847,10 @@ function setupDateCalculations() {
 
             // Validate the calculated days
             if (!validateCalculatedDays(calculatedDays)) {
+
+                calculateResumptionDate(endDate);
+                disableDaysAppliedField();
+
                 return; // Don't proceed if validation fails
             }
 
@@ -790,7 +863,7 @@ function setupDateCalculations() {
 
                     // For half-day, resumption is the next business/calendar day based on leave type
                     if (usesCalendarDays()) {
-                        resumption = getNextCalendarDay(endDate);
+                        resumption = getNextBusinessDay(endDate);
                     } else {
                         resumption = getNextBusinessDay(endDate);
                     }
@@ -798,15 +871,20 @@ function setupDateCalculations() {
 
                     // Regular resumption calculation
                     if (usesCalendarDays()) {
-                        resumption = getNextCalendarDay(endDate);
+
+                        resumption = getNextBusinessDay(endDate);
+
                     } else {
+
                         resumption = getNextBusinessDay(endDate);
                     }
                 }
 
-                resumptionDate.removeAttribute('readonly');
+                //resumptionDate.removeAttribute('readonly');
+                //resumptionDate.value = formatShortDisplayDate(resumption);
+                //resumptionDate.setAttribute('readonly', 'readonly');
+
                 resumptionDate.value = formatShortDisplayDate(resumption);
-                resumptionDate.setAttribute('readonly', 'readonly');
             }
 
             // Clear validation errors when calculations are valid
@@ -818,16 +896,33 @@ function setupDateCalculations() {
             updateDaysAppliedConstraints();
 
             disableDaysAppliedField();
-            
+
         }
 
+    }
+
+    function calculateResumptionDate(endDate) {
+
+        if (!resumptionDate) return;
+
+        let resumption;
+        if (usesCalendarDays()) {
+
+            resumption = getNextBusinessDay(endDate);
+
+        } else {
+
+            resumption = getNextBusinessDay(endDate);
+        }
+
+        resumptionDate.value = formatDisplayDate(resumption);
     }
 
     function enableDaysAppliedField() {
         daysApplied.removeAttribute('readonly');
         daysApplied.classList.remove('calculated-field');
     }
-    
+
     function disableDaysAppliedField() {
 
         daysApplied.setAttribute('readonly', 'readonly');
@@ -838,16 +933,19 @@ function setupDateCalculations() {
     function validateCalculatedDays(calculatedDays) {
 
         // Check against leave type limits
+        // NOTE: getMaxAllowedDays() is now global with its own DOM query
         const maxAllowed = getMaxAllowedDays();
 
         // For half-day, we don't need to check maximums since 0.5 is always valid
         if (!isHalfDaySelected() && maxAllowed && calculatedDays > maxAllowed) {
+            // NOTE: getLeaveTypeName() is now global with its own DOM query
             const leaveTypeName = getLeaveTypeName();
             showFieldError(daysApplied, `${leaveTypeName} allows maximum ${maxAllowed} days`);
             return false;
         }
 
         // Check against earned days (for annual leave only)
+        // NOTE: isAnnualLeave() is global with its own DOM query
         if (isAnnualLeave()) {
             const earnedDaysInput = document.querySelector('input[name="LeaveEarnedToDate"]');
             const earnedDays = earnedDaysInput ? parseFloat(earnedDaysInput.value) || 0 : 0;
@@ -863,6 +961,7 @@ function setupDateCalculations() {
 
     // Update days applied field constraints based on leave type
     function updateDaysAppliedConstraints() {
+        // NOTE: getMaxAllowedDays() is now global with its own DOM query
         const maxAllowed = getMaxAllowedDays();
 
         if (maxAllowed) {
@@ -936,6 +1035,7 @@ function setupDateCalculations() {
             }
 
             // Revalidate current days if any
+            // NOTE: validateDaysAppliedField() is now global
             if (daysApplied.value) {
                 validateDaysAppliedField(daysApplied);
             }
@@ -943,6 +1043,7 @@ function setupDateCalculations() {
     }
 
     // Manual days input change with validation
+    // NOTE: validateDaysAppliedField() is now global
     daysApplied.addEventListener('input', function () {
         clearFieldError(this);
         validateDaysAppliedField(this);
@@ -1127,40 +1228,22 @@ function removeFile(index) {
     handleFileSelection(fileInput.files);
 }
 
-
-
-
-function showFieldError(field, message) {
-    if (!field) return;
-
-    field.classList.add('is-invalid');
-
-    let feedback = field.parentNode.querySelector('.invalid-feedback');
-    if (feedback) {
-        feedback.textContent = message;
-        feedback.style.display = 'block';
-    }
-}
-
-function clearFieldError(field) {
-    if (!field) return;
-
-    field.classList.remove('is-invalid');
-
-    const feedback = field.parentNode.querySelector('.invalid-feedback');
-    if (feedback) {
-        feedback.style.display = 'none';
-    }
-}
-
-
-
 // Helper function for form submission
 async function submitForm(form) {
+
     const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
+    const submitBtnOriginalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+    const cancelBtn = form.querySelector('a.btn-secondary');
+    cancelBtn.disabled = true;
+    cancelBtn.classList.add('disabled');
+    cancelBtn.style.pointerEvents = 'none';
+    const originalHref = cancelBtn.getAttribute('href');
+    cancelBtn.removeAttribute('href'); 
+
+    
 
     try {
         const formData = new FormData(form);
@@ -1176,13 +1259,116 @@ async function submitForm(form) {
 
         const response = await fetch(form.action || window.location.pathname, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: getFormDataHeaders()
         });
 
         if (response.ok) {
+
+            // Check content type before parsing
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+
+                console.error('Server returned non-JSON response:', contentType); // - Server returned HTML instead of JSON - likely a session/auth issue
+                throw new Error('Session may have expired. Please refresh the page and try again.');
+            }
+
             const data = await response.json();
 
-            if (data.success) {
+            await handleSubmissionResponse(response);
+
+            //    if (data.success) {
+            //        await Swal.fire({
+            //            title: 'Success!',
+            //            text: `Leave application submitted successfully. ${data.applicationNo ? 'Reference: ' + data.applicationNo : ''}`,
+            //            icon: 'success',
+            //            confirmButtonText: 'Go to Dashboard',
+            //            confirmButtonColor: '#198754'
+            //        });
+
+            //        window.location.href = data.redirectUrl || '/Home/Index';
+
+            //    } else {
+
+            //        const errors = data.errors || [];
+            //        let title = 'Error';
+            //        let content;
+
+            //        if (errors.length === 0) {
+            //            content = data.message || 'An unknown error occurred.';
+            //        } else if (errors.length === 1) {
+            //            content = errors[0];
+            //        } else {
+            //            content = '<ul>' + errors.map(err => `<li>${escapeHtml(err)}</li>`).join('') + '</ul>';
+            //            title = 'Validation Errors';
+            //        }
+
+            //        await Swal.fire({
+            //            title: title,
+            //            html: typeof content === 'string' && content.startsWith('<ul>') ? content : undefined,
+            //            text: content.startsWith('<ul>') ? undefined : content,
+            //            icon: 'error',
+            //            confirmButtonColor: '#dc3545'
+            //        });
+
+            //    }
+            //} else {
+
+            //    throw new Error(`Server error: ${response.status}`);
+            //}
+
+        }
+    }
+    catch (error) {
+
+        console.error('Submission error:', error);
+        Swal.fire({
+            title: 'Error!',
+            text: error,
+            icon: 'error',
+            confirmButtonColor: '#dc3545'
+        });
+    } finally {
+        // Restore button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitBtnOriginalText;
+
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove('disabled');
+        cancelBtn.style.pointerEvents = '';
+        if (originalHref) {
+            cancelBtn.setAttribute('href', originalHref);
+        }
+
+        
+    }
+
+    // Helper to prevent XSS (safe since errors are from your validator)
+    function escapeHtml(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+}
+
+// ===========================================
+// UTILITIES
+// ===========================================
+
+// Function to handle the response from the fetch/ajax call
+
+async function handleSubmissionResponse(response) {
+
+    try {
+
+        // ----------------------------------------------------
+        // STEP 1: CHECK HTTP STATUS CODE
+        // ----------------------------------------------------
+        if (response.ok) {
+            // HTTP 200-299 status code (Success) - This is for your ApiResponse pattern
+            const data = await response.json();
+
+            if (data.successful) {
+                // SUCCESS
                 await Swal.fire({
                     title: 'Success!',
                     text: `Leave application submitted successfully. ${data.applicationNo ? 'Reference: ' + data.applicationNo : ''}`,
@@ -1194,42 +1380,99 @@ async function submitForm(form) {
                 window.location.href = data.redirectUrl || '/Home/Index';
 
             } else {
-                let errorMessage = data.message || 'Failed to submit application';
+                // LOGICAL FAILURE (API returned 200 OK, but with a failure message/errors array)
 
-                if (data.errors && data.errors.length > 0) {
-                    errorMessage += '\n\nDetails:\n' + data.errors.join('\n');
+                // NOTE: The C# HandleResponse now returns 4xx/5xx for failures, 
+                // so this block should theoretically not be reached unless your API
+                // is configured to return 200 OK on business errors. We will keep it 
+                // as a robust fallback to handle the legacy ApiResponse<T> format.
+                const errors = data.errors || [];
+                let title = data.message//'Error';
+                let content;
+
+                if (data.message) {
+                    // Use the main message for the title/content if available
+                    title = data.message;
+                } else if (errors.length > 1) {
+                    title = 'Multiple Errors';
                 }
 
-                Swal.fire({
-                    title: 'Error!',
-                    text: errorMessage,
+                // Format content as a list or single string
+                if (errors.length > 1) {
+                    content = '<ul>' + errors.map(err => `<li>${escapeHtml(err)}</li>`).join('') + '</ul>';
+                } else {
+                    content = errors[0] || 'An unknown error occurred.';
+                }
+
+                await Swal.fire({
+                    title: title,
+                    html: content.startsWith('<ul>') ? content : undefined,
+                    text: content.startsWith('<ul>') ? undefined : content,
                     icon: 'error',
                     confirmButtonColor: '#dc3545'
                 });
             }
-        } else {
+        }
+        // ----------------------------------------------------
+        // STEP 2: HANDLE INFRASTRUCTURE/API ERRORS (HTTP 4xx/5xx)
+        // ----------------------------------------------------
+        else {
+            // HTTP status code is 4xx or 5xx (e.g., 400 Bad Request, 404 Not Found, 500 Internal Error)
+            // Your C# HandleResponse returns a ProblemDetails object here.
 
-            throw new Error(`Server error: ${response.status}`);
+            const problemDetails = await response.json().catch(() => null);
+
+            let title;
+            let detail;
+            let content;
+
+            if (problemDetails && problemDetails.title) {
+                // Successfully parsed ProblemDetails from the server
+                title = problemDetails.title;
+                detail = problemDetails.detail || problemDetails.title;
+
+                // Check for FluentValidation errors structure added in your C# (problemDetails.Extensions["errors"])
+                const validationErrors = problemDetails.errors?.general || [];
+
+                if (validationErrors.length > 1) {
+                    content = '<ul>' + validationErrors.map(err => `<li>${escapeHtml(err)}</li>`).join('') + '</ul>';
+                    // If the error contains multiple validation issues, use the title from C# but detail the errors
+                } else if (validationErrors.length === 1) {
+                    content = validationErrors[0];
+                } else {
+                    // No specific errors array, just use the main 'detail' message from the server
+                    content = detail;
+                }
+
+            } else {
+                // Fallback for non-JSON or unexpected server error format
+                title = `Server Error (${response.status} ${response.statusText})`;
+                content = `The server returned an unhandled error. Please contact support.`;
+            }
+
+            await Swal.fire({
+                title: title,
+                html: typeof content === 'string' && content.startsWith('<ul>') ? content : undefined,
+                text: content.startsWith('<ul>') ? undefined : content,
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
         }
 
-    } catch (error) {
-        console.error('Submission error:', error);
+    } catch (e) {
+        console.error('Error handling submission response:', e);
         Swal.fire({
             title: 'Error!',
-            text: error,
+            text: 'An unexpected error occurred while processing the response.',
             icon: 'error',
             confirmButtonColor: '#dc3545'
         });
-    } finally {
-        // Restore button
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+
     }
+
+    
 }
 
-// ===========================================
-// UTILITIES
-// ===========================================
 
 // Show alert function (fallback if SweetAlert2 not available)
 function showAlert(message, type = 'info') {
@@ -1256,6 +1499,7 @@ function getAlertTitle(type) {
     }
 }
 
-// Global functions for buttons
+
+// Global functions for buttons (onclick handlers in HTML)
 window.clearAllRelieverSelections = clearAllRelieverSelections;
 window.removeFile = removeFile;

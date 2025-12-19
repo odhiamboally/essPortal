@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
 using System.Data;
 using System.Data.Common;
 using System.Security.Claims;
@@ -12,15 +14,17 @@ namespace ESSPortal.Persistence.SQLServer.DataContext;
 public class DBContext : IdentityDbContext<AppUser>
 {
     private readonly IHttpContextAccessor? _httpContextAccessor;
+    private readonly ILogger<DBContext>? _logger;
 
-    public DBContext(DbContextOptions<DBContext> options, IHttpContextAccessor? httpContextAccessor) : base(options) 
+    public DBContext(
+        DbContextOptions<DBContext> options, 
+        IHttpContextAccessor? httpContextAccessor, 
+        ILogger<DBContext>? logger = null) : base(options) 
     { 
         _httpContextAccessor = httpContextAccessor;
-
+        _logger = logger;
 
     }
-
-
 
     #region Sets
 
@@ -39,7 +43,6 @@ public class DBContext : IdentityDbContext<AppUser>
 
 
     #endregion
-
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -100,24 +103,44 @@ public class DBContext : IdentityDbContext<AppUser>
             UpdateAuditFields();
             return await base.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
+            // Log which entities were involved
+            foreach (var entry in ex.Entries)
+            {
+                var entryName = entry.Entity.GetType().Name;
+                Console.WriteLine($"Concurrency conflict on: {entryName}");
+                Console.WriteLine($"Entity State: {entry.State}");
+                Console.WriteLine($"Entity: {System.Text.Json.JsonSerializer.Serialize(entry.Entity)}");
+
+                // Get current database values
+                var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
+                if (databaseValues == null)
+                {
+                    Console.WriteLine("Entity has been deleted from database");
+                }
+                else
+                {
+                    Console.WriteLine($"Database values: {System.Text.Json.JsonSerializer.Serialize(databaseValues.ToObject())}");
+                }
+            }
             throw;
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex)
         {
+            _logger?.LogError(ex, "Database update failed. Exception: {ErrorMessage}", ex.Message);
             throw;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger?.LogError(ex, "An unexpected error occurred. Exception: {ErrorMessage}", ex.Message);
             throw;
         }
     }
 
     private void UpdateAuditFields()
     {
-        var entries = ChangeTracker.Entries<AppUser>()
-            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+        var entries = ChangeTracker.Entries<AppUser>().Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
         foreach (var entry in entries)
         {
@@ -136,48 +159,30 @@ public class DBContext : IdentityDbContext<AppUser>
             }
         }
 
-        var userSessionEntries = ChangeTracker.Entries<UserSession>()
-        .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+        var userSessionEntries = ChangeTracker.Entries<UserSession>().Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
         foreach (var entry in userSessionEntries)
         {
             if (entry.State == EntityState.Added)
             {
-                // Only override if CreatedAt wasn't explicitly set
-                if (entry.Entity.CreatedAt == default(DateTimeOffset) ||
-                    entry.Entity.CreatedAt == DateTimeOffset.MinValue)
-                {
-                    var now = DateTimeOffset.UtcNow;
-                    entry.Entity.CreatedAt = now;
+                var now = DateTimeOffset.UtcNow;
 
-                    // Ensure LastAccessedAt is not before CreatedAt
-                    if (entry.Entity.LastAccessedAt < now)
-                    {
-                        entry.Entity.LastAccessedAt = now;
-                    }
-                }
-                else
-                {
-                    // CreatedAt was explicitly set, ensure LastAccessedAt respects constraint
-                    if (entry.Entity.LastAccessedAt < entry.Entity.CreatedAt)
-                    {
-                        entry.Entity.LastAccessedAt = entry.Entity.CreatedAt;
-                    }
-                }
-
+                // Simplify - always set for new entities
+                entry.Entity.CreatedAt = now;
+                entry.Entity.LastAccessedAt = now;
                 entry.Entity.CreatedBy = GetCurrentUserId();
             }
-
-            if (entry.State == EntityState.Modified)
+            else if (entry.State == EntityState.Modified)
             {
+                // Only update these on modification
                 entry.Entity.UpdatedAt = DateTimeOffset.UtcNow;
                 entry.Entity.UpdatedBy = GetCurrentUserId();
+                entry.Entity.LastAccessedAt = DateTimeOffset.UtcNow;
             }
         }
 
-        var refreshTokenEntries = ChangeTracker.Entries<RefreshToken>()
-            .Where(e => e.State == EntityState.Added);
-
+        var refreshTokenEntries = ChangeTracker.Entries<RefreshToken>().Where(e => e.State == EntityState.Added);
+            
         foreach (var entry in refreshTokenEntries)
         {
             if (entry.State == EntityState.Added)
@@ -186,9 +191,8 @@ public class DBContext : IdentityDbContext<AppUser>
             }
         }
 
-        var deviceEntries = ChangeTracker.Entries<UserDevice>()
-            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
-
+        var deviceEntries = ChangeTracker.Entries<UserDevice>().Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+            
         foreach (var entry in deviceEntries)
         {
             if (entry.State == EntityState.Added)
@@ -202,9 +206,8 @@ public class DBContext : IdentityDbContext<AppUser>
             }
         }
 
-        var profileEntries = ChangeTracker.Entries<Profile>()
-            .Where(e => e.State == EntityState.Added);
-
+        var profileEntries = ChangeTracker.Entries<Profile>().Where(e => e.State == EntityState.Added);
+            
         foreach (var entry in profileEntries)
         {
             if (entry.State == EntityState.Added && !entry.Entity.DateCreated.HasValue)

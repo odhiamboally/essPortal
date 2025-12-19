@@ -1,0 +1,224 @@
+﻿@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Description" Class="mr-2" />
+            Leave Application Details
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3">
+            <!-- Application Header -->
+            <MudPaper Outlined="true" Class="pa-3">
+                <MudGrid Spacing="2">
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Application Number</MudText>
+                        <MudText Typo="Typo.body1" Style="font-weight: 600;">
+                            @LeaveApplication?.ApplicationNo
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                        @{
+                            var (color, icon) = GetStatusDisplay(LeaveApplication?.Status ?? "unknown");
+                        }
+                        <MudChip T="string" Color="@color" Icon="@icon" Size="Size.Small">
+                            @LeaveApplication?.StatusDisplayText
+                        </MudChip>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <!-- Application Information -->
+            <MudPaper Outlined="true" Class="pa-3">
+                <MudText Typo="Typo.h6" Class="mb-3">Application Information</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Leave Type</MudText>
+                        <MudText Typo="Typo.body2">@LeaveApplication?.LeaveType</MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Application Date</MudText>
+                        <MudText Typo="Typo.body2">
+                            @LeaveApplication?.ApplicationDate.ToString("dddd, MMMM dd, yyyy")
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Start Date</MudText>
+                        <MudText Typo="Typo.body2">
+                            @LeaveApplication?.StartDate.ToString("dddd, MMMM dd, yyyy")
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">End Date</MudText>
+                        <MudText Typo="Typo.body2">
+                            @LeaveApplication?.EndDate.ToString("dddd, MMMM dd, yyyy")
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Days Applied</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Primary" Style="font-weight: 600;">
+                            @LeaveApplication?.DaysApplied days
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Resumption Date</MudText>
+                        <MudText Typo="Typo.body2">
+                            @LeaveApplication?.ResumptionDate.ToString("dddd, MMMM dd, yyyy")
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Leave Period</MudText>
+                        <MudText Typo="Typo.body2">@LeaveApplication?.LeavePeriod</MudText>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Duration</MudText>
+                        <MudText Typo="Typo.body2">@LeaveApplication?.DurationText</MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <!-- Leave Options -->
+            @if (LeaveApplication!.HalfDay || LeaveApplication.LeaveAllowancePayable)
+            {
+                <MudPaper Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Class="mb-3">Leave Options</MudText>
+                    <MudStack Spacing="1">
+                        @if (LeaveApplication.HalfDay)
+                        {
+                            <MudChip T="string" Icon="@Icons.Material.Filled.Schedule" Color="Color.Info" Size="Size.Small">
+                                Half Day Leave (0.5 days)
+                            </MudChip>
+                        }
+                        @if (LeaveApplication.LeaveAllowancePayable)
+                        {
+                            <MudChip T="string" Icon="@Icons.Material.Filled.AttachMoney" Color="Color.Success" Size="Size.Small">
+                                Leave Allowance Payable
+                            </MudChip>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+
+            <!-- Reliever Information -->
+            @if (!string.IsNullOrEmpty(LeaveApplication.DutiesTakenOverBy))
+            {
+                <MudPaper Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-2" />
+                        Leave Reliever
+                    </MudText>
+                    <MudText Typo="Typo.body2">
+                        <strong>@LeaveApplication.DutiesTakenOverBy</strong>
+                    </MudText>
+                </MudPaper>
+            }
+
+            <!-- Status Summary -->
+            <MudPaper Outlined="true" Class="pa-3">
+                <MudStack Row="false" Spacing="2">
+                    <MudText Typo="Typo.h6" Class="d-flex align-center">
+                        @{
+                            var statusIcon = GetStatusIcon(LeaveApplication.StatusDisplayText);
+                        }
+                        <MudIcon Icon="@statusIcon" Size="Size.Medium" Class="mr-2" />
+                        Application Status
+                    </MudText>
+
+                    <MudAlert Severity="@GetStatusSeverity(LeaveApplication.StatusDisplayText)"
+                              Dense="true"
+                              NoIcon="false"
+                              Variant="Variant.Outlined">
+                        @GetStatusDescription(LeaveApplication.StatusDisplayText)
+                    </MudAlert>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="Color.Secondary" OnClick="Cancel">Close</MudButton>
+        @if (CanEdit(LeaveApplication?.Status ?? ""))
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="EditApplication">
+                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="mr-2" />
+                Edit Application
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    MudDialog? MudDialog { get; set; }
+
+    [Parameter]
+    public LeaveHistoryResponse? LeaveApplication { get; set; }
+
+    private (Color color, string icon) GetStatusDisplay(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "draft" => (Color.Default, Icons.Material.Filled.Edit),
+            "pending" => (Color.Warning, Icons.Material.Filled.Schedule),
+            "approved" => (Color.Success, Icons.Material.Filled.CheckCircle),
+            "rejected" => (Color.Error, Icons.Material.Filled.Cancel),
+            _ => (Color.Default, Icons.Material.Filled.Info)
+        };
+    }
+
+    private string GetStatusIcon(string statusDisplayText)
+    {
+        return statusDisplayText?.ToLower() switch
+        {
+            "pending" or "open" => Icons.Material.Filled.HourglassEmpty,
+            "approved" or "released" => Icons.Material.Filled.CheckCircle,
+            "rejected" => Icons.Material.Filled.Cancel,
+            "cancelled" => Icons.Material.Filled.Block,
+            _ => Icons.Material.Filled.Description
+        };
+    }
+
+    private Severity GetStatusSeverity(string statusDisplayText)
+    {
+        return statusDisplayText?.ToLower() switch
+        {
+            "pending" or "open" => Severity.Warning,
+            "approved" or "released" => Severity.Success,
+            "rejected" => Severity.Error,
+            "cancelled" => Severity.Error,
+            _ => Severity.Info
+        };
+    }
+
+    private string GetStatusDescription(string statusDisplayText)
+    {
+        return statusDisplayText?.ToLower() switch
+        {
+            "pending" or "open" => "Your application is under review and awaiting approval",
+            "approved" or "released" => "Your leave application has been approved and processed",
+            "rejected" => "Your leave application was not approved",
+            "cancelled" => "Your leave application has been cancelled",
+            _ => $"Current status: {statusDisplayText}"
+        };
+    }
+
+
+    private bool CanEdit(string status)
+    {
+        return status?.ToLowerInvariant() is "draft" or "pending";
+    }
+
+    private async Task Cancel()
+    {
+        await MudDialog?.CloseAsync(DialogResult.Cancel())!;
+    }
+
+    private async Task EditApplication()
+    {
+        await MudDialog?.CloseAsync(DialogResult.Ok("edit"))!;
+    }
+}

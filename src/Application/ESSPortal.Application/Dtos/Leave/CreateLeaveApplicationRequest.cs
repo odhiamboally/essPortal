@@ -23,5 +23,6 @@ public record CreateLeaveApplicationRequest
     public string ResponsibilityCenter { get; init; } = string.Empty;
     public string DutiesTakenOverBy { get; init; } = string.Empty;
     public string RelievingName { get; init; } = string.Empty;
-    public bool IsHalfDay { get; init; }
+    public bool HalfDay { get; init; }
+    public bool IsEditing { get; set; }
 }

@@ -1,5 +1,7 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Dtos.Common;
+
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 using ESSPortal.Web.Mvc.Dtos.Leave;
 using ESSPortal.Web.Mvc.Utilities.Api;
@@ -25,9 +27,9 @@ internal sealed class LeaveService : ILeaveService
         return await HandlePostRequest<CreateLeaveApplicationRequest, LeaveApplicationResponse>(endpoint, request);
     }
 
-    public Task<AppResponse<LeaveApplicationResponse>> UpdateLeaveApplicationAsync(CreateLeaveApplicationRequest request)
+    public Task<AppResponse<LeaveApplicationResponse>> EditLeaveApplicationAsync(CreateLeaveApplicationRequest request)
     {
-        var endpoint = _apiSettings.ApiEndpoints.Leave.UpdateLeaveApplication;
+        var endpoint = _apiSettings.ApiEndpoints.Leave.EditLeaveApplication;
         return HandlePutRequest<CreateLeaveApplicationRequest, LeaveApplicationResponse>(endpoint, request);
 
     }

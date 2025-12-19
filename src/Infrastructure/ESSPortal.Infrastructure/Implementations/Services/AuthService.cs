@@ -345,6 +345,7 @@ internal sealed class AuthService : IAuthService
         try
         {
             var user = await _userManager.Users.AsNoTracking().FirstOrDefaultAsync(u => u.EmployeeNumber == loginRequest.EmployeeNumber);
+
             if (user == null)
             {
                 _logger.LogWarning("Login attempt with invalid employee number: {EmployeeNumber}", loginRequest.EmployeeNumber);
@@ -406,18 +407,19 @@ internal sealed class AuthService : IAuthService
 
             var userInfo = new UserInfo(
                 user.Id,
-                employee?.ID_No ?? string.Empty,
+                employee?.IdNo ?? string.Empty,
                 user.EmployeeNumber,
                 user.FirstName,
                 user.LastName,
+                user.Gender,
                 user.Email,
                 user.PhoneNumber,
-                employeeCard?.Responsibility_Center ?? string.Empty,
-                employee?.Job_Position_Title ?? string.Empty,
-                employeeCard?.Manager_Supervisor ?? string.Empty,
-                employee?.Employment_Type ?? string.Empty,
+                employeeCard?.ResponsibilityCenter ?? string.Empty,
+                employee?.JobPositionTitle ?? string.Empty,
+                employeeCard?.ManagerSupervisor ?? string.Empty,
+                GetEmploymentTypeDescription(employee?.EmploymentType) ?? string.Empty,
                 user.ProfilePictureUrl,
-                employee?.Country_Region_Code,
+                employee?.CountryRegionCode,
                 emailConfirmed,
                 false,
                 twoFactorEnabled,
@@ -465,6 +467,8 @@ internal sealed class AuthService : IAuthService
 
                 var roles = await _userManager.GetRolesAsync(user);
                 var userInfoWith2FA = userInfo with { Roles = roles.ToList() };
+
+                _cacheService.SetUserInfo(user.EmployeeNumber ?? string.Empty, userInfoWith2FA);
 
                 return ApiResponse<LoginResponse>.Success("Two-factor authentication required", new LoginResponse(
                     user.Id ?? string.Empty,
@@ -547,6 +551,8 @@ internal sealed class AuthService : IAuthService
             var rolesResponse = await _userManager.GetRolesAsync(user);
             var userRoles = rolesResponse.ToList();
             var finalUserInfo = userInfo with { Roles = userRoles };
+
+            _cacheService.SetUserInfo(user.EmployeeNumber ?? string.Empty, finalUserInfo);
 
             await _userManager.Users
                 .Where(u => u.Id == user.Id)
@@ -861,6 +867,7 @@ internal sealed class AuthService : IAuthService
                 user.EmployeeNumber,
                 user.FirstName,
                 user.LastName,
+                user.Gender,
                 user.Email,
                 user.PhoneNumber,
                 employeeCard?.Responsibility_Center ?? string.Empty,
@@ -1373,6 +1380,7 @@ internal sealed class AuthService : IAuthService
                 user.EmployeeNumber,
                 user.FirstName,
                 user.LastName,
+                user.Gender,
                 user.Email,
                 user.PhoneNumber,
                 employeeCard?.Responsibility_Center ?? string.Empty,
@@ -1474,14 +1482,14 @@ internal sealed class AuthService : IAuthService
 
             return new RegisterEmployeeRequest(
                 employee.No, 
-                employee.First_Name, 
-                employee.Middle_Name, 
-                employee.Last_Name,
-                employee.E_Mail, 
-                employee.Mobile_Phone_No,
-                employee.Gender == "Male" ? Gender.Male : Gender.Female,
-                employee.E_Mail, 
-                employee.E_Mail,
+                employee.FirstName, 
+                employee.MiddleName, 
+                employee.LastName,
+                employee.Email, 
+                employee.MobilePhoneNo,
+                employee.Gender,
+                employee.Email, 
+                employee.Email,
                 false,
                 false, 
                 string.Empty, 
@@ -1491,7 +1499,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating employee in Business Central: {EmployeeNumber}", employeeNumber);
-            return null;
+            throw;
         }
     }
 
@@ -1780,5 +1788,31 @@ internal sealed class AuthService : IAuthService
     private static string GetUserCacheKey(string userId) => $"user_{userId}";
     private static string GetUserPermissionsCacheKey(string userId) => $"user_permissions_{userId}";
 
-    
+    private static string GetEmploymentTypeDescription(Employment_Type? employmentType)
+    {
+        return employmentType switch
+        {
+            Employment_Type.Contract => "Contract",
+            Employment_Type.Permanent => "Permanent",
+            Employment_Type.Trustee => "Trustee",
+            Employment_Type.Attachee => "Attachee",
+            Employment_Type.Intern => "Intern",
+            Employment_Type._blank_ => string.Empty,
+            _ => string.Empty
+        };
+    }
+
+    private static string GetGenderDescription(Gender gender)
+    {
+        return gender switch
+        {
+            Gender.Female => "Female",
+            Gender.Male => "Male",
+            Gender.Intersex => "Intersex",
+            Gender._blank_ => string.Empty,
+            _ => string.Empty
+        };
+    }
+
+
 }

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(for filter in \"LeavePlannerListGeneralFilter\" \"LeavePlannerLinesFilter\" \"LeaveRelieverFilter\")",
+      "Bash(do echo \"=== $filter ===\")",
+      "Bash(done)",
+      "Bash(grep:*)",
+      "Bash(for exc in \"NoException\" \"ConcurrencyConflictException\" \"CreatingDuplicateException\" \"NoContentException\")",
+      "Bash(do echo \"=== $exc ===\")",
+      "Bash(find:*)",
+      "Bash(dotnet --version:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

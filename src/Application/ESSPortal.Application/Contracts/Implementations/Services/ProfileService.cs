@@ -67,7 +67,7 @@ internal sealed class ProfileService : IProfileService
                 LastLoginAt: appUser.LastLoginAt,
                 CreatedAt: appUser.CreatedAt,
                 IsActive: appUser.IsActive,
-
+                No: string.Empty,
                 CountryRegionCode: userProfile?.CountryRegionCode,
                 PhysicalAddress: userProfile?.PhysicalAddress,
                 TelephoneNo: userProfile?.TelephoneNo,

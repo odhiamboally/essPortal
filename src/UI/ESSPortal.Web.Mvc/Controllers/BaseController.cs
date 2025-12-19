@@ -1,6 +1,10 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Dtos.Auth;
+
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+using ESSPortal.Web.Mvc.Utilities.Session;
+using ESSPortal.Web.Mvc.ViewModels.Auth;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +15,7 @@ using Microsoft.Extensions.Options;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace EssPortal.Web.Mvc.Controllers;
 
@@ -58,16 +63,6 @@ public class BaseController : Controller
                 ViewBag.UserInitials = "U";
             }
 
-            // ============================================================
-            // IMPORTANT: We no longer check JWT expiry for idle timeout!
-            // The Cookie Authentication middleware handles idle timeout.
-            // 
-            // ValidateAndRefreshTokenAsync is now ONLY for ensuring we 
-            // have a valid JWT when we need to call the backend API.
-            // ============================================================
-
-            // Ensure we have a valid JWT for API calls (refresh if needed)
-            // This does NOT affect user session - just API token validity
             await EnsureValidApiTokenAsync();
 
             // Load current user data for the request
@@ -93,7 +88,7 @@ public class BaseController : Controller
 
     protected string? GetEmployeeNumber()
     {
-        return User.FindFirst("employeenumber")?.Value ?? User.FindFirst("Employeenumber")?.Value;
+        return User.FindFirst("employeenumber")?.Value ?? User.FindFirst("EmployeeNumber")?.Value;
         
     }
 
@@ -110,6 +105,67 @@ public class BaseController : Controller
     protected bool IsUserAuthenticated => User.Identity?.IsAuthenticated == true;
 
     protected string? CurrentUserId => GetCurrentUserId();
+
+    protected UserInfo? GetUserInfoFromSession()
+    {
+        try
+        {
+            var serializedUserInfo = HttpContext.Session.GetString("UserInfo");
+            if (string.IsNullOrWhiteSpace(serializedUserInfo))
+                return null;
+
+            return JsonSerializer.Deserialize<UserInfo>(serializedUserInfo, JsonDefaults.Options);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to deserialize UserInfo from session for employee {EmployeeNo}",
+                _currentUser?.EmployeeNumber);
+            HttpContext.Session.Remove("UserInfo");
+            return null;
+        }
+    }
+
+    protected LockScreenViewModel GetLockScreenViewModel()
+    {
+        var userInfo = GetUserInfoFromSession();
+        var displayName = $"{userInfo?.FirstName} {userInfo?.LastName}".Trim();
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = User.FindFirst(ClaimTypes.Name)?.Value ?? "User";
+        }
+
+        return new LockScreenViewModel
+        {
+            DisplayName = displayName,
+            Initials = GetInitials(userInfo?.FirstName, userInfo?.LastName) ?? GetInitialsFromName(displayName),
+            Email = userInfo?.Email ?? GetUserEmail(),
+            ProfilePictureUrl = userInfo?.ProfilePictureUrl
+        };
+    }
+
+    protected string? GetInitials(string? firstName, string? lastName)
+    {
+        var first = !string.IsNullOrWhiteSpace(firstName) ? firstName[0].ToString().ToUpperInvariant() : "";
+        var last = !string.IsNullOrWhiteSpace(lastName) ? lastName[0].ToString().ToUpperInvariant() : "";
+        var initials = first + last;
+        return string.IsNullOrWhiteSpace(initials) ? null : initials;
+    }
+
+    protected string GetInitialsFromName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "U";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
+
+        if (parts.Length == 1 && parts[0].Length >= 2)
+            return parts[0].Substring(0, 2).ToUpperInvariant();
+
+        return "U";
+    }
 
     protected virtual void SetUserInfoInViewBag()
     {
@@ -319,7 +375,7 @@ public class BaseController : Controller
         }
     }
 
-    public static void ClearAllCookies(HttpContext http)
+    protected static void ClearAllCookies(HttpContext http)
     {
         var cookieOptions = new CookieOptions
         {

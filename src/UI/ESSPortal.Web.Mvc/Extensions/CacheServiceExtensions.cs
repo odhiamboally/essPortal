@@ -7,6 +7,28 @@ namespace ESSPortal.Web.Mvc.Extensions;
 
 public static class CacheServiceExtensions
 {
+    // Session methods
+    public static string? GetSessionId(this ICacheService cache, string employeeNo)
+    {
+        return cache.Get<string>(CacheKeys.SessionId(employeeNo));
+    }
+
+    public static void SetSessionId(this ICacheService cache, string employeeNo, string data)
+    {
+        cache.Set(CacheKeys.SessionId(employeeNo), data, CacheExpiration.SessionId);
+    }
+
+    // UserInfo methods
+    public static UserInfo? GetUserInfo(this ICacheService cache, string employeeNo)
+    {
+        return cache.Get<UserInfo>(CacheKeys.UserInfo(employeeNo));
+    }
+
+    public static void SetUserInfo(this ICacheService cache, string employeeNo, UserInfo data)
+    {
+        cache.Set(CacheKeys.UserInfo(employeeNo), data, CacheExpiration.UserInfo);
+    }
+
     // Dashboard methods
     public static DashboardResponse? GetDashboard(this ICacheService cache, string employeeNo)
     {

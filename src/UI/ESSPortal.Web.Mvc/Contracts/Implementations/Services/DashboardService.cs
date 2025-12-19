@@ -1,5 +1,7 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Dtos.Common;
+
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 using ESSPortal.Web.Mvc.Dtos.Dashboard;
 using ESSPortal.Web.Mvc.Utilities.Api;

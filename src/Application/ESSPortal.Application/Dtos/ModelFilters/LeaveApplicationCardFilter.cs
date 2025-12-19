@@ -30,50 +30,5 @@ public record LeaveApplicationCardFilter : BaseFilter
 
 
 
-    //public Dictionary<string, string?> CustomQueryParameters()
-    //{
-    //    var parameters = new Dictionary<string, string?>();
-
-    //    void AddIf(string key, object? value)
-    //    {
-    //        if (value is null) return;
-
-    //        string? stringValue = value switch
-    //        {
-    //            DateTimeOffset date => date.ToString("yyyy-MM-dd"),
-    //            bool b => b.ToString(),
-    //            Enum e => e.ToString(),
-    //            _ => value.ToString()
-    //        };
-
-    //        if (!string.IsNullOrWhiteSpace(stringValue))
-    //            parameters[key] = stringValue;
-    //    }
-
-    //    AddIf(nameof(ApplicationNo), ApplicationNo);
-    //    AddIf(nameof(ApplicationDate), ApplicationDate);
-    //    AddIf(nameof(Applyonbehalf), Applyonbehalf);
-    //    AddIf(nameof(EmployeeNo), EmployeeNo);
-    //    AddIf(nameof(EmployeeName), EmployeeName);
-    //    AddIf(nameof(EmailAdress), EmailAdress);
-    //    AddIf(nameof(EmploymentType), EmploymentType);
-    //    AddIf(nameof(ResponsibilityCenter), ResponsibilityCenter);
-    //    AddIf(nameof(MobileNo), MobileNo);
-    //    AddIf(nameof(ShortcutDimension1Code), ShortcutDimension1Code);
-    //    AddIf(nameof(ShortcutDimension2Code), ShortcutDimension2Code);
-    //    AddIf(nameof(LeavePeriod), LeavePeriod);
-    //    AddIf(nameof(LeaveCode), LeaveCode);
-    //    AddIf(nameof(LeaveStatus), LeaveStatus);
-    //    AddIf(nameof(Status), Status);
-    //    AddIf(nameof(LeaveEarnedtoDate), LeaveEarnedtoDate);
-    //    AddIf(nameof(DaysApplied), DaysApplied);
-    //    AddIf(nameof(StartDate), StartDate);
-    //    AddIf(nameof(EndDate), EndDate);
-    //    AddIf(nameof(ResumptionDate), ResumptionDate);
-    //    AddIf(nameof(DutiesTakenOverBy), DutiesTakenOverBy);
-    //    AddIf(nameof(RelievingName), RelievingName);
-    //    AddIf(nameof(LeaveAllowancePayable), LeaveAllowancePayable);
-
-    //    return parameters;
-    //}
+   
 }

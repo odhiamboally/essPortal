@@ -304,6 +304,7 @@ internal sealed class TwoFactorService(
                 user.EmployeeNumber,
                 user.FirstName,
                 user.LastName,
+                user.Gender,
                 user.Email,
                 user.PhoneNumber,
                 employeeCard?.Responsibility_Center ?? string.Empty,

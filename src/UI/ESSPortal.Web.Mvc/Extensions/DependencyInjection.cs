@@ -179,7 +179,7 @@ public static class DependencyInjection
                 options.IdleTimeout = TimeSpan.FromMinutes(sessionManagementSettings.SessionTimeoutMinutes);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always; 
+                options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.SameAsRequest; //ToDo: When going to production, change to Always
                 options.Cookie.SameSite = SameSiteMode.Strict;
 
                 
@@ -374,8 +374,6 @@ public static class DependencyInjection
 
     }
 
-
-
     private static void ConfigureCookieAuthentication(CookieAuthenticationOptions options, SessionManagementSettings sessionSettings, bool isDevelopment)
     {
         // Cookie identity
@@ -390,7 +388,7 @@ public static class DependencyInjection
 
         // Cookie security
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+        options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Lax;
 
         // Event handlers
@@ -642,7 +640,7 @@ public static class DependencyInjection
     {
         builder.AddTimeout(TimeSpan.FromMinutes(2));
 
-        // 2. Retry strategy - handle both exceptions AND bad responses
+        // Retry strategy - handle both exceptions AND bad responses
         builder.AddRetry(new RetryStrategyOptions<HttpResponseMessage>
         {
             MaxRetryAttempts = 3,
@@ -674,7 +672,7 @@ public static class DependencyInjection
             }
         });
 
-        // 3. Less aggressive Circuit breaker
+        // Less aggressive Circuit breaker
         builder.AddCircuitBreaker(new CircuitBreakerStrategyOptions<HttpResponseMessage>
         {
             FailureRatio = 0.7, // 70% failures
@@ -687,17 +685,7 @@ public static class DependencyInjection
                 { Result.IsSuccessStatusCode: false } => PredicateResult.True(),
                 _ => PredicateResult.False()
             }
-
-            //ShouldHandle = args =>
-            //{
-            //    return args.Outcome switch
-            //    {
-            //        { Exception: HttpRequestException } => PredicateResult.True(),
-            //        { Exception: HttpIOException } => PredicateResult.True(),
-            //        { Result: HttpResponseMessage response } when !response.IsSuccessStatusCode => PredicateResult.True(),
-            //        _ => PredicateResult.False()
-            //    };
-            //}
+           
         });
     }
 

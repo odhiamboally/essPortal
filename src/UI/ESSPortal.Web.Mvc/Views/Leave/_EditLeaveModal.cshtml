@@ -3,6 +3,7 @@
 
 @{
     ViewData["Title"] = $"Edit Leave Application - {ViewBag.ApplicationNo}";
+    //Layout = null;
     Layout = "_Layout";
 
     // Get existing values from ViewBag
@@ -10,9 +11,10 @@
     var existingFromDate = ViewBag.ExistingFromDate?.ToString() ?? "";
     var existingToDate = ViewBag.ExistingToDate?.ToString() ?? "";
     var existingDaysApplied = ViewBag.ExistingDaysApplied?.ToString() ?? "";
-    var existingHalfDay = ViewBag.ExistingHalfDay == true;
-    var existingLeaveAllowancePayable = ViewBag.ExistingLeaveAllowancePayable == true;
-    var existingSelectedRelieverEmployeeNo = ViewBag.ExistingSelectedRelieverEmployeeNo?.ToString() ?? "";
+    var existingHalfDay = ViewBag.ExistingHalfDay;
+    var existingResumptionDate = ViewBag.ExistingResumptionDate?.ToString() ?? "";
+    var existingLeaveAllowancePayable = ViewBag.ExistingLeaveAllowancePayable;
+    var existingDutiesTakenOverBy = ViewBag.DutiesTakenOverBy?.ToString() ?? "";
     var applicationNo = ViewBag.ApplicationNo?.ToString() ?? "";
 }
 
@@ -33,7 +35,7 @@
 
             <div class="modal-body">
 
-                <form id="editLeaveApplicationForm" method="post" enctype="multipart/form-data" asp-antiforgery="true" asp-controller="Leave" asp-action="UpdateLeaveApplication">
+                <form id="editLeaveApplicationForm" method="post" enctype="multipart/form-data" asp-antiforgery="true" asp-controller="Leave" asp-action="EditLeaveApplication">
                     
                     <!-- Hidden field for edit mode -->
                     <input type="hidden" name="ApplicationNo" value="@applicationNo" />
@@ -106,13 +108,25 @@
                                             var maxDays = type.MaxDays;
                                             var usesCalendar = new[] { "ADOPTION", "COMPASSIONATE", "MATERNITY", "PATERNITY", "SICK" }.Contains(type.Code);
 
-                                            <option value="@type.Code"
-                                                    data-max-days="@(maxDays > 0 ? maxDays.ToString() : "")"
-                                                    data-uses-calendar="@(usesCalendar ? "true" : "false")"
-                                                    data-is-annual="@(type.Code == "ANNUAL" ? "true" : "false")"
-                                                    selected="@isSelected">
-                                                @type.Description @(maxDays > 0 ? $"(Max: {maxDays} days)" : "")
-                                            </option>
+                                            if (isSelected)
+                                            {
+                                                <option value="@type.Code"
+                                                        data-max-days="@(maxDays > 0 ? maxDays.ToString() : "")"
+                                                        data-uses-calendar="@(usesCalendar ? "true" : "false")"
+                                                        data-is-annual="@(type.Code == "ANNUAL" ? "true" : "false")"
+                                                        selected>
+                                                    @type.Description @(maxDays > 0 ? $"(Max: {maxDays} days)" : "")
+                                                </option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@type.Code"
+                                                        data-max-days="@(maxDays > 0 ? maxDays.ToString() : "")"
+                                                        data-uses-calendar="@(usesCalendar ? "true" : "false")"
+                                                        data-is-annual="@(type.Code == "ANNUAL" ? "true" : "false")">
+                                                    @type.Description @(maxDays > 0 ? $"(Max: {maxDays} days)" : "")
+                                                </option>
+                                            }
                                         }
                                     </select>
                                     <div class="invalid-feedback">Please select a leave type</div>
@@ -133,7 +147,8 @@
                                 <div class="col compact-col">
                                     <label for="FromDate" class="form-label">From Date <span class="text-danger">*</span></label>
                                     <div class="date-input-group">
-                                        <input name="FromDate" type="date" id="editFromDate" class="form-control" value="@existingFromDate" required>
+                                        <i class="date-icon">📅</i>
+                                        <input name="FromDate" type="date" min="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")" id="editFromDate" class="form-control" value="@existingFromDate" required>
                                     </div>
                                     <div class="invalid-feedback">Please select a start date</div>
                                 </div>
@@ -142,42 +157,61 @@
                                 <div class="col compact-col">
                                     <label for="ToDate" class="form-label">To Date <span class="text-danger">*</span></label>
                                     <div class="date-input-group">
-                                        <input name="ToDate" type="date" id="editToDate" class="form-control" value="@existingToDate" required>
+                                        <i class="date-icon">📅</i>
+                                        <input name="ToDate" type="date" min="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")" id="editToDate" class="form-control" value="@existingToDate" required>
                                     </div>
                                     <div class="invalid-feedback">Please select a valid to date</div>
                                 </div>
 
-                                <!-- Resumption Date -->
-                                <div class="col compact-col">
-                                    <label for="ResumptionDate" class="form-label">Resumption Date</label>
-                                    <div class="date-input-group">
-                                        <input name="ResumptionDate" type="text" id="editResumptionDate" class="form-control calculated-field" placeholder="Auto-calculated" readonly>
-                                        
+                                <!-- Replace your current resumption date and checkboxes section with this -->
+                                <div class="col-12">
+
+                                    <div class="row g-3">
+                                        <!-- Resumption Date -->
+                                        <div class="col-md-4">
+                                            <label for="ResumptionDate" class="form-label">Resumption Date</label>
+                                            <div class="date-input-group">
+                                                <input name="ResumptionDate" id="editResumptionDate" type="text" class="form-control calculated-field" placeholder="Auto-calculated" value="@existingResumptionDate" required readonly>
+                                                <i class="date-icon">📅</i>
+                                            </div>
+                                        </div>
+
+                                        <!-- Half Day Leave -->
+                                        <div class="col-md-4">
+                                            <label class="form-label">Leave Options</label>
+                                            <div class="form-check form-switch">
+                                                <input name="HalfDay"
+                                                       class="form-check-input"
+                                                       type="checkbox"
+                                                       id="halfDayToggle"
+                                                       value="true"
+                                                       @(existingHalfDay ? "checked" : "")>
+                                                <input name="HalfDay" type="hidden" value="false">
+                                                <label class="form-check-label" for="halfDayToggle">
+                                                    Half Day Leave (0.5 days)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Leave Allowance Payable -->
+                                        <div class="col-md-4">
+                                            <label class="form-label"></label>
+                                            <div class="form-check form-switch">
+                                                <input name="LeaveAllowancePayable"
+                                                       class="form-check-input"
+                                                       type="checkbox"
+                                                       id="leaveAllowanceToggle"
+                                                       value="true"
+                                                       @(existingLeaveAllowancePayable ? "checked" : "")>
+                                                <input name="LeaveAllowancePayable" type="hidden" value="false">
+                                                <label class="form-check-label" for="leaveAllowanceToggle">
+                                                    Leave Allowance Payable
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- Toggle Options -->
-                                <div class="col compact-col">
-                                    <label class="form-label" style="opacity: 0;">Options</label>
-
-                                    <!-- Half Day Toggle -->
-                                    <div class="form-check form-switch mb-2">
-                                        <input name="HalfDay" id="halfDayToggle" class="form-check-input" type="checkbox" value="true" @(existingHalfDay ? "checked" : "")>
-                                        <input name="HalfDay" type="hidden" value="false">
-                                        <label class="form-check-label" for="halfDayToggle" style="font-size: 0.75rem;">
-                                            Half Day Leave (0.5 days)
-                                        </label>
-                                    </div>
-
-                                    <!-- Leave Allowance Toggle -->
-                                    <div class="form-check form-switch">
-                                        <input name="LeaveAllowancePayable" id="leaveAllowanceToggle" class="form-check-input" type="checkbox" value="true" @(existingLeaveAllowancePayable ? "checked" : "")>
-                                        <input name="LeaveAllowancePayable" type="hidden" value="false">
-                                        <label class="form-check-label" for="leaveAllowanceToggle" style="font-size: 0.75rem;">
-                                            Leave Allowance Payable (Annual Leave Only)
-                                        </label>
-                                    </div>
-                                </div>
                             </div>
 
                             <!-- Half Day Helper (shown/hidden by JS) -->
@@ -200,7 +234,7 @@
                             <!-- Search Input -->
                             <div class="reliever-search-container">
                                 <div class="search-input-group">
-                                    <input type="text" id="relieverSearch" class="form-control" placeholder="Search by name or employee number..."> 🔍
+                                    <input type="text" id="relieverSearch" class="form-control" placeholder="🔍 Search by name or employee number...">
                                 </div>
                             </div>
 
@@ -214,7 +248,7 @@
 
                                     @foreach (var reliever in Model.AvailableRelievers)
                                     {
-                                        var isSelectedReliever = reliever.EmployeeNo.Equals(existingSelectedRelieverEmployeeNo, StringComparison.OrdinalIgnoreCase);
+                                        var isSelectedReliever = reliever.EmployeeNo.Equals(existingDutiesTakenOverBy, StringComparison.OrdinalIgnoreCase);
 
                                         <div class="reliever-item p-2 border rounded mb-2 @(isSelectedReliever ? "selected" : "")"
 
@@ -260,7 +294,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     ❌ Cancel
                 </button>
-                <button type="submit" form="leaveApplicationForm" class="btn btn-primary">
+                <button type="button" id="editLeaveSubmitBtn" form="editLeaveApplicationForm" class="btn btn-primary">
                     💾 Update Application
                 </button>
             </div>
@@ -274,5 +308,3 @@
 
 
 }
-
-                

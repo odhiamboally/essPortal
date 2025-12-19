@@ -12,12 +12,10 @@ const LayoutCore = {
      * Initialize layout functionality
      */
     init() {
-        console.log('Layout Core: Initializing...');
         this.setupGlobalErrorHandling();
         this.initializeCSRFToken();
         this.setupModalFunctions();
         this.setupGlobalModalCleanup();
-        console.log('Layout Core: Initialization complete');
     },
 
     /**
@@ -96,7 +94,6 @@ const LayoutCore = {
             }, 150);
         });
 
-        console.log('Global modal cleanup handlers installed');
     },
 
     /**

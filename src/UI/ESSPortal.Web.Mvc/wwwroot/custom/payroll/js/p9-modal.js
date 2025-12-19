@@ -1,11 +1,9 @@
 ﻿// P9 Modal Handler (Modal form only)
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('=== P9 MODAL HANDLER LOADED ===');
 
     // Handle P9 form submission (modal form)
     document.addEventListener('submit', function (event) {
         if (event.target.id === 'p9GenerationForm') {
-            console.log('=== P9 FORM INTERCEPTED ===');
 
             // Prevent normal form submission
             event.preventDefault();
@@ -36,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return false;
             }
 
-            console.log('Starting P9 AJAX request...');
 
             // Disable modal controls during generation
             disableModalControls(submitBtn, closeBtn, cancelBtn, modal);
@@ -278,5 +275,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    console.log('P9 modal handler active');
 });

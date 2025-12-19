@@ -11,7 +11,6 @@ using Scalar.AspNetCore;
 using Serilog;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.OpenApi.Models;
 
 
 try
@@ -235,24 +234,35 @@ public class SafeSchemaTransformer : IOpenApiSchemaTransformer
         {
             if (schema == null) return Task.CompletedTask;
 
-            schema.Properties ??= new Dictionary<string, OpenApiSchema>();
+            // In OpenApi 3.0+, Properties is never null - it's pre-initialized
+            //schema.Properties ??= new Dictionary<string, OpenApiSchema>();
 
-            var problematicKeys = schema.Properties
-                .Where(kvp => string.IsNullOrWhiteSpace(kvp.Key) || kvp.Value == null)
-                .Select(kvp => kvp.Key)
-                .ToList();
-
-            foreach (var key in problematicKeys)
+            // Check if Properties exists before processing
+            if (schema.Properties != null)
             {
-                schema.Properties.Remove(key);
+                var problematicKeys = schema.Properties
+                    .Where(kvp => string.IsNullOrWhiteSpace(kvp.Key) || kvp.Value == null)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
+
+                foreach (var key in problematicKeys)
+                {
+                    schema.Properties.Remove(key);
+                }
             }
 
             if (schema.AdditionalPropertiesAllowed && schema.AdditionalProperties != null)
             {
-                if (string.IsNullOrEmpty(schema.AdditionalProperties.Type))
+                // In OpenApi 3.0+, Type is now JsonSchemaType enum, not string
+                if (schema.AdditionalProperties.Type == JsonSchemaType.Null || schema.AdditionalProperties.Type == default)
                 {
                     schema.AdditionalProperties = null;
-                }
+                } 
+
+                //if (string.IsNullOrWhiteSpace(schema.AdditionalProperties.Type))
+                //{
+                //    schema.AdditionalProperties = null;
+                //}
             }
         }
         catch (Exception ex)

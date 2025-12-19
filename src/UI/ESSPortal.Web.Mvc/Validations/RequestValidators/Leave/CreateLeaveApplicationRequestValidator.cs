@@ -80,8 +80,9 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
     };
     
 
-    public CreateLeaveApplicationRequestValidator(IServiceManager serviceManager, string gender) 
+    public CreateLeaveApplicationRequestValidator(IServiceManager serviceManager, string gender, bool isEditing) 
     {
+        
         _serviceManager = serviceManager;
         _gender = gender;
 
@@ -126,12 +127,16 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
             .WithMessage("Days must be in 0.5 increments (e.g., 1, 1.5, 2)")
             .LessThanOrEqualTo(365)
             .WithMessage("Days applied cannot exceed 365");
-
-        RuleFor(x => x.FromDate)
+        
+        if (!isEditing)
+        {
+            RuleFor(x => x.FromDate)
             .NotEmpty()
             .WithMessage("Start date is required")
             .GreaterThanOrEqualTo(DateTime.Today)
             .WithMessage("Start date cannot be in the past");
+
+        }
 
         RuleFor(x => x.ToDate)
             .NotEmpty()
@@ -434,8 +439,8 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
     {
         return leaveType?.ToUpperInvariant() switch
         {
-            "MATERNITY" => "Maternity leave is only available for female employees.",
-            "PATERNITY" => "Paternity leave is only available for male employees.",
+            "MATERNITY" => "Maternity leave can only be requested by female employees.",
+            "PATERNITY" => "Paternity leave can only be requested by male employees.",
             _ => "Gender requirements not met for this leave type."
         };
     }

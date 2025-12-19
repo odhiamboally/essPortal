@@ -37,23 +37,22 @@ public class TwoFactorController : BaseController
             if (result.Data == null)
             {
                 this.ToastError("Two-factor authentication status is not available.");
-                return RedirectToAction("Index", "Profile"); 
-            }
-
-            if (result.Data.IsEnabled && !result.Data.HasBackupCodes)
-            {
-                this.ToastWarning("You have two-factor authentication enabled but no backup codes generated. Please generate backup codes for account recovery.");
                 return RedirectToAction("Index", "Profile");
+
             }
 
             if (result.Data.IsEnabled && !result.Data.HasBackupCodes)
             {
-                this.ToastWarning("Two-factor authentication is enabled, but you have not generated backup codes. Please generate backup codes for account recovery.");
-            } 
-            
-            else 
+                this.ToastWarning("Two-factor authentication is enabled, but no backup codes generated. Please generate backup codes for account recovery.");
+
+                return RedirectToAction("Index", "Profile");
+
+            }
+
+            if( !result.Data.IsEnabled)
             {
                 this.ToastInfo("Two-factor authentication is not enabled. You can enable it for added security.");
+
             }
 
             var model = new TwoFactorSettingsViewModel
@@ -64,6 +63,9 @@ public class TwoFactorController : BaseController
             };
 
             return PartialView("_TwoFactorSettingsModal", model);
+
+
+
         }
         catch (Exception ex)
         {

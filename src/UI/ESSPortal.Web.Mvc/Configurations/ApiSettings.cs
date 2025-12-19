@@ -111,7 +111,7 @@ public class ApiSettings
     public class LeaveEndpoints
     {
         public string CreateLeaveApplication { get; set; } = string.Empty;
-        public string UpdateLeaveApplication { get; set; } = string.Empty;
+        public string EditLeaveApplication { get; set; } = string.Empty;
         public string GetEmployeeLeaveBalance { get; set; } = string.Empty;
         public string GetEmployeeLeaveBalances { get; set; } = string.Empty;
         public string ManageLeave { get; set; } = string.Empty;
@@ -135,7 +135,7 @@ public class ApiSettings
         public string SearchLeaveApplicationCards { get; set; } = string.Empty;
         public string CreateLeaveApplicationCard { get; set; } = string.Empty;
         public string CreateMultipleLeaveApplicationCards { get; set; } = string.Empty;
-        public string UpdateLeaveApplicationCard { get; set; } = string.Empty;
+        public string EditLeaveApplicationCard { get; set; } = string.Empty;
         public string UpdateMultipleLeaveApplicationCards { get; set; } = string.Empty;
         public string DeleteLeaveApplicationCard { get; set; } = string.Empty;
         public string GetLeaveApplicationCardRecIdFromKey { get; set; } = string.Empty;
@@ -150,7 +150,7 @@ public class ApiSettings
         public string SearchLeaveApplicationLists { get; set; } = string.Empty;
         public string CreateLeaveApplicationList { get; set; } = string.Empty;
         public string CreateMultipleLeaveApplicationLists { get; set; } = string.Empty;
-        public string UpdateLeaveApplicationList { get; set; } = string.Empty;
+        public string EditLeaveApplicationList { get; set; } = string.Empty;
         public string UpdateMultipleLeaveApplicationLists { get; set; } = string.Empty;
         public string DeleteLeaveApplicationList { get; set; } = string.Empty;
         public string GetLeaveApplicationListRecIdFromKey { get; set; } = string.Empty;

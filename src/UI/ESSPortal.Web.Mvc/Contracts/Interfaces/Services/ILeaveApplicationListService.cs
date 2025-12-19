@@ -17,7 +17,7 @@ public interface ILeaveApplicationListService
     Task<AppResponse<List<LeaveApplicationList>>> CreateMultipleLeaveApplicationListsAsync(List<LeaveApplicationList> requests);
 
     // Update operations
-    Task<AppResponse<LeaveApplicationList>> UpdateLeaveApplicationListAsync(LeaveApplicationList request);
+    Task<AppResponse<LeaveApplicationList>> EditLeaveApplicationListAsync(LeaveApplicationList request);
     Task<AppResponse<List<LeaveApplicationList>>> UpdateMultipleLeaveApplicationListsAsync(List<LeaveApplicationList> requests);
 
     // Delete operations

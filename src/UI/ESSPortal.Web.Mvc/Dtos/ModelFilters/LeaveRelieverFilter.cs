@@ -17,7 +17,6 @@ public record LeaveRelieverFilter
              parameters[key] = value;
        }
 
-       // Explicit mapping for all fields
        AddIf(nameof(StaffNo), StaffNo);
        AddIf(nameof(StaffName), StaffName);
        AddIf(nameof(LeaveCode), LeaveCode);

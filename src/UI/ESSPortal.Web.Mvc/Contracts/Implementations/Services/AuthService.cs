@@ -5,8 +5,10 @@ using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Dtos.Auth;
 using EssPortal.Web.Mvc.Dtos.Common;
 
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 using ESSPortal.Web.Mvc.Dtos.Auth;
+using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Utilities.Api;
 
 using Microsoft.AspNetCore.Http;
@@ -26,15 +28,17 @@ namespace ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
 internal sealed class AuthService : IAuthService
 {
     private readonly IApiService _apiService;
+    private readonly ICacheService _cacheService;
     private readonly ApiSettings _apiSettings;
     private readonly ILogger<AuthService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private const string SessionIdCookieName = "session_id";
 
 
-    public AuthService(IApiService apiService, IOptions<ApiSettings> apiSettings,  ILogger<AuthService> logger, IHttpContextAccessor httpContextAccessor)
+    public AuthService(IApiService apiService, ICacheService cacheService, IOptions<ApiSettings> apiSettings,  ILogger<AuthService> logger, IHttpContextAccessor httpContextAccessor)
     {
         _apiService = apiService;
+        _cacheService = cacheService;
         _apiSettings = apiSettings.Value;
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
@@ -145,6 +149,9 @@ internal sealed class AuthService : IAuthService
             if (!string.IsNullOrEmpty(apiResponse.SessionId))
             {
                 StoreSessionId(apiResponse.SessionId);
+
+                _cacheService.SetSessionId(apiResponse.Data?.EmployeeNumber ?? string.Empty, apiResponse.SessionId);
+
                 if (apiResponse.Data != null)
                 {
                     await StoreSessionInfoAsync(AppResponse<LoginResponse>.Success(apiResponse.Message!, apiResponse.Data));
@@ -313,10 +320,14 @@ internal sealed class AuthService : IAuthService
 
                 // Store session ID from response header
                 if (apiResponse.Headers != null && apiResponse.Headers.TryGetValue("X-Session-Id", out var sessionId) &&
-                    !string.IsNullOrEmpty(sessionId))
+                    !string.IsNullOrWhiteSpace(sessionId))
                 {
                     StoreSessionId(sessionId);
                 }
+                else
+                {
+                    StoreSessionId(apiResponse.SessionId!);
+                }  
             }
 
             return !apiResponse.Successful
@@ -541,7 +552,12 @@ internal sealed class AuthService : IAuthService
 
     public string? GetSessionId()
     {
-        return _httpContextAccessor.HttpContext?.Request.Cookies[SessionIdCookieName];
+        if (string.IsNullOrWhiteSpace(_httpContextAccessor.HttpContext?.Request.Cookies[SessionIdCookieName]))
+        {
+            return _cacheService.GetSessionId(GetCurrentUserId() ?? string.Empty);
+        }
+
+        return string.Empty;
     }
 
     #endregion

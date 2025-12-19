@@ -41,9 +41,6 @@ internal sealed class DashboardService : IDashboardService
         IApprovedLeaveService approvedLeaveService,
         IEmployeeService employeeService
 
-
-
-
         )
     {
         _cache = cacheService;
@@ -80,7 +77,7 @@ internal sealed class DashboardService : IDashboardService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting dashboard data for employee {EmployeeNo}", employeeNo);
-            return ApiResponse<DashboardResponse>.Failure($"Failed to retrieve dashboard data: {ex.Message}");
+            throw;
         }
     }
 
@@ -103,25 +100,26 @@ internal sealed class DashboardService : IDashboardService
         var leaveTypesEntities = leaveTypesTask.Result;
         var leaveRelieversEntities = leaveRelieversTask.Result;
 
-        var leaveTypes = leaveTypesEntities.Select(lt => lt.ToLeaveTypeResponse()).ToList();
+        var leaveTypes = BCEntityMappingExtensions.ToLeaveTypeResponses(leaveTypesEntities);
+        var leaveApplicationCards = leaveApplicationCardEntities.Items.ToLeaveApplicationCards();
 
         var annualLeaveSummary = BCEntityMappingExtensions.ToAnnualLeaveSummaryResponse(
                 employeeNo,
                 approvedLeavesEntities,
-                leaveApplicationCardEntities);
+                leaveApplicationCards);
 
         var leaveSummary = BCEntityMappingExtensions.ToLeaveSummaryResponse(
                 employeeNo,
                 leaveTypesEntities,
-                leaveApplicationCardEntities);
+                leaveApplicationCards);
 
-        var leaveHistory = leaveApplicationCardEntities.ToLeaveHistoryResponses(leaveTypes);
+        var leaveHistory = leaveApplicationCards.ToLeaveHistoryResponses(leaveTypes);
         var approvedLeaveResponses = approvedLeavesEntities?.ToApprovedLeaveResponses() ?? [];
-        var leaveApplicationCardResponse = leaveApplicationCardEntities.ToLeaveApplicationCardResponse();
+        var leaveApplicationCardResponse = leaveApplicationCards.ToLeaveApplicationCardResponse();
 
         var leaveRelievers = leaveRelieversEntities;
 
-        var employeeName = leaveApplicationCardEntities?.FirstOrDefault()?.Employee_Name ?? "Unknown Employee";
+        var employeeName = leaveApplicationCards?.FirstOrDefault()?.Employee_Name ?? "Unknown Employee";
 
         var response = new DashboardResponse(
             employeeNo,
@@ -143,7 +141,7 @@ internal sealed class DashboardService : IDashboardService
         return ApiResponse<DashboardResponse>.Success("Dashboard data retrieved successfully", response);
     }
 
-    private async Task<List<LeaveApplicationCard>> GetLeaveApplicationCardsAsync(string employeeNo)
+    private async Task<PagedResult<LeaveApplicationCardResponse>> GetLeaveApplicationCardsAsync(string employeeNo)
     {
         LeaveApplicationCardFilter filter = new() { Employee_No = employeeNo };
 
@@ -151,16 +149,16 @@ internal sealed class DashboardService : IDashboardService
         if (!response.Successful)
         {
             _logger.LogError("Failed to fetch leave application cards for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
-            return new List<LeaveApplicationCard>();
+            return new();
         }
 
         if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
         {
             _logger.LogInformation("No leave application cards found for employee {EmployeeNo}", employeeNo);
-            return new List<LeaveApplicationCard>();
+            return new();
         }
 
-        return response.Data.Items;
+        return response.Data;
     }
 
     private async Task<List<ApprovedLeaves>> GetLeaveApprovedLeavesAsync(string employeeNo)
@@ -184,7 +182,6 @@ internal sealed class DashboardService : IDashboardService
 
     private async Task<List<LeaveTypes>> GetActiveLeaveTypesAsync()
     {
-        // Check cache first
         var cachedLeaveTypes = _cache.GetLeaveTypes();
         if (cachedLeaveTypes != null)
         {
@@ -214,14 +211,15 @@ internal sealed class DashboardService : IDashboardService
             return new List<LeaveTypes>();
         }
 
-        // Convert LeaveTypes to LeaveTypeResponse before caching
-        var leaveTypeResponses = response.Data.Items.Select(lt => lt.ToLeaveTypeResponse()).ToList();
+        var leaveTypeResponses = response.Data.Items;
 
         _cache.SetLeaveTypes(leaveTypeResponses);
 
         _logger.LogInformation("Fetched and cached {Count} active leave types", response.Data.Items.Count);
 
-        return response.Data.Items;
+        var activeLeaveaTypes = leaveTypeResponses.ToLeaveTypes();
+
+        return activeLeaveaTypes;
     }
 
     private async Task<List<LeaveRelieverResponse>> GetLeaveRelieversAsync(string employeeNo)
@@ -233,37 +231,35 @@ internal sealed class DashboardService : IDashboardService
                 No = employeeNo,
             };
 
-            var employeeCardResponse = await _employeeService.SearchEmployeeCardsAsync(getResponsibilityCenterFilter);
-            if (!employeeCardResponse.Successful || employeeCardResponse.Data == null || !employeeCardResponse.Data.Items.Any())
+            var searchResponse = await _employeeService.SearchEmployeeCardsAsync(getResponsibilityCenterFilter);
+            if (!searchResponse.Successful || searchResponse.Data == null || !searchResponse.Data.Items.Any())
             {
-                _logger.LogWarning("Failed to retrieve employee card for employee {EmployeeNo}: {Message}",
-                    employeeNo, employeeCardResponse.Message);
+                _logger.LogWarning("Failed to retrieve employee card for employee {EmployeeNo}: {Message}", employeeNo, searchResponse.Message);
+
                 return [];
             }
 
             // Get the responsibility center from the employee card
-            var employeeCard = employeeCardResponse.Data.Items.FirstOrDefault();
-            if (employeeCard == null || string.IsNullOrWhiteSpace(employeeCard.Responsibility_Center))
+            var employeeCardResponse = searchResponse.Data.Items.FirstOrDefault();
+            if (employeeCardResponse == null || string.IsNullOrWhiteSpace(employeeCardResponse.ResponsibilityCenter))
             {
-                _logger.LogWarning("Employee card for {EmployeeNo} does not have a valid responsibility center",
-                    employeeNo);
+                _logger.LogWarning("Employee card for {EmployeeNo} does not have a valid responsibility center", employeeNo);
+                    
                 return [];
             }
-
-            var responsibilityCenter = employeeCard.Responsibility_Center;
 
             EmployeeCardFilter leaveRelieverFilter = new()
             {
                 //No = employeeNo,
-                Responsibility_Center = responsibilityCenter
+                Responsibility_Center = employeeCardResponse.ResponsibilityCenter
             };
 
             var potentialRelieversResponse = await _employeeService.SearchEmployeeCardsAsync(leaveRelieverFilter);
 
             if (!potentialRelieversResponse.Successful || potentialRelieversResponse.Data == null)
             {
-                _logger.LogWarning("Failed to retrieve potential relievers for responsibility center {ResponsibilityCenter}: {Message}",
-                    responsibilityCenter, potentialRelieversResponse.Message);
+                _logger.LogWarning("Failed to retrieve potential relievers for responsibility center {ResponsibilityCenter}: {Message}", employeeCardResponse.ResponsibilityCenter, potentialRelieversResponse.Message);
+                    
                 return [];
             }
 
@@ -271,8 +267,8 @@ internal sealed class DashboardService : IDashboardService
 
             if (!potentialRelievers.Any())
             {
-                _logger.LogInformation("No potential relievers found in responsibility center {ResponsibilityCenter} for employee {EmployeeNo}",
-                    responsibilityCenter, employeeNo);
+                _logger.LogInformation("No potential relievers found in responsibility center {ResponsibilityCenter} for employee {EmployeeNo}", employeeCardResponse.ResponsibilityCenter, employeeNo);
+
                 return [];
             }
 
@@ -280,22 +276,19 @@ internal sealed class DashboardService : IDashboardService
             var relieverResponses = potentialRelievers.Select(emp => new LeaveRelieverResponse
             {
                 EmployeeNo = emp.No ?? string.Empty,
-                EmployeeName = $"{emp.First_Name} {emp.Last_Name}".Trim(),
-                EmailAddress = emp.E_Mail ?? string.Empty,
-                Department = emp.Responsibility_Center ?? string.Empty,
-                JobTitle = emp.Job_Position_Title ?? string.Empty
+                EmployeeName = $"{emp.FirstName} {emp.LastName}".Trim(),
+                EmailAddress = emp.Email ?? string.Empty,
+                Department = emp.ResponsibilityCenter ?? string.Empty,
+                JobTitle = emp.JobPositionTitle ?? string.Empty
 
             }).ToList();
-
-            _logger.LogDebug("Retrieved {Count} potential relievers from responsibility center {ResponsibilityCenter} for employee {EmployeeNo}",
-                relieverResponses.Count, responsibilityCenter, employeeNo);
 
             return relieverResponses;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving potential relievers for employee {EmployeeNo}", employeeNo);
-            return [];
+            throw;
         }
     }
 

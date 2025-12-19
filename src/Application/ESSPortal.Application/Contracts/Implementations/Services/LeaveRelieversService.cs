@@ -4,7 +4,9 @@ using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Application.Dtos.Common;
+using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Application.Extensions;
+using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
@@ -39,118 +41,174 @@ internal sealed class LeaveRelieversService : ILeaveRelieversService
     }
 
     // Read operations
-    public async Task<ApiResponse<PagedResult<LeaveRelievers>>> GetLeaveRelieversAsync()
+    public async Task<ApiResponse<PagedResult<LeaveRelieverResponse>>> GetLeaveRelieversAsync()
     {
-        if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
-            return ApiResponse<PagedResult<LeaveRelievers>>.Failure("Leave Relievers Entity set not configured");
+        try
+        {
+            if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Failure("Leave Relievers Entity set not configured");
 
-        var response = await _navisionService.GetMultipleAsync<LeaveRelievers>(entitySet);
-        return await NavisionResponseHandler.HandlePagedResponse(response);
+            var response = await _navisionService.GetMultipleAsync<LeaveRelievers>(entitySet);
+            if (!response.Successful)
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Failure(response.Message ?? "Failed to fetch leave relievers");
+
+            var (items, rawJson) = response.Data;
+
+            if (items == null || !items.Any())
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Success("No leave relievers found", new());
+
+            var mappedItems = items.ToLeaveRelieverResponses().ToList();
+
+            return ApiResponse<PagedResult<LeaveRelieverResponse>>.Success("Success", new PagedResult<LeaveRelieverResponse>
+            {
+                Items = mappedItems,
+                TotalCount = mappedItems.Count
+            });
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching LeaveRelievers: {Message}", ex.Message);
+            throw;
+        }
+
     }
 
-    public async Task<ApiResponse<LeaveRelievers>> GetLeaveRelieverAsync(string leaveCode, string staffNo)
+    public async Task<ApiResponse<LeaveRelieverResponse>> GetLeaveRelieverAsync(string leaveCode, string staffNo)
     {
-        if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
-            return ApiResponse<LeaveRelievers>.Failure("Leave Relievers Entity set not configured");
+        try
+        {
+            if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
+                return ApiResponse<LeaveRelieverResponse>.Failure("Leave Relievers Entity set not configured");
 
-        var requestUri = $"{entitySet}?$filter=Leave_Code eq '{leaveCode}' and Staff_No eq '{staffNo}'";
-        var response = await _navisionService.GetSingleAsync<LeaveRelievers>(requestUri);
+            var requestUri = $"{entitySet}?$filter=Leave_Code eq '{leaveCode}' and Staff_No eq '{staffNo}'";
+            var response = await _navisionService.GetSingleAsync<LeaveRelievers>(requestUri);
 
-        if (!response.Successful)
-            return ApiResponse<LeaveRelievers>.Failure(response.Message ?? "Failed to fetch leave reliever");
+            if (!response.Successful)
+                return ApiResponse<LeaveRelieverResponse>.Failure(response.Message ?? "Failed to fetch leave reliever");
 
-        return ApiResponse<LeaveRelievers>.Success("Success", response.Data ?? new());
+            var mappedItems = response.Data?.ToLeaveRelieverResponse();
+
+            return ApiResponse<LeaveRelieverResponse>.Success("Success", mappedItems ?? new());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching LeaveReliever: {Message}", ex.Message);
+            throw;
+        }
     }
 
-    public async Task<ApiResponse<List<LeaveRelievers>>> GetLeaveRelieversByApplicationNoAsync(string applicationNo)
+    public async Task<ApiResponse<PagedResult<LeaveRelieverResponse>>> GetLeaveRelieversByApplicationNoAsync(string applicationNo)
     {
-        if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
-            return ApiResponse<List<LeaveRelievers>>.Failure("Leave Relievers Entity set not configured");
+        try
+        {
+            if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Failure("Leave Relievers Entity set not configured");
 
-        var requestUri = $"{entitySet}?$filter=Application_No eq '{applicationNo}'";
-        var response = await _navisionService.GetMultipleAsync<LeaveRelievers>(requestUri);
+            var requestUri = $"{entitySet}?$filter=Application_No eq '{applicationNo}'";
+            var response = await _navisionService.GetMultipleAsync<LeaveRelievers>(requestUri);
 
-        if (!response.Successful)
-            return ApiResponse<List<LeaveRelievers>>.Failure(response.Message ?? "Failed to fetch leave relievers");
+            if (!response.Successful)
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Failure(response.Message ?? "Failed to fetch leave relievers");
 
-        var (items, rawJson) = response.Data;
-        if (items == null || !items.Any())
-            return ApiResponse<List<LeaveRelievers>>.Success("No leave relievers found", new List<LeaveRelievers>());
+            var (items, rawJson) = response.Data;
+            if (items == null || !items.Any())
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Success("No leave relievers found", new());
 
-        // Deserialize the raw JSON to PagedResult
-        JsonSerializer.Deserialize<PagedResult<LeaveRelievers>>(rawJson);
+            var mappedItems = items.ToLeaveRelieverResponses().ToList();
 
-        return ApiResponse<List<LeaveRelievers>>.Success("Success", items);
+            return ApiResponse<PagedResult<LeaveRelieverResponse>>.Success("Success", new PagedResult<LeaveRelieverResponse>
+            {
+                Items = mappedItems,
+                TotalCount = mappedItems.Count
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching LeaveRelievers by ApplicationNo: {Message}", ex.Message);
+            throw;
+        }
+
+
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveRelievers>>> SearchLeaveRelieversAsync(LeaveRelieversFilter filter)
+    public async Task<ApiResponse<PagedResult<LeaveRelieverResponse>>> SearchLeaveRelieversAsync(LeaveRelieversFilter filter)
     {
-        if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
-            return ApiResponse<PagedResult<LeaveRelievers>>.Failure("Leave Relievers Entity set not configured");
+        try
+        {
+            if (!_bcSettings.EntitySets.TryGetValue("LeaveRelievers", out var entitySet))
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Failure("Leave Relievers Entity set not configured");
 
-        var odataQuery = filter.BuildODataFilter();
-        var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
+            var odataQuery = filter.BuildODataFilter();
+            var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
 
-        var response = await _navisionService.GetMultipleAsync<LeaveRelievers>(requestUri);
-        return await NavisionResponseHandler.HandlePagedResponse(response);
+            var response = await _navisionService.GetMultipleAsync<LeaveRelievers>(requestUri);
+            if (!response.Successful)
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Failure(response.Message ?? "Failed to fetch leave relievers");
+
+            var (items, rawJson) = response.Data;
+
+            if (items == null || !items.Any())
+                return ApiResponse<PagedResult<LeaveRelieverResponse>>.Success("No leave relievers found", new());
+
+            var mappedItems = items.ToLeaveRelieverResponses().ToList();
+
+            return ApiResponse<PagedResult<LeaveRelieverResponse>>.Success("Success", new PagedResult<LeaveRelieverResponse>
+            {
+                Items = mappedItems,
+                TotalCount = mappedItems.Count
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching LeaveRelievers: {Message}", ex.Message);
+            throw;
+        }
+
     }
 
-    public async Task<ApiResponse<bool>> CreateAsync(LeaveReliever leaveReliever)
+    public async Task<ApiResponse<bool>> CreateAsync(CreateLeaveRelieverRequest request)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("CreateLeaveReliever", out var entitySet))
                 return ApiResponse<bool>.Failure("Leave Relievers Entity set not configured");
+
+            var leaveReliever = request.ToLeaveRelievers();
 
             var response = await _navisionService.CreateAsync(entitySet, leaveReliever);
             if (!response.Successful)
                 return ApiResponse<bool>.Failure(response.Message ?? "Failed to create record.");
+
             return ApiResponse<bool>.Success(response.Message ?? "Success", true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating LeaveReliever: {Message}", ex.Message);
-            return ApiResponse<bool>.Failure("An error occurred while creating the record.");
+            throw;
         }
 
     }
 
-    public async Task<ApiResponse<bool>> CreateAsync(LeaveRelievers leaveRelievers)
-    {
-        try
-        {
-            if (!_bcSettings.EntitySets.TryGetValue("CreateLeaveReliever", out var entitySet))
-                return ApiResponse<bool>.Failure("Leave Relievers Entity set not configured");
-
-            var response = await _navisionService.CreateAsync(entitySet, leaveRelievers);
-            if (!response.Successful)
-                return ApiResponse<bool>.Failure(response.Message ?? "Failed to create record.");
-            return ApiResponse<bool>.Success(response.Message ?? "Success", true);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating LeaveReliever: {Message}", ex.Message);
-            return ApiResponse<bool>.Failure("An error occurred while creating the record.");
-        }
-
-    }
-
-    public async Task<ApiResponse<bool>> CreateMultipleAsync(List<LeaveRelievers> leaveRelievers)
+    public async Task<ApiResponse<bool>> CreateMultipleAsync(List<CreateLeaveRelieverRequest> requests)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("CreateLeaveRelievers", out var entitySet))
                 return ApiResponse<bool>.Failure("Leave Relievers Entity set not configured");
 
+            var leaveRelievers = requests.Select(r => r.ToLeaveRelievers()).ToList();
+
             var response = await _navisionService.CreateMultipleAsync(entitySet, leaveRelievers);
             if (!response.Successful)
                 return ApiResponse<bool>.Failure(response.Message ?? "Failed to create multiple records.");
+
             return ApiResponse<bool>.Success(response.Message ?? "Success", true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating multiple LeaveRelievers: {Message}", ex.Message);
-            return ApiResponse<bool>.Failure("An error occurred while creating multiple records.");
+            throw;
         }
 
     }

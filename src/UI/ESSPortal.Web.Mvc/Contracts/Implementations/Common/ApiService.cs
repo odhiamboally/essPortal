@@ -3,7 +3,6 @@ using EssPortal.Web.Mvc.Dtos.Common;
 using EssPortal.Web.Mvc.Enums.NavEnums;
 
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 using ESSPortal.Web.Mvc.Utilities.Common;
 
 using Jose;

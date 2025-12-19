@@ -9,7 +9,9 @@ using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Dtos.Auth;
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Mappings;
+using ESSPortal.Web.Mvc.Utilities.Session;
 using ESSPortal.Web.Mvc.Validations.RequestValidators.Auth;
+using ESSPortal.Web.Mvc.ViewModels.Auth;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -43,6 +45,9 @@ public class AuthController : BaseController
     private const string SessionKey_2FA_ExpiresAt = "2FA_ExpiresAt";
     private const string SessionKey_UserProfile = "UserProfile";
     private const string SessionKey_UserInfo = "UserInfo";
+    private const string SessionKey_IsLocked = "IsLocked";
+    private const string SessionKey_LockedAt = "LockedAt";
+    private const string SessionKey_LockReturnUrl = "LockReturnUrl";
 
     public AuthController(
         IServiceManager serviceManager, 
@@ -154,7 +159,23 @@ public class AuthController : BaseController
             }
 
             var userId = GetCurrentUserId();
+
             _logger.LogDebug("Keep-alive request from user: {UserId}", userId);
+
+            // Just touching the session keeps it alive
+            var isLocked = HttpContext.Session.GetString(SessionKey_IsLocked) == "true";
+            if (isLocked)
+            {
+                // Refresh the session
+                HttpContext.Session.SetString("LastKeepAlive", DateTime.UtcNow.ToString("O"));
+
+                return Json(new
+                {
+                    success = true,
+                    isLocked,
+                    message = "Session extended"
+                });
+            }
 
             // Re-authenticate to refresh the cookie expiration
             var authResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -266,122 +287,159 @@ public class AuthController : BaseController
         }
     }
 
+    /// <summary>
+    /// API endpoint for JavaScript-triggered lock
+    /// </summary>
     [HttpPost]
-    [Route("Auth/Unlock")]
     [Authorize]
-    public async Task<IActionResult> Unlock([FromBody] UnlockRequest unlockRequest)
+    public IActionResult TriggerLock()
     {
-        try
+        var returnUrl = Request.Headers["Referer"].ToString();
+        if (string.IsNullOrEmpty(returnUrl))
         {
-            if (User.Identity?.IsAuthenticated != true)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = "Session expired. Please sign in again.",
-                    requiresLogin = true
-                });
-            }
-
-            if (string.IsNullOrWhiteSpace(unlockRequest?.Password))
-            {
-                return Json(new { success = false, message = "Password is required." });
-            }
-
-            var userId = GetCurrentUserId();
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                return Json(new { success = false, message = "User not found.", requiresLogin = true });
-            }
-
-            var employeeNumber = GetEmployeeNumber();
-            if (employeeNumber == null) 
-            {
-                return Json(new { success = false, message = "Employee number not found.", requiresLogin = true });
-            }
-            
-            var userEmail = GetUserEmail();
-            if (userEmail == null) 
-            {
-                return Json(new { success = false, message = "User email not found.", requiresLogin = true });
-            }
-
-            _logger.LogInformation("Unlock attempt for user: {UserId}", userId);
-
-            unlockRequest = unlockRequest with 
-            { 
-                Email = userEmail, 
-                EmployeeNumber = employeeNumber 
-            };
-
-
-            var unlockSessionResult = await _serviceManager.AuthService.UnlockSessionAsync(unlockRequest);
-
-            if (!unlockSessionResult.Successful)
-            {
-                // Check if account is locked
-                if (unlockSessionResult.Data?.AccountLocked == true)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Account locked due to too many failed attempts",
-                        locked = true
-                    });
-                }
-
-                // Check if session expired
-                if (unlockSessionResult.Data?.SessionExpired == true)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Session expired. Please sign in again.",
-                        requiresLogin = true
-                    });
-                }
-
-                var accountLocked = unlockSessionResult.Message?.Contains("locked", StringComparison.OrdinalIgnoreCase) ?? false;
-
-                return Json(new
-                {
-                    success = false,
-                    message = accountLocked ? "Account locked due to too many failed attempts." : "Invalid password.",
-                    locked = accountLocked
-                });
-            }
-
-            // Password verified - extend session
-            var authResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            if (authResult.Succeeded && authResult.Principal != null)
-            {
-                var properties = authResult.Properties ?? new AuthenticationProperties();
-                properties.ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(_securitySettings.SessionManagement.SessionTimeoutMinutes);
-                properties.IssuedUtc = DateTimeOffset.UtcNow;
-                properties.AllowRefresh = true;
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    authResult.Principal,
-                    properties);
-
-                _logger.LogInformation("Session unlocked for user: {UserId}", userId);
-
-                return Json(new
-                {
-                    success = true,
-                    message = "Session unlocked successfully.",
-                });
-            }
-
-            return Json(new { success = false, message = "Could not extend session.", requiresLogin = true });
+            returnUrl = "/Home/Index";
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "Unlock error");
-            return Json(new { success = false, message = "An error occurred. Please try again." });
+            // Extract just the path
+            if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri))
+            {
+                returnUrl = uri.PathAndQuery;
+            }
         }
+
+        // Don't lock if already on lock/auth pages
+        if (returnUrl.Contains("/Auth/", StringComparison.OrdinalIgnoreCase))
+        {
+            returnUrl = "/Home/Index";
+        }
+
+        HttpContext.Session.SetString(SessionKey_IsLocked, "true");
+        HttpContext.Session.SetString(SessionKey_LockedAt, DateTime.UtcNow.ToString("O"));
+        HttpContext.Session.SetString(SessionKey_LockReturnUrl, returnUrl);
+
+        _logger.LogInformation("Screen locked for user {UserId}, return URL: {ReturnUrl}",
+            GetCurrentUserId(), returnUrl);
+
+        return Json(new { success = true, redirectUrl = "/Auth/Lock" });
+    }
+
+
+    /// <summary>
+    /// Lock screen page
+    /// </summary>
+    [HttpGet]
+    [Authorize]
+    public IActionResult Lock()
+    {
+        // Ensure lock state is set (in case user navigates here directly)
+        var isLocked = HttpContext.Session.GetString(SessionKey_IsLocked);
+        if (isLocked != "true")
+        {
+            // Not locked, redirect to dashboard
+            return RedirectToAction("Index", "Home");
+        }
+
+        var userInfo = GetUserInfoFromSession();
+
+        var model = new LockScreenViewModel
+        {
+            DisplayName = $"{userInfo?.FirstName} {userInfo?.LastName}".Trim(),
+            Initials = GetInitials(userInfo?.FirstName, userInfo?.LastName),
+            Email = userInfo?.Email,
+            ProfilePictureUrl = userInfo?.ProfilePictureUrl
+        };
+
+        // If display name is empty, try from claims
+        if (string.IsNullOrWhiteSpace(model.DisplayName))
+        {
+            model.DisplayName = User.FindFirst(ClaimTypes.Name)?.Value ?? "User";
+            model.Initials = GetInitialsFromName(model.DisplayName);
+        }
+
+        return View(model);
+    }
+
+    /// <summary>
+    /// Unlock endpoint
+    /// </summary>
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> Unlock(UnlockRequest unlockRequest)
+    {
+        var model = GetLockScreenViewModel();
+
+        if (string.IsNullOrWhiteSpace(unlockRequest.Password))
+        {
+            ModelState.AddModelError("Password", "Password is required");
+            return View("Lock", model);
+        }
+
+        var userId = GetCurrentUserId();
+        var employeeNumber = GetEmployeeNumber();
+        var email = GetUserEmail();
+
+        if (string.IsNullOrEmpty(email))
+        {
+            ModelState.AddModelError("", "Unable to verify identity. Please sign in again.");
+            return View("Lock", model);
+        }
+
+        if(string.IsNullOrEmpty(employeeNumber))
+        {
+            ModelState.AddModelError("", "Unable to verify identity. Please sign in again.");
+            return View("Lock", model);
+        }
+
+        _logger.LogInformation("Unlock attempt for user: {UserId}", userId);
+
+        unlockRequest = unlockRequest with
+        {
+            Email = email,
+            EmployeeNumber = employeeNumber
+        };
+
+
+        var unlockResult = await _serviceManager.AuthService.UnlockSessionAsync(unlockRequest);
+
+        if (!unlockResult.Successful)
+        {
+            _logger.LogWarning("Failed unlock attempt for user {UserId} ({Email})", userId, email);
+            ModelState.AddModelError("Password", "Invalid password");
+            return View("Lock", model);
+        }
+
+        // Clear lock state
+        HttpContext.Session.Remove(SessionKey_IsLocked);
+        HttpContext.Session.Remove(SessionKey_LockedAt);
+
+        var authResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        if (authResult.Succeeded && authResult.Principal != null)
+        {
+            var properties = authResult.Properties ?? new AuthenticationProperties();
+            properties.ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(_securitySettings.SessionManagement.SessionTimeoutMinutes);
+            properties.IssuedUtc = DateTimeOffset.UtcNow;
+            properties.AllowRefresh = true;
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                authResult.Principal,
+                properties);
+        }
+
+        // Get return URL
+        var returnUrl = HttpContext.Session.GetString(SessionKey_LockReturnUrl);
+        HttpContext.Session.Remove(SessionKey_LockReturnUrl);
+
+        // Validate return URL
+        if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
+        {
+            returnUrl = "/Home/Index";
+        }
+
+        _logger.LogInformation("Screen unlocked for user {UserId}, returning to {ReturnUrl}", userId, returnUrl);
+
+        return LocalRedirect(returnUrl);
     }
 
     [AllowAnonymous]
@@ -532,8 +590,10 @@ public class AuthController : BaseController
 
             if (loginData.UserInfo != null)
             {
-                HttpContext.Session.SetString(SessionKey_UserInfo, JsonSerializer.Serialize(loginData.UserInfo));
+                HttpContext.Session.SetString(SessionKey_UserInfo, JsonSerializer.Serialize(loginData.UserInfo, JsonDefaults.Options));
                 await HttpContext.Session.CommitAsync();
+
+                CacheServiceExtensions.SetUserInfo(_serviceManager.CacheService, request.EmployeeNumber, loginData.UserInfo);
 
             }
 

@@ -81,8 +81,11 @@ const EditLeaveModal = (function () {
         toDate = document.querySelector('#editLeaveModal input[name="ToDate"]');
         daysApplied = document.querySelector('#editLeaveModal input[name="DaysApplied"]');
         resumptionDate = document.querySelector('#editLeaveModal input[name="ResumptionDate"]');
-        halfDayToggle = document.querySelector('#editLeaveModal input[name="HalfDay"]');
-        leaveAllowanceToggle = document.querySelector('#editLeaveModal input[name="LeaveAllowancePayable"]');
+
+        //halfDayToggle = document.querySelector('#editLeaveModal input[name="HalfDay"]');
+        halfDayToggle = document.querySelector('#editLeaveModal input[name="HalfDay"][type="checkbox"]');
+
+        leaveAllowanceToggle = document.querySelector('#editLeaveModal input[name="LeaveAllowancePayable"][type="checkbox"]');
         relieverSearch = document.getElementById('relieverSearch');
         relieverList = document.getElementById('relieverList');
         leaveBalanceInfo = document.getElementById('leaveBalanceInfo');
@@ -216,14 +219,23 @@ const EditLeaveModal = (function () {
 
         // Calculate resumption date
         if (resumptionDate) {
+
             let resumption;
+
             if (usesCalendarDays()) {
+
                 resumption = new Date(endDate);
-                resumption.setDate(resumption.getDate() + 1);
+
+                resumption = getNextBusinessDay(endDate);
+                //resumption.setDate(resumption.getDate() + 1);
+
             } else {
+
                 resumption = getNextBusinessDay(endDate);
             }
-            resumptionDate.value = formatDateForInput(resumption);
+
+            resumptionDate.value = formatShortDisplayDate(resumption);
+            //resumptionDate.value = formatDateForInput(resumption);
         }
     }
 
@@ -266,6 +278,24 @@ const EditLeaveModal = (function () {
 
     function formatDateForInput(date) {
         return date.toISOString().split('T')[0];
+    }
+
+    function formatLongDisplayDate(date) {
+        return date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    function formatShortDisplayDate(date) {
+        return date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
     }
 
     // ===========================================
@@ -408,23 +438,69 @@ const EditLeaveModal = (function () {
     // ===========================================
 
     function setupFormSubmission() {
-        if (!form) return;
+        if (!form) {
+            console.error('EditLeaveModal: Form not found for submission setup');
+            return;
+        }
 
-        form.addEventListener('submit', async function (e) {
+        // Find the submit button (now type="button")
+        const submitBtn = document.getElementById('editLeaveSubmitBtn');
+
+        if (submitBtn) {
+
+            console.log('EditLeaveModal: Setting up button click handler');
+
+            submitBtn.addEventListener('click', async function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Validate
+                if (!validateForm()) {
+                    console.log('EditLeaveModal: Validation failed');
+                    return;
+                }
+
+                // Confirm submission - WAIT for user response
+                const confirmed = await confirmSubmission();
+                if (!confirmed) {
+                    console.log('EditLeaveModal: User cancelled submission');
+                    return;
+                }
+
+                // Only submit after confirmation
+                console.log('EditLeaveModal: User confirmed, submitting...');
+                await submitForm();
+            });
+        }
+
+        // Also prevent default form submission (in case Enter is pressed)
+        form.addEventListener('submit', function (e) {
+
             e.preventDefault();
+            e.stopPropagation();
+            console.log('EditLeaveModal: Form submit event intercepted');
 
-            // Validate
-            if (!validateForm()) {
-                return;
+            // Trigger the button click to go through proper flow
+            if (submitBtn) {
+                submitBtn.click();
             }
-
-            // Confirm submission
-            const confirmed = await confirmSubmission();
-            if (!confirmed) return;
-
-            // Submit
-            await submitForm();
         });
+
+        //form.addEventListener('submit', async function (e) {
+        //    e.preventDefault();
+
+        //    // Validate
+        //    if (!validateForm()) {
+        //        return;
+        //    }
+
+        //    // Confirm submission
+        //    const confirmed = await confirmSubmission();
+        //    if (!confirmed) return;
+
+        //    // Submit
+        //    await submitForm();
+        //});
     }
 
     function validateForm() {
@@ -483,6 +559,8 @@ const EditLeaveModal = (function () {
         const relieverName = selectedReliever ?
             selectedReliever.closest('.reliever-item').querySelector('.reliever-name').textContent : 'N/A';
 
+        console.log('EditLeaveModal: Showing confirmation dialog...');
+
         const result = await Swal.fire({
             title: 'Confirm Update',
             html: `
@@ -499,14 +577,21 @@ const EditLeaveModal = (function () {
             confirmButtonText: 'Yes, Update',
             cancelButtonText: 'Review Again',
             confirmButtonColor: '#198754',
-            cancelButtonColor: '#6c757d'
+            cancelButtonColor: '#6c757d',
+            allowOutsideClick: false,
+            allowEscapeKey: true
         });
 
+        console.log('EditLeaveModal: Confirmation result:', result.isConfirmed);
         return result.isConfirmed;
     }
 
     async function submitForm() {
-        const submitBtn = form.querySelector('button[type="submit"]');
+
+        const submitBtn = document.getElementById('editLeaveSubmitBtn');
+
+        //const submitBtn = form.querySelector('button[type="submit"]');
+
         const originalText = submitBtn ? submitBtn.innerHTML : '';
 
         if (submitBtn) {
@@ -515,6 +600,7 @@ const EditLeaveModal = (function () {
         }
 
         try {
+
             const formData = new FormData(form);
 
             // Ensure boolean values
@@ -530,9 +616,20 @@ const EditLeaveModal = (function () {
             });
 
             if (response.ok) {
+
+                // Check content type BEFORE parsing
+                const contentType = response.headers.get('content-type');
+
+                if (!contentType || !contentType.includes('application/json')) {
+
+                    console.error('EditLeaveModal: Server returned non-JSON response:', contentType);
+                    throw new Error('Session may have expired. Please refresh the page and try again.');
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
+
                     showToast('success', data.message || 'Leave application updated successfully!');
 
                     // Close modal
@@ -541,20 +638,30 @@ const EditLeaveModal = (function () {
 
                     // Refresh page or redirect
                     setTimeout(() => {
-                        window.location.reload();
+
+                        if (data.redirectUrl) {
+                            window.location.href = data.redirectUrl;
+                        } else {
+                            window.location.reload();
+                        }
                     }, 1500);
 
                 } else {
+
                     showToast('error', data.message || 'Failed to update application');
                 }
             } else {
+
                 throw new Error(`Server error: ${response.status}`);
             }
 
         } catch (error) {
+
             console.error('EditLeaveModal: Submission error:', error);
             showToast('error', 'Error updating application. Please try again.');
+
         } finally {
+
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
@@ -648,7 +755,9 @@ const EditLeaveModal = (function () {
     }
 
     function setupModalObserver() {
+
         const container = document.getElementById('dynamicModalContainer');
+
         if (!container) return;
 
         const observer = new MutationObserver(function (mutations) {

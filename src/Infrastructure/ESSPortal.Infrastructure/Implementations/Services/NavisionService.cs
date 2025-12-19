@@ -68,11 +68,14 @@ internal sealed class NavisionService : INavisionService
         {
             var url = GetServiceUrl(serviceName);
             var response = await _essHttpClient.PostAsJsonAsync(url, entity);
-
-            response.EnsureSuccessStatusCode();
+            if(!response.IsSuccessStatusCode) 
+            {
+                var errorJson = await response.Content.ReadAsStringAsync();
+                var errorResult = JsonSerializer.Deserialize<T>(errorJson);
+                return ApiResponse<(T, string RawJson)>.Failure($"Failed to create entity: {response} {errorJson}");
+            }
 
             var responseJson = await response.Content.ReadAsStringAsync();
-
             var result = JsonSerializer.Deserialize<T>(responseJson);
 
             return result != null
@@ -142,11 +145,11 @@ internal sealed class NavisionService : INavisionService
         }
     }
 
-    public async Task<ApiResponse<T>> GetSingleAsync<T>(string requestUri) where T : class, new()
+    public async Task<ApiResponse<T>> GetSingleAsync_<T>(string requestUri) where T : class, new()
     {
         try
         {
-            var response = await _httpClient.GetAsync(requestUri);
+            var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead);
             response.EnsureSuccessStatusCode();
             var responseJson = await response.Content.ReadAsStringAsync();
 
@@ -175,7 +178,58 @@ internal sealed class NavisionService : INavisionService
         }
     }
 
-    public async Task<ApiResponse<(List<T>, string RawJson)>> GetMultipleAsync<T>(string requestUri) where T : class, new()
+    public async Task<ApiResponse<T>> GetSingleAsync<T>(string requestUri) where T : class, new()
+    {
+        try
+        {
+            // FIXED: Use ResponseContentRead to buffer entire response
+            using var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return ApiResponse<T>.Failure($"Business Central API returned {response.StatusCode}: {errorContent}");
+            }
+
+            // Read into byte array first for reliability
+            var contentBytes = await response.Content.ReadAsByteArrayAsync();
+            var responseJson = System.Text.Encoding.UTF8.GetString(contentBytes);
+
+            // Since you know it's always OData format, deserialize directly
+            var odataResponse = JsonSerializer.Deserialize<PagedResult<T>>(responseJson);
+            var result = odataResponse?.Items?.FirstOrDefault();
+
+            if (result == null)
+            {
+                return ApiResponse<T>.Failure("Entity not found or failed to deserialize.");
+            }
+
+            return ApiResponse<T>.Success("Entity fetched successfully.", result);
+        }
+        catch (JsonException ex)
+        {
+            return ApiResponse<T>.Failure($"JSON deserialization failed: {ex.Message}");
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResponse<T>.Failure($"HTTP request failed: {ex.Message}");
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            return ApiResponse<T>.Failure($"Request to Business Central timed out");
+        }
+        catch (Exception ex) when (ex.Message.Contains("copying content to a stream"))
+        {
+            return ApiResponse<T>.Failure("Failed to read complete response from Business Central. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<T>.Failure($"Unexpected error: {ex.Message}");
+        }
+    }
+
+
+    public async Task<ApiResponse<(List<T>, string RawJson)>> GetMultipleAsync_<T>(string requestUri) where T : class, new()
     {
         try
         {
@@ -212,8 +266,69 @@ internal sealed class NavisionService : INavisionService
         }
     }
 
+    public async Task<ApiResponse<(List<T>, string RawJson)>> GetMultipleAsync<T>(string requestUri) where T : class, new()
+    {
+        try
+        {
+            // FIXED: Use ResponseContentRead to buffer entire response before returning
+            // This prevents "Error while copying content to a stream" failures
+            using var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead);
+
+            // Check status code before reading content
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return ApiResponse<(List<T>, string)>.Failure($"Business Central API returned {response.StatusCode}: {errorContent}");
+            }
+
+            // FIXED: Read entire response into byte array first (more reliable than streaming)
+            var contentBytes = await response.Content.ReadAsByteArrayAsync();
+            var responseJson = System.Text.Encoding.UTF8.GetString(contentBytes);
+
+            List<T> result = [];
+
+            try
+            {
+                var odataResponse = JsonSerializer.Deserialize<PagedResult<T>>(responseJson);
+                result = odataResponse?.Items ?? [];
+            }
+            catch (JsonException ex)
+            {
+                return ApiResponse<(List<T>, string)>.Failure($"Failed to deserialize response: {ex.Message}");
+            }
+
+            if (result.Count == 0)
+            {
+                return ApiResponse<(List<T>, string)>.Failure("No data found.");
+            }
+
+            return ApiResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"HTTP request failed: {ex.Message}");
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"Request to Business Central timed out for: {requestUri}");
+        }
+        catch (TaskCanceledException ex)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"Request was cancelled: {ex.Message}");
+        }
+        catch (Exception ex) when (ex.Message.Contains("copying content to a stream"))
+        {
+            return ApiResponse<(List<T>, string)>.Failure("Failed to read complete response from Business Central. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"Unexpected error: {ex.Message}");
+        }
+    }
+
+
     // Simpler version if you know it's always OData format:
-    public async Task<ApiResponse<(List<T>, string RawJson)>> GetMultipleAsyncSimple<T>(string requestUri) where T : class, new()
+    public async Task<ApiResponse<(List<T>, string RawJson)>> GetMultipleAsyncSimple_<T>(string requestUri) where T : class, new()
     {
         try
         {
@@ -244,7 +359,56 @@ internal sealed class NavisionService : INavisionService
             return ApiResponse<(List<T>, string)>.Failure($"Unexpected error: {ex.Message}");
         }
     }
-    
+
+    public async Task<ApiResponse<(List<T>, string RawJson)>> GetMultipleAsyncSimple<T>(string requestUri) where T : class, new()
+    {
+        try
+        {
+            // FIXED: Buffer entire response
+            using var response = await _httpClient.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return ApiResponse<(List<T>, string)>.Failure($"Business Central API returned {response.StatusCode}: {errorContent}");
+            }
+
+            var contentBytes = await response.Content.ReadAsByteArrayAsync();
+            var responseJson = System.Text.Encoding.UTF8.GetString(contentBytes);
+
+            var odataResponse = JsonSerializer.Deserialize<PagedResult<T>>(responseJson);
+            var result = odataResponse?.Items ?? [];
+
+            if (result.Count == 0)
+            {
+                return ApiResponse<(List<T>, string)>.Failure("No data found.");
+            }
+
+            return ApiResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
+        }
+        catch (JsonException ex)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"Failed to deserialize JSON: {ex.Message}");
+        }
+        catch (HttpRequestException ex)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"HTTP request failed: {ex.Message}");
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"Request to Business Central timed out");
+        }
+        catch (Exception ex) when (ex.Message.Contains("copying content to a stream"))
+        {
+            return ApiResponse<(List<T>, string)>.Failure("Failed to read complete response from Business Central. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<(List<T>, string)>.Failure($"Unexpected error: {ex.Message}");
+        }
+    }
+
+
     public async Task<ApiResponse<string>> GenerateP9Async(string employeeNo, int year)
     {
         return await _soapService.GenerateP9Async(employeeNo, year);
@@ -308,8 +472,6 @@ internal sealed class NavisionService : INavisionService
             throw;
         }
     }
-
-
 
     private string GetServiceUrl(string serviceKey)
     {

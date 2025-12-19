@@ -60,7 +60,6 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-CSRF-TOKEN";
     options.Cookie.Name = "__RequestVerificationToken";
     options.Cookie.HttpOnly = true;
-    //options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite = SameSiteMode.Lax;
     
@@ -70,6 +69,92 @@ builder.Services.AddAntiforgery(options =>
 builder.Services.AddScoped<ExceptionHandler>();
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    // Generate a unique nonce for this request
+    var nonce = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+    context.Items["ScriptNonce"] = nonce;
+
+    // Security headers
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+
+    var domain = context.Request.Host.Host;
+    var scheme = context.Request.Scheme;
+    var port = context.Request.Host.Port;
+    var hostWithPort = port.HasValue ? $"{domain}:{port}" : domain;
+
+    context.Response.Headers.Append("X-Content-Security-Policy", $"script-src 'self' 'nonce-{nonce}';");
+
+    if (app.Environment.IsDevelopment())
+    {
+        context.Response.Headers.Append("Content-Security-Policy",
+
+            $"default-src 'self'; " +
+
+            $"font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://ka-f.fontawesome.com; " +
+
+            $"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://ka-f.fontawesome.com; " +
+
+            $"style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
+
+            $"style-src-attr 'self' 'unsafe-inline'; " +
+
+            $"script-src 'self'  'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com {scheme}://{hostWithPort} {scheme}://localhost:*; " +
+
+            $"script-src-elem 'self'  https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {scheme}://{hostWithPort}; " +
+
+            $"img-src 'self' data: blob: https: http:; " +
+
+            $"connect-src 'self' {scheme}://{hostWithPort} {scheme}://localhost:* wss://{hostWithPort} ws://localhost:* https://ka-f.fontawesome.com; " +
+
+            $"media-src 'self'; " +
+            $"object-src 'none'; " +
+            $"base-uri 'self'; " +
+            $"form-action 'self';"
+        );
+    }
+    else
+    {
+        context.Response.Headers.Append("Content-Security-Policy",
+
+            $"default-src 'self'; " +
+
+            $"font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " +
+
+            $"style-src 'self' 'unsafe-inline'  https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
+
+            $"style-src-elem 'self' 'unsafe-inline'  https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
+
+            $"style-src-attr 'self' 'unsafe-inline'; " +
+
+            $"script-src 'self' 'unsafe-inline'  https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {scheme}://{hostWithPort}; " +
+
+            $"script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {scheme}://{hostWithPort}; " +
+
+            $"img-src 'self' data: blob: https:; " +
+
+            $"connect-src 'self' {scheme}://{hostWithPort} wss://{hostWithPort}; " +
+
+            $"media-src 'self'; " +
+            $"object-src 'none'; " +
+            $"base-uri 'self'; " +
+            $"form-action 'self'; " +
+            $"frame-ancestors 'none'; "
+        //$"upgrade-insecure-requests;"
+        );
+
+        context.Response.Headers.Append("Permissions-Policy",
+            "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=()");
+    }
+
+
+    await next();
+
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -90,72 +175,11 @@ else
     });
 
     app.UseHsts();
+
 }
 
-app.Use(async (context, next) =>
-{
-    // Generate a unique nonce for this request
-    var nonce = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-    context.Items["ScriptNonce"] = nonce;
-
-    // Security headers
-    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-    context.Response.Headers.Append("X-Frame-Options", "DENY");
-    context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
-    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
-
-    var domain = context.Request.Host.Host;
-    var scheme = context.Request.Scheme;
-    var port = context.Request.Host.Port;
-    var hostWithPort = port.HasValue ? $"{domain}:{port}" : domain;
-
-    if (app.Environment.IsDevelopment())
-    {
-        context.Response.Headers.Append("Content-Security-Policy",
-            $"default-src 'self'; " +
-            $"font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://ka-f.fontawesome.com; " +
-            $"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://ka-f.fontawesome.com; " +
-            $"style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-            $"style-src-attr 'self' 'unsafe-inline'; " +
-            $"script-src 'self'  'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com {scheme}://{hostWithPort} {scheme}://localhost:*; " +
-            $"script-src-elem 'self'  https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {scheme}://{hostWithPort}; " +
-            $"img-src 'self' data: blob: https: http:; " +
-            $"connect-src 'self' {scheme}://{hostWithPort} {scheme}://localhost:* wss://{hostWithPort} ws://localhost:* https://ka-f.fontawesome.com; " +
-            $"media-src 'self'; " +
-            $"object-src 'none'; " +
-            $"base-uri 'self'; " +
-            $"form-action 'self';"
-        );
-    }
-    else
-    {
-        context.Response.Headers.Append("Content-Security-Policy",
-            $"default-src 'self'; " +
-            $"font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " +
-            $"style-src 'self' 'unsafe-inline'  https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-            $"style-src-elem 'self' 'unsafe-inline'  https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-            $"style-src-attr 'self' 'unsafe-inline'; " +
-            $"script-src 'self' 'unsafe-inline'  https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {scheme}://{hostWithPort}; " +
-            $"script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {scheme}://{hostWithPort}; " +
-            $"img-src 'self' data: blob: https:; " +
-            $"connect-src 'self' {scheme}://{hostWithPort} wss://{hostWithPort}; " +
-            $"media-src 'self'; " +
-            $"object-src 'none'; " +
-            $"base-uri 'self'; " +
-            $"form-action 'self'; " +
-            $"frame-ancestors 'none'; " 
-            //$"upgrade-insecure-requests;"
-        );
-
-        context.Response.Headers.Append("Permissions-Policy",
-            "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=()");
-    }
-
-    await next();
-});
 
 
-// Development debugging middleware
 if (app.Environment.IsDevelopment())
 {
     app.Use(async (context, next) =>

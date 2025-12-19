@@ -10,8 +10,7 @@ using System.Threading.Tasks;
 namespace ESSPortal.Application.Utilities;
 public static class NavisionResponseHandler
 {
-    public static Task<ApiResponse<PagedResult<T>>> HandlePagedResponse<T>(
-        ApiResponse<(List<T> Items, string RawJson)> response)
+    public static Task<ApiResponse<PagedResult<T>>> HandlePagedResponse<T>(ApiResponse<(List<T> Items, string RawJson)> response)
     {
         if (!response.Successful)
         {

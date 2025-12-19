@@ -1,5 +1,4 @@
 ﻿// Complete 2FA Modal JavaScript with debugging
-console.log('2FA Modal JS loaded');
 
 
 

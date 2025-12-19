@@ -1,4 +1,7 @@
-﻿namespace EssPortal.Web.Mvc.Middleware;
+﻿using System;
+using System.IO;
+
+namespace EssPortal.Web.Mvc.Middleware;
 
 public class TokenRefreshMiddleware
 {
@@ -26,17 +29,42 @@ public class TokenRefreshMiddleware
             if (string.IsNullOrWhiteSpace(token))
             {
                 _logger.LogWarning("API request without token: {Path}", context.Request.Path);
-                await HandleUnauthenticated(context);
+
+                // Check if response hasn't started before handling
+                if (!context.Response.HasStarted)
+                {
+                    await HandleUnauthenticated(context);
+                }
                 return;
             }
         }
 
-        await _next(context);
+        try
+        {
+            await _next(context);
+        }
+        catch (Exception ex) when (context.Response.HasStarted)
+        {
+            // Response has already started, we can't modify it
+            // Log and re-throw so upstream can handle appropriately
+            _logger.LogWarning(ex, "Exception occurred after response started for {Path}. Cannot modify response.", context.Request.Path);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Log unexpected exceptions
+            _logger.LogError(ex, "Unhandled exception in TokenRefreshMiddleware for {Path}", context.Request.Path);
+            throw;
+        }
     }
-
 
     private static async Task HandleUnauthenticated(HttpContext context)
     {
+        if (context.Response.HasStarted)
+        {
+            return;
+        }
+
         if (IsApiRequest(context.Request))
         {
             // Return 401 for API requests with JSON response
@@ -79,12 +107,13 @@ public class TokenRefreshMiddleware
             }
         }
 
-        return null;
+        return string.Empty;
     }
 
     private static bool IsExcludedPath(PathString path)
     {
         var pathValue = path.Value?.ToLowerInvariant();
+
         return pathValue != null && (
             // Authentication endpoints
             pathValue.StartsWith("/auth/") ||
@@ -132,4 +161,6 @@ public class TokenRefreshMiddleware
         // Only treat as API if it's AJAX + expects JSON + sends JSON
         return isXmlHttpRequest && acceptsJson && hasJsonContent;
     }
+
+    
 }

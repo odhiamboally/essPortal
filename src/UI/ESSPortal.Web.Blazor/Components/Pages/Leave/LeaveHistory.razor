@@ -1,0 +1,457 @@
+﻿@page "/leave/history"
+@attribute [Authorize]
+@inject ILeaveService LeaveService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Leave History - ESS Portal</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <!-- Page Header -->
+    <MudPaper Elevation="0" Class="mb-4">
+        <MudText Typo="Typo.h4" Class="mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.History" Class="mr-2" />
+            Leave History
+        </MudText>
+        <MudBreadcrumbs Items="_breadcrumbItems"></MudBreadcrumbs>
+    </MudPaper>
+
+    @if (isLoading)
+    {
+        <MudPaper Elevation="2" Class="pa-8 text-center">
+            <MudProgressCircular Size="Size.Large" Indeterminate="true" />
+            <MudText Typo="Typo.body1" Class="mt-4">Loading leave history...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <!-- Search and Filters Card -->
+        <MudPaper Elevation="2" Class="pa-4 mb-4">
+            <MudStack Row="false" Spacing="3">
+                <MudText Typo="Typo.h6">
+                    <MudIcon Icon="@Icons.Material.Filled.FilterList" Class="mr-2" />
+                    Search & Filters
+                </MudText>
+
+                <MudGrid Spacing="2">
+                    <!-- Global Search -->
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="searchString"
+                                      Label="Search Applications"
+                                      Placeholder="Search by application number, leave type, status..."
+                                      Immediate="true"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      Variant="Variant.Outlined"
+                                      Clearable="true" />
+                    </MudItem>
+
+                    <!-- Status Filter -->
+                    <MudItem xs="12" md="3">
+                        <MudSelect @bind-Value="statusFilter"
+                                   Label="Status"
+                                   Variant="Variant.Outlined"
+                                   Clearable="true"
+                                   AnchorOrigin="Origin.BottomCenter">
+                            <MudSelectItem Value="@("")">All Statuses</MudSelectItem>
+                            <MudSelectItem Value="@("Draft")">Draft</MudSelectItem>
+                            <MudSelectItem Value="@("Pending")">Pending</MudSelectItem>
+                            <MudSelectItem Value="@("Approved")">Approved</MudSelectItem>
+                            <MudSelectItem Value="@("Rejected")">Rejected</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Quick Actions -->
+                    <MudItem xs="12" md="3" Class="d-flex align-end">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   OnClick="NavigateToApply"
+                                   FullWidth="true">
+                            Apply for Leave
+                        </MudButton>
+                    </MudItem>
+
+                    <!-- Date Range Filters -->
+                    <MudItem xs="12" md="3">
+                        <MudDatePicker @bind-Date="dateFromFilter"
+                                       Label="From Date"
+                                       Variant="Variant.Outlined"
+                                       Clearable="true"
+                                       DateFormat="dd/MM/yyyy" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="3">
+                        <MudDatePicker @bind-Date="dateToFilter"
+                                       Label="To Date"
+                                       Variant="Variant.Outlined"
+                                       Clearable="true"
+                                       MinDate="dateFromFilter"
+                                       DateFormat="dd/MM/yyyy" />
+                    </MudItem>
+
+                    <!-- Action Buttons -->
+                    <MudItem xs="12" md="6" Class="d-flex align-end gap-2">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.Clear"
+                                   OnClick="ClearFilters">
+                            Clear Filters
+                        </MudButton>
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Info"
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="RefreshDataAsync">
+                            Refresh
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudStack>
+        </MudPaper>
+
+        <!-- Data Grid Card -->
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.TableChart" Class="mr-2" />
+                Leave Applications
+                <MudChip T="string" Size="Size.Small" Color="Color.Info" Class="ml-2">
+                    @GetFilteredCount() applications
+                </MudChip>
+            </MudText>
+
+            <MudDataGrid T="LeaveHistoryResponse"
+                         Items="@GetFilteredData()"
+                         Dense="true"
+                         Hover="true"
+                         Bordered="true"
+                         Striped="true"
+                         Elevation="0"
+                         FixedHeader="true"
+                         Height="600px"
+                         Loading="@isLoading"
+                         LoadingProgressColor="Color.Primary">
+                <Columns>
+                    <PropertyColumn Property="x => x.ApplicationNo"
+                                    Title="Application No"
+                                    Sortable="true">
+                        <CellTemplate>
+                            <MudText Typo="Typo.body2" Color="Color.Primary" Style="font-weight: 600;">
+                                @context.Item.ApplicationNo
+                            </MudText>
+                        </CellTemplate>
+                    </PropertyColumn>
+
+                    <PropertyColumn Property="x => x.LeaveType"
+                                    Title="Leave Type"
+                                    Sortable="true">
+                        <CellTemplate>
+                            <MudText Typo="Typo.body2">@context.Item.LeaveType</MudText>
+                        </CellTemplate>
+                    </PropertyColumn>
+
+                    <PropertyColumn Property="x => x.ApplicationDate"
+                                    Title="Application Date"
+                                    Format="dd/MM/yyyy"
+                                    Sortable="true" />
+
+                    <PropertyColumn Property="x => x.StartDate"
+                                    Title="Start Date"
+                                    Format="dd/MM/yyyy"
+                                    Sortable="true" />
+
+                    <PropertyColumn Property="x => x.EndDate"
+                                    Title="End Date"
+                                    Format="dd/MM/yyyy"
+                                    Sortable="true" />
+
+                    <PropertyColumn Property="x => x.DaysApplied"
+                                    Title="Days"
+                                    Sortable="true">
+                        <CellTemplate>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Style="font-weight: 600;">
+                                @context.Item.DaysApplied
+                            </MudText>
+                        </CellTemplate>
+                    </PropertyColumn>
+
+                    <PropertyColumn Property="x => x.Status"
+                                    Title="Status"
+                                    Sortable="true">
+                        <CellTemplate>
+                            @{
+                                var (color, icon) = GetStatusDisplay(context.Item.Status);
+                            }
+                            <MudChip Size="Size.Small" Color="@color" Icon="@icon">
+                                @context.Item.Status
+                            </MudChip>
+                        </CellTemplate>
+                    </PropertyColumn>
+
+                    <TemplateColumn Title="Actions" Sortable="false">
+                        <CellTemplate>
+                            <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                               Color="Color.Info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => ViewDetailsAsync(context.Item))"
+                                               Title="View Details" />
+
+                                @if (CanEdit(context.Item.Status))
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Color="Color.Primary"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => EditLeaveAsync(context.Item))"
+                                                   Title="Edit Application" />
+                                }
+                            </MudStack>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </Columns>
+
+                <PagerContent>
+                    <MudDataGridPager T="LeaveHistoryResponse"
+                                      PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+
+                <NoRecordsContent>
+                    <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-8">
+                        <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Default" />
+                        <MudText Typo="Typo.h6">No leave applications found</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @if (HasActiveFilters())
+                            {
+                                <text>Try adjusting your filters or</text>
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="ClearFilters">
+                                    clear all filters
+                                </MudButton>
+                            }
+                            else
+                            {
+                                <text>You haven't applied for any leave yet.</text>
+                            }
+                        </MudText>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   OnClick="NavigateToApply">
+                            Apply for Leave
+                        </MudButton>
+                    </MudStack>
+                </NoRecordsContent>
+            </MudDataGrid>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    // State
+    private bool isLoading = true;
+    private List<LeaveHistoryResponse> leaveHistory = new();
+    
+    // Filters
+    private string searchString = "";
+    private string statusFilter = "";
+    private DateTime? dateFromFilter;
+    private DateTime? dateToFilter;
+
+    // Breadcrumbs
+    private List<BreadcrumbItem> _breadcrumbItems = new()
+    {
+        new BreadcrumbItem("Dashboard", href: "/"),
+        new BreadcrumbItem("Leave History", href: null, disabled: true)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Get current user's employee number
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var employeeNo = user.FindFirst("EmployeeNo")?.Value ?? "";
+
+            if (string.IsNullOrEmpty(employeeNo))
+            {
+                Snackbar.Add("Unable to determine employee number", Severity.Error);
+                return;
+            }
+
+            // Load leave history
+            var apiResponse = await LeaveService.GetLeaveHistoryAsync(employeeNo);
+
+            if (apiResponse.Successful && apiResponse.Data != null)
+            {
+                leaveHistory = apiResponse.Data.Items?.ToList() ?? [];
+            }
+            else
+            {
+                Snackbar.Add(apiResponse.Message ?? "Failed to load leave history", Severity.Error);
+                leaveHistory = [];
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+            leaveHistory = [];
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<LeaveHistoryResponse> GetFilteredData()
+    {
+        var filtered = leaveHistory.AsEnumerable();
+
+        // Global search
+        if (!string.IsNullOrWhiteSpace(searchString))
+        {
+            var search = searchString.ToLower();
+            filtered = filtered.Where(x =>
+                x.ApplicationNo?.ToLowerInvariant().Contains(search) == true ||
+                x.LeaveType?.ToLowerInvariant().Contains(search) == true ||
+                x.Status?.ToLowerInvariant().Contains(search) == true);
+                
+        }
+
+        // Status filter
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            filtered = filtered.Where(x =>
+                x.Status?.Equals(statusFilter, StringComparison.OrdinalIgnoreCase) == true);
+        }
+
+        // Date range filter
+        if (dateFromFilter.HasValue)
+        {
+            filtered = filtered.Where(x => x.ApplicationDate >= dateFromFilter.Value);
+        }
+
+        if (dateToFilter.HasValue)
+        {
+            filtered = filtered.Where(x => x.ApplicationDate <= dateToFilter.Value);
+        }
+
+        return filtered;
+    }
+
+    private int GetFilteredCount()
+    {
+        return GetFilteredData().Count();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrWhiteSpace(searchString) ||
+               !string.IsNullOrWhiteSpace(statusFilter) ||
+               dateFromFilter.HasValue ||
+               dateToFilter.HasValue;
+    }
+
+    private void ClearFilters()
+    {
+        searchString = "";
+        statusFilter = "";
+        dateFromFilter = null;
+        dateToFilter = null;
+    }
+
+    private async Task RefreshDataAsync()
+    {
+        await LoadDataAsync();
+        Snackbar.Add("Leave history refreshed", Severity.Success);
+    }
+
+    // Status display logic
+    private (Color color, string icon) GetStatusDisplay(string status)
+    {
+        return status?.ToLowerInvariant() switch
+        {
+            "draft" => (Color.Default, Icons.Material.Filled.Edit),
+            "pending" => (Color.Warning, Icons.Material.Filled.Schedule),
+            "approved" => (Color.Success, Icons.Material.Filled.CheckCircle),
+            "rejected" => (Color.Error, Icons.Material.Filled.Cancel),
+            _ => (Color.Default, Icons.Material.Filled.Info)
+        };
+    }
+
+    private bool CanEdit(string status)
+    {
+        // Can only edit draft or pending applications
+        return status?.ToLowerInvariant() is "draft" or "pending";
+    }
+
+    // Navigation
+    private void NavigateToApply()
+    {
+        Navigation.NavigateTo("/leave/apply");
+    }
+
+    // Dialog handlers
+    private async Task ViewDetailsAsync(LeaveHistoryResponse leave)
+    {
+        var parameters = new DialogParameters
+        {
+            { "LeaveApplication", leave }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<LeaveDetailDialog>(
+            "Leave Application Details",
+            parameters,
+            options);
+
+        await dialog.Result;
+    }
+
+    private async Task EditLeaveAsync(LeaveHistoryResponse leave)
+    {
+        var parameters = new DialogParameters
+        {
+            { "LeaveApplication", leave }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseButton = true,
+            BackdropClick = false
+        };
+
+        var dialog = await DialogService.ShowAsync<EditLeaveDialog>(
+            "Edit Leave Application",
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            // Refresh data after edit
+            await RefreshDataAsync();
+        }
+    }
+}

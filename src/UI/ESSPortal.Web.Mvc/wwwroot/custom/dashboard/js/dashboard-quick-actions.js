@@ -12,11 +12,9 @@
             return;
         }
 
-        console.log('DashboardQuickActions: Initializing...');
         createLoadingOverlay();
         setupEventListeners();
         isInitialized = true;
-        console.log('DashboardQuickActions: Ready');
     }
 
     /**

@@ -15,14 +15,11 @@ const DashboardModals = (function () {
      */
     function init() {
         if (isInitialized) {
-            console.warn('DashboardModals: Already initialized');
             return;
         }
 
-        console.log('DashboardModals: Initializing...');
         checkInitialModalTriggers();
         isInitialized = true;
-        console.log('DashboardModals: Ready');
     }
 
     /**

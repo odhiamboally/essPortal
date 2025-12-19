@@ -1,10 +1,13 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Controllers;
+
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Dtos.Dashboard;
 using ESSPortal.Web.Mvc.Dtos.Leave;
 using ESSPortal.Web.Mvc.Extensions;
+using ESSPortal.Web.Mvc.Utilities.Session;
 using ESSPortal.Web.Mvc.Validations.RequestValidators.Leave;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -22,9 +25,9 @@ public class LeaveController : BaseController
     public LeaveController(
         IServiceManager serviceManager,
         IOptions<AppSettings> appSettings,
-        ILogger<LeaveController> logger
-        )
-        : base(serviceManager, appSettings, logger)
+        ILogger<LeaveController> logger) : base(serviceManager, appSettings, logger)
+        
+        
     {
         
     }
@@ -68,8 +71,6 @@ public class LeaveController : BaseController
 
             var userInfo = GetUserInfoFromSession();
 
-            HttpContext.Session.GetString(SessionKey_UserInfo);
-
             var formResponse = new LeaveApplicationFormResponse
             {
                 Employee = new LeaveApplicationEmployeeResponse
@@ -102,9 +103,21 @@ public class LeaveController : BaseController
     [HttpPost]
     public async Task<IActionResult> ApplyForLeave([FromForm] CreateLeaveApplicationRequest request)
     {
+        bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+                         || Request.Headers["Accept"].ToString().Contains("application/json");
+
         try
         {
             var userInfo = GetUserInfoFromSession();
+            if (userInfo == null) 
+            {
+                userInfo = CacheServiceExtensions.GetUserInfo(_serviceManager.CacheService, _currentUser?.EmployeeNumber ?? string.Empty);
+
+                if (userInfo == null)
+                {
+                    _logger.LogWarning("User info not found in session for employee {EmployeeNo}", _currentUser?.EmployeeNumber);
+                }
+            }
 
             request = request with
             {
@@ -136,8 +149,16 @@ public class LeaveController : BaseController
                 var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
-                    this.ToastWarning("Unable to load required data for leave application.", "Data Load Error");
+                    if (isAjaxRequest)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Unable to load required data for leave application."
+                        });
+                    }
 
+                    this.ToastWarning("Unable to load required data for leave application.", "Data Load Error");
                     var errorFormResponse = await BuildLeaveApplicationFormResponse(request);
                     return View("ApplyForLeave", errorFormResponse);
 
@@ -148,6 +169,15 @@ public class LeaveController : BaseController
 
             if (request.SelectedRelieverEmployeeNos.Count > 1)
             {
+                if (isAjaxRequest)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Please select a reliever for your leave application."
+                    });
+                }
+
                 this.ToastWarning("Please select only one reliever for your leave application.", "Multiple Relievers Selected");
 
                 var errorFormResponse = await BuildLeaveApplicationFormResponse(request, cachedDashboardData);
@@ -158,9 +188,7 @@ public class LeaveController : BaseController
             if (request.SelectedRelieverEmployeeNos.Count == 0)
             {
                 this.ToastWarning("Please select a reliever for your leave application.", "No Reliever Selected");
-
                 var errorFormResponse = await BuildLeaveApplicationFormResponse(request, cachedDashboardData);
-
                 return View("ApplyForLeave", errorFormResponse);
             }
 
@@ -176,7 +204,8 @@ public class LeaveController : BaseController
                 };
             }
 
-            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty);
+            bool isEditing = false;
+            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty, isEditing);
 
             var validationResult = await validator.ValidateAsync(request);
             if (!validationResult.IsValid)
@@ -185,6 +214,17 @@ public class LeaveController : BaseController
                 this.ToastWarning($"{string.Join(", ", errors)}", "Validation Failed");
 
                 var errorFormResponse = await BuildLeaveApplicationFormResponse(request, cachedDashboardData);
+
+                if (isAjaxRequest)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = errors.FirstOrDefault(),
+                        errors = errors,
+                        redirectUrl = Url.Action("Index", "Home")
+                    });
+                }
 
                 return View("ApplyForLeave", errorFormResponse);
 
@@ -196,6 +236,17 @@ public class LeaveController : BaseController
             {
                 _serviceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
 
+                if (isAjaxRequest)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Leave application submitted successfully",
+                        applicationNo = result.Data?.ApplicationNo,
+                        redirectUrl = Url.Action("Index", "Home")
+                    });
+                }
+
                 this.ToastActivitySuccess("Leave Application", "Leave application submitted successfully");
 
                 return RedirectToAction("Index", "Home");
@@ -203,9 +254,19 @@ public class LeaveController : BaseController
             }
             else
             {
+                if (isAjaxRequest)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = result.Message ?? "Failed to submit application",
+                        applicationNo = result.Data?.ApplicationNo,
+                        redirectUrl = Url.Action("Index", "Home")
+                    });
+                }
+
                 this.ToastError(result.Message ?? "Failed to submit application", "Submission Error");
                 var errorFormResponse = await BuildLeaveApplicationFormResponse(request, cachedDashboardData);
-
                 return View("ApplyForLeave", errorFormResponse);
             }
         }
@@ -213,10 +274,17 @@ public class LeaveController : BaseController
         {
             _logger.LogError(ex, "Error submitting leave application for {EmployeeNo}", _currentUser?.EmployeeNumber);
 
+            if (isAjaxRequest)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "An error occurred while submitting your application"
+                });
+            }
+
             this.ToastError("An error occurred while submitting your application", "Error");
-
             var errorFormResponse = await BuildLeaveApplicationFormResponse(request);
-
             return View("ApplyForLeave", errorFormResponse);
 
         }
@@ -225,6 +293,26 @@ public class LeaveController : BaseController
     [HttpGet]
     public async Task<IActionResult> EditLeaveModal(string applicationNo)
     {
+        // PSEUDOCODE / PLAN:
+        // 1. Validate input: if applicationNo is null/empty -> return BadRequest.
+        // 2. Retrieve leave history by calling the existing LeaveHistory() action.
+        // 3. Ensure the returned IActionResult is a ViewResult and contains a List<LeaveHistoryResponse>.
+        // 4. Find the leaveDetails matching the provided applicationNo. If not found -> return NotFound.
+        // 5. Build a LeaveApplicationFormResponse for the modal by calling BuildLeaveApplicationFormResponse with a prefilled CreateLeaveApplicationRequest.
+        // 6. Compute the resumption date:
+        //    - Start with the day after the leave end date: endDate + 1 day.
+        //    - While the candidate resumption date falls on a weekend (Saturday or Sunday), advance by 1 day.
+        //    - (Note: holiday checking is intentionally omitted to avoid coupling to an unknown holiday source;
+        //       if holiday data becomes available in the dashboard or via a service, this loop can also check against that list.)
+        //    - Format the resumption date as "yyyy-MM-dd" to match existing ViewBag date strings.
+        // 7. Populate ViewBag with existing leave data (type, dates, days, half-day flag, reliever, allowance payable).
+        // 8. Return the partial view "_EditLeaveModal" with the built formResponse.
+        //
+        // Implementation details:
+        // - Use safe null checks for _currentUser.
+        // - Use the existing logging and error handling pattern in the controller where appropriate.
+        // - Keep the method asynchronous because BuildLeaveApplicationFormResponse is async.
+
         if (string.IsNullOrWhiteSpace(applicationNo))
         {
             return BadRequest("Application number is required");
@@ -242,6 +330,7 @@ public class LeaveController : BaseController
         {
             return BadRequest("Unable to retrieve leave data");
         }
+
         var leaveDetails = leaveHistoryList.FirstOrDefault(l => l.ApplicationNo == applicationNo);
 
         if (leaveDetails == null)
@@ -256,8 +345,9 @@ public class LeaveController : BaseController
             EmployeeName = $"{_currentUser?.FirstName} {_currentUser?.LastName}".Trim(),
             EmailAddress = _currentUser?.Email ?? string.Empty,
             MobileNo = _currentUser?.PhoneNumber ?? string.Empty,
-            DutiesTakenOverBy = leaveDetails.DutiesTakenOverBy
-
+            DutiesTakenOverBy = leaveDetails.DutiesTakenOverBy,
+            HalfDay = leaveDetails.DaysApplied == 0.5m || leaveDetails.Duration == 0.5,
+            LeaveAllowancePayable = leaveDetails.Duration > 10,
         });
 
         // Pass existing data via ViewBag so it can be bound in the view
@@ -266,15 +356,35 @@ public class LeaveController : BaseController
         ViewBag.ExistingFromDate = leaveDetails.StartDate.ToString("yyyy-MM-dd");
         ViewBag.ExistingToDate = leaveDetails.EndDate.ToString("yyyy-MM-dd");
         ViewBag.ExistingDaysApplied = leaveDetails.DaysApplied;
-        ViewBag.ExistingHalfDay = leaveDetails.DaysApplied == 0.5m;
-        ViewBag.ExistingSelectedRelieverEmployeeNo = leaveDetails.DutiesTakenOverBy;
-        ViewBag.ExistingLeaveAllowancePayable = false;
+        ViewBag.DutiesTakenOverBy = leaveDetails.DutiesTakenOverBy;
+        ViewBag.ExistingHalfDay = leaveDetails.DaysApplied == 0.5m || leaveDetails.Duration == 0.5;
+
+        // Calculate resumption date as the day after end date, skipping weekends (Saturday/Sunday).
+        // If holiday awareness is added later, also skip holidays in this loop.
+        try
+        {
+            var resumptionDate = leaveDetails.EndDate.Date.AddDays(1);
+
+            while (resumptionDate.DayOfWeek == DayOfWeek.Saturday || resumptionDate.DayOfWeek == DayOfWeek.Sunday)
+            {
+                resumptionDate = resumptionDate.AddDays(1);
+            }
+
+            ViewBag.ExistingResumptionDate = resumptionDate.ToString("yyyy-MM-dd");
+        }
+        catch
+        {
+            // Fallback: at minimum provide the day after end date formatted
+            ViewBag.ExistingResumptionDate = leaveDetails.EndDate.Date.AddDays(1).ToString("yyyy-MM-dd");
+        }
+
+        ViewBag.ExistingLeaveAllowancePayable = leaveDetails.Duration > 10;
 
         return PartialView("_EditLeaveModal", formResponse);
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateLeaveApplication([FromForm] CreateLeaveApplicationRequest request)
+    public async Task<IActionResult> EditLeaveApplication([FromForm] CreateLeaveApplicationRequest request)
     {
         try
         {
@@ -350,7 +460,8 @@ public class LeaveController : BaseController
                 };
             }
 
-            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty);
+            bool isEditing = true;
+            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty, isEditing);
 
             var validationResult = await validator.ValidateAsync(request);
             if (!validationResult.IsValid)
@@ -364,7 +475,7 @@ public class LeaveController : BaseController
 
             }
 
-            var result = await _serviceManager.LeaveService.UpdateLeaveApplicationAsync(request);
+            var result = await _serviceManager.LeaveService.EditLeaveApplicationAsync(request);
 
             if (result.Successful)
             {
@@ -453,25 +564,6 @@ public class LeaveController : BaseController
             this.ToastError("Unable to load leave history. Please try again.");
 
             return RedirectToAction("Index", "Home");
-        }
-    }
-
-    private UserInfo? GetUserInfoFromSession()
-    {
-        try
-        {
-            var serializedUserInfo = HttpContext.Session.GetString("UserInfo");
-            if (string.IsNullOrWhiteSpace(serializedUserInfo))
-                return null;
-
-            return JsonSerializer.Deserialize<UserInfo>(serializedUserInfo);
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "Failed to deserialize UserInfo from session for employee {EmployeeNo}",
-                _currentUser?.EmployeeNumber);
-            HttpContext.Session.Remove("UserInfo");
-            return null;
         }
     }
 

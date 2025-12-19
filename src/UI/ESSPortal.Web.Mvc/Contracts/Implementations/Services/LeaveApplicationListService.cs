@@ -3,6 +3,7 @@ using EssPortal.Web.Mvc.Dtos.Common;
 using EssPortal.Web.Mvc.Dtos.ModelFilters;
 using EssPortal.Web.Mvc.Models.Navision;
 
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 using ESSPortal.Web.Mvc.Utilities.Api;
 
@@ -63,9 +64,9 @@ internal sealed class LeaveApplicationListService : ILeaveApplicationListService
     }
 
     // Update operations
-    public async Task<AppResponse<LeaveApplicationList>> UpdateLeaveApplicationListAsync(LeaveApplicationList request)
+    public async Task<AppResponse<LeaveApplicationList>> EditLeaveApplicationListAsync(LeaveApplicationList request)
     {
-        var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.UpdateLeaveApplicationList;
+        var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.EditLeaveApplicationList;
         return await HandlePutRequest<LeaveApplicationList, LeaveApplicationList>(endpoint, request);
     }
 

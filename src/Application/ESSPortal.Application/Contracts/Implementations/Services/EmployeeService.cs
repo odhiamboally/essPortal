@@ -1,12 +1,15 @@
 ﻿using AutoMapper;
 
 using EssPortal.Application.Dtos.ModelFilters;
+using EssPortal.Domain.Enums.NavEnums;
 
 using ESSPortal.Application.Configuration;
 
 using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Application.Dtos.Common;
+using ESSPortal.Application.Dtos.Employee;
 using ESSPortal.Application.Extensions;
+using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.NavEntities;
 
@@ -21,101 +24,175 @@ internal sealed class EmployeeService : IEmployeeService
     private readonly INavisionService _navisionService;
     private readonly ILogger<EmployeeService> _logger;
     private readonly BCSettings _bcSettings;
+    private readonly PaginationSetting _paginationSettings;
     private readonly IMapper _mapper;
 
     public EmployeeService(
         ILogger<EmployeeService> logger,
         IOptions<BCSettings> bcSettings,
+        IOptions<PaginationSetting> paginationSettings,
         INavisionService navisionService,
         IMapper mapper)
     {
         _logger = logger;
         _bcSettings = bcSettings.Value;
+        _paginationSettings = paginationSettings.Value;
         _navisionService = navisionService;
         _mapper = mapper;
     }
 
     // Employees
-    public async Task<ApiResponse<PagedResult<Employees>>> GetEmployeesAsync()
+    public async Task<ApiResponse<PagedResult<EmployeeResponse>>> GetEmployeesAsync()
     {
         if (!_bcSettings.EntitySets.TryGetValue("Employees", out var entitySet))
-            return ApiResponse<PagedResult<Employees>>.Failure("Entity set not configured");
+            return ApiResponse<PagedResult<EmployeeResponse>>.Failure("Entity set not configured");
 
         var response = await _navisionService.GetMultipleAsync<Employees>(entitySet);
-        return await NavisionResponseHandler.HandlePagedResponse(response);
+        var (items, rawJson) = response.Data;
+        var mappedItems = items.Select(emp => emp.ToEmployeeResponse()).ToList();
+
+        return ApiResponse<PagedResult<EmployeeResponse>>.Success("Success", new PagedResult<EmployeeResponse>
+        {
+            Items = mappedItems,
+            Cursor = null,
+            NextCursor = null,
+            PageSize = mappedItems.Count,
+            CurrentPage = 1,
+            IsFirstPage = true,
+            IsLastPage = false,
+            TotalPages = (int)Math.Ceiling((double)mappedItems.Count / _paginationSettings.DefaultPageSize),
+            TotalCount = mappedItems.Count
+        });
     }
 
-    public async Task<ApiResponse<Employees>> GetEmployeeByNoAsync(string employeeNo)
+    public async Task<ApiResponse<EmployeeResponse>> GetEmployeeByNoAsync(string employeeNo)
     {
         if (!_bcSettings.EntitySets.TryGetValue("Employees", out var entitySet))
-            return ApiResponse<Employees>.Failure("Entity set not configured");
+            return ApiResponse<EmployeeResponse>.Failure("Entity set not configured");
 
         var requestUri = $"{entitySet}?$filter=No eq '{employeeNo}'";
         var response = await _navisionService.GetSingleAsync<Employees>(requestUri);
 
         if (!response.Successful)
-            return ApiResponse<Employees>.Failure(response.Message ?? "Failed to fetch employee");
+            return ApiResponse<EmployeeResponse>.Failure(response.Message ?? "Failed to fetch employee");
 
         if (response.Data == null)
-            return ApiResponse<Employees>.Failure("Employee not found");
+            return ApiResponse<EmployeeResponse>.Failure("Employee not found");
 
-        return ApiResponse<Employees>.Success("Success", response.Data);
+        var employeeResponse = response.Data.ToEmployeeResponse();
+        
+        return ApiResponse<EmployeeResponse>.Success("Success", employeeResponse);
     }
 
-    public async Task<ApiResponse<PagedResult<Employees>>> SearchEmployeesAsync(EmployeesFilter filter)
+    public async Task<ApiResponse<PagedResult<EmployeeResponse>>> SearchEmployeesAsync(EmployeesFilter filter)
     {
         if (!_bcSettings.EntitySets.TryGetValue("Employees", out var entitySet))
-            return ApiResponse<PagedResult<Employees>>.Failure("Entity set not configured");
+            return ApiResponse<PagedResult<EmployeeResponse>>.Failure("Entity set not configured");
 
         var odataQuery = filter.BuildODataFilter();
         var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
 
         var response = await _navisionService.GetMultipleAsync<Employees>(requestUri);
         if (!response.Successful)
-            return ApiResponse<PagedResult<Employees>>.Failure(response.Message ?? "Failed to fetch employee records");
+            return ApiResponse<PagedResult<EmployeeResponse>>.Failure(response.Message ?? "Failed to fetch employee records");
 
-        // Extract the list from the tuple
-        var (_, _) = response.Data;
+        var (items, rawJson) = response.Data;
 
-        return await NavisionResponseHandler.HandlePagedResponse(response);
+        var mappedItems = items.Select(emp => emp.ToEmployeeResponse()).ToList();
+
+        return ApiResponse<PagedResult<EmployeeResponse>>.Success("Success", new PagedResult<EmployeeResponse>
+        {
+            Items = mappedItems,
+            Cursor = null,
+            NextCursor = null,
+            PageSize = mappedItems.Count,
+            CurrentPage = 1,
+            IsFirstPage = true,
+            IsLastPage = false,
+            TotalPages = (int)Math.Ceiling((double)mappedItems.Count / _paginationSettings.DefaultPageSize),
+            TotalCount = mappedItems.Count
+        });
     }
 
-    public async Task<ApiResponse<PagedResult<EmployeeCard>>> GetEmployeeCardsAsync()
+    public Task<ApiResponse<bool>> CreateEmployeeCardsAsync(CreateEmployeeCardRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<ApiResponse<PagedResult<EmployeeCardResponse>>> GetEmployeeCardsAsync()
     {
         if (!_bcSettings.EntitySets.TryGetValue("EmployeeCards", out var entitySet))
-            return ApiResponse<PagedResult<EmployeeCard>>.Failure("Entity set not configured");
+            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure("Entity set not configured");
 
         var response = await _navisionService.GetMultipleAsync<EmployeeCard>(entitySet);
-        return await NavisionResponseHandler.HandlePagedResponse(response);
+        if (!response.Successful)
+            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure(response.Message ?? "Failed to fetch employee cards");
+
+        var (items, rawJson) = response.Data;
+        var mappedItems = items.Select(card => card.ToEmployeeCardResponse()).ToList();
+
+        return ApiResponse<PagedResult<EmployeeCardResponse>>.Success("Success", new PagedResult<EmployeeCardResponse>
+        {
+            Items = mappedItems,
+            Cursor = null,
+            NextCursor = null,
+            PageSize = mappedItems.Count,
+            CurrentPage = 1,
+            IsFirstPage = true,
+            IsLastPage = false,
+            TotalPages = (int)Math.Ceiling((double)mappedItems.Count / _paginationSettings.DefaultPageSize),
+            TotalCount = mappedItems.Count
+        });
+
     }
 
-    public async Task<ApiResponse<EmployeeCard>> GetEmployeeCardByNoAsync(string employeeNo)
+    public async Task<ApiResponse<EmployeeCardResponse>> GetEmployeeCardByNoAsync(string employeeNo)
     {
         if (!_bcSettings.EntitySets.TryGetValue("EmployeeCards", out var entitySet))
-            return ApiResponse<EmployeeCard>.Failure("Entity set not configured");
+            return ApiResponse<EmployeeCardResponse>.Failure("Entity set not configured");
 
         var requestUri = $"{entitySet}?$filter=No eq '{employeeNo}'";
         var response = await _navisionService.GetSingleAsync<EmployeeCard>(requestUri);
 
         if (!response.Successful)
-            return ApiResponse<EmployeeCard>.Failure(response.Message ?? "Failed to fetch employee card");
+            return ApiResponse<EmployeeCardResponse>.Failure(response.Message ?? "Failed to fetch employee card");
 
         if (response.Data == null)
-            return ApiResponse<EmployeeCard>.Failure("Employee card not found");
+            return ApiResponse<EmployeeCardResponse>.Failure("Employee card not found");
 
-        return ApiResponse<EmployeeCard>.Success("Success", response.Data);
+        var employeeCardResponse = response.Data.ToEmployeeCardResponse();
+
+        return ApiResponse<EmployeeCardResponse>.Success("Success", employeeCardResponse);
     }
 
-    public async Task<ApiResponse<PagedResult<EmployeeCard>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter)
+    public async Task<ApiResponse<PagedResult<EmployeeCardResponse>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter)
     {
         if (!_bcSettings.EntitySets.TryGetValue("EmployeeCards", out var entitySet))
-            return ApiResponse<PagedResult<EmployeeCard>>.Failure("Entity set not configured");
+            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure("Entity set not configured");
 
         var odataQuery = filter.BuildODataFilter();
         var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
 
         var response = await _navisionService.GetMultipleAsync<EmployeeCard>(requestUri);
-        return await NavisionResponseHandler.HandlePagedResponse(response);
+        if (!response.Successful)
+            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure(response.Message ?? "Failed to fetch employee card records");
+
+        var (items, rawJson) = response.Data;
+        var mappedItems = items.Select(card => card.ToEmployeeCardResponse()).ToList();
+
+        return ApiResponse<PagedResult<EmployeeCardResponse>>.Success("Success", new PagedResult<EmployeeCardResponse>
+        {
+            Items = mappedItems,
+            Cursor = null,
+            NextCursor = null,
+            PageSize = mappedItems.Count,
+            CurrentPage = 1,
+            IsFirstPage = true,
+            IsLastPage = false,
+            TotalPages = (int)Math.Ceiling((double)mappedItems.Count / _paginationSettings.DefaultPageSize),
+            TotalCount = mappedItems.Count
+        });
+
     }
 
     

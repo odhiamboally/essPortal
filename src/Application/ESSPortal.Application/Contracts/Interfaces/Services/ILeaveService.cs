@@ -9,5 +9,4 @@ public interface ILeaveService
     Task<ApiResponse<AnnualLeaveSummaryResponse>> GetAnnualLeaveSummaryAsync(string employeeNo);
     Task<ApiResponse<LeaveSummaryResponse>> GetLeaveSummaryAsync(string employeeNo);
     Task<ApiResponse<PagedResult<LeaveHistoryResponse>>> GetLeaveHistoryAsync(string employeeNo);
-
 }

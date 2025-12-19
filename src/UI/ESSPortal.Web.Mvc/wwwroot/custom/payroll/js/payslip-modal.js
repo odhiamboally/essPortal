@@ -1,11 +1,9 @@
 ﻿// Clean payslip modal handler (MODAL ONLY - no quick actions)
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('=== PAYSLIP MODAL HANDLER LOADED ===');
 
     // Handle ONLY payslip form submission (modal form)
     document.addEventListener('submit', function (event) {
         if (event.target.id === 'payslipGenerationForm') {
-            console.log('=== PAYSLIP FORM INTERCEPTED ===');
 
             // Prevent normal form submission
             event.preventDefault();
@@ -37,7 +35,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return false;
             }
 
-            console.log('Starting AJAX request...');
 
             // Disable modal controls during generation
             disableModalControls(submitBtn, closeBtn, cancelBtn, modal);
@@ -402,5 +399,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    console.log('Payslip modal handler active');
 });

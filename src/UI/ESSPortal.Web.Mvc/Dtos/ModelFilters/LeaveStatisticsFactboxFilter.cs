@@ -1,6 +1,6 @@
 namespace EssPortal.Web.Mvc.Dtos.ModelFilters;
 
-public record LeaveStatisticsFactboxFilter //: BaseFilter
+public record LeaveStatisticsFactboxFilter 
 {
     public string? EmployeeNumber { get; init; }
     public string? LeaveEntitlment { get; init; }

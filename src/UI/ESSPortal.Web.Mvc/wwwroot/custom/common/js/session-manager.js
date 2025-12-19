@@ -17,6 +17,7 @@ const SessionManager = (function () {
         warningThresholdSeconds: 30,
         criticalThresholdSeconds: 10,
         keepAliveIntervalSeconds: 30,
+        warningBeforeLockSeconds: 30,
         checkIntervalSeconds: 15,
         useLockScreen: true,
         debugMode: false
@@ -160,7 +161,7 @@ const SessionManager = (function () {
 
         const idleSeconds = getIdleTimeSeconds();
         const lockThreshold = config.idleTimeoutMinutes * 60;
-        const warningThreshold = lockThreshold - config.warningBeforeLockSeconds;
+        const warningThreshold = lockThreshold - (config.warningBeforeLockSeconds || 30);
 
         debugLog(`Idle: ${Math.floor(idleSeconds)}s / Lock at: ${lockThreshold}s`);
 
@@ -343,336 +344,54 @@ const SessionManager = (function () {
     }
 
     // ========================================
-    // Lock Screen (Pure Overlay)
+    // Lock Screen - Server-Side Redirect (SECURE)
     // ========================================
-    function showLockScreen() {
-
+    async function showLockScreen() {
         if (isLocked) return;
 
         isLocked = true;
+        debugLog('Triggering server-side lock');
 
-        debugLog('Showing lock screen');
-
-        const userInfo = getUserInfo();
-
-        // Create overlay
-        const lockOverlay = document.createElement('div');
-        lockOverlay.id = 'session-lock-overlay';
-        lockOverlay.innerHTML = `
-            <style>
-                #session-lock-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 999999;
-                    animation: lockFadeIn 0.3s ease;
-                }
-                @keyframes lockFadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes lockFadeOut {
-                    from { opacity: 1; }
-                    to { opacity: 0; }
-                }
-                .lock-content {
-                    background: rgba(255, 255, 255, 0.95);
-                    padding: 40px 50px;
-                    border-radius: 16px;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-                    text-align: center;
-                    max-width: 400px;
-                    width: 90%;
-                }
-                .lock-avatar {
-                    width: 80px;
-                    height: 80px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin: 0 auto 20px;
-                    font-size: 32px;
-                    color: white;
-                    font-weight: 600;
-                }
-                .lock-content h2 {
-                    margin: 0 0 8px 0;
-                    color: #1a1a2e;
-                    font-size: 24px;
-                    font-weight: 600;
-                }
-                .lock-user-name {
-                    color: #666;
-                    margin-bottom: 8px;
-                    font-size: 16px;
-                }
-                .lock-message {
-                    color: #888;
-                    margin-bottom: 24px;
-                    font-size: 14px;
-                }
-                .lock-input-group {
-                    margin-bottom: 20px;
-                }
-                .lock-input {
-                    width: 100%;
-                    padding: 14px 16px;
-                    border: 2px solid #e0e0e0;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    transition: border-color 0.2s, box-shadow 0.2s;
-                    box-sizing: border-box;
-                }
-                .lock-input:focus {
-                    outline: none;
-                    border-color: #667eea;
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-                }
-                .lock-input.error {
-                    border-color: #dc3545;
-                    animation: shake 0.5s ease;
-                }
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    25% { transform: translateX(-5px); }
-                    75% { transform: translateX(5px); }
-                }
-                .lock-error {
-                    color: #dc3545;
-                    font-size: 13px;
-                    margin-top: 8px;
-                    display: none;
-                    text-align: left;
-                }
-                .lock-error.visible {
-                    display: block;
-                }
-                .lock-btn {
-                    width: 100%;
-                    padding: 14px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: transform 0.2s, box-shadow 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 8px;
-                }
-                .lock-btn:hover:not(:disabled) {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-                }
-                .lock-btn:disabled {
-                    opacity: 0.7;
-                    cursor: not-allowed;
-                    transform: none;
-                }
-                .lock-spinner {
-                    display: none;
-                    width: 18px;
-                    height: 18px;
-                    border: 2px solid rgba(255,255,255,0.3);
-                    border-top-color: white;
-                    border-radius: 50%;
-                    animation: spin 0.8s linear infinite;
-                }
-                .lock-btn.loading .lock-spinner {
-                    display: block;
-                }
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-                .lock-footer {
-                    margin-top: 24px;
-                    padding-top: 20px;
-                    border-top: 1px solid #eee;
-                }
-                .lock-switch-link {
-                    color: #667eea;
-                    text-decoration: none;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                }
-                .lock-switch-link:hover {
-                    text-decoration: underline;
-                }
-            </style>
-            <div class="lock-content">
-                <div class="lock-avatar">${userInfo.initials}</div>
-                <h2>Screen Locked</h2>
-                <p class="lock-user-name">${userInfo.name}</p>
-                <p class="lock-message">Enter your password to unlock</p>
-                <div class="lock-input-group">
-                    <input type="password" 
-                           id="lock-password" 
-                           class="lock-input" 
-                           placeholder="Password" 
-                           autocomplete="current-password" />
-                    <div id="lock-error" class="lock-error"></div>
-                </div>
-                <button type="button" id="lock-unlock-btn" class="lock-btn">
-                    <span class="lock-spinner"></span>
-                    <span>Unlock</span>
-                </button>
-                <div class="lock-footer">
-                    <a id="lock-signout-link" class="lock-switch-link">Sign out and use different account</a>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(lockOverlay);
-
-        // Setup event handlers
-        const passwordInput = document.getElementById('lock-password');
-        const unlockBtn = document.getElementById('lock-unlock-btn');
-        const signoutLink = document.getElementById('lock-signout-link');
-
-        // Focus password input
-        setTimeout(() => passwordInput?.focus(), 100);
-
-        // Handle Enter key
-        passwordInput?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleUnlock();
-            }
-        });
-
-        // Handle unlock button
-        unlockBtn?.addEventListener('click', handleUnlock);
-
-        // Handle sign out
-        signoutLink?.addEventListener('click', (e) => {
-            e.preventDefault();
-            logout();
-        });
-
-        debugLog('Lock screen shown - keep-alive will continue');
-
-    }
-
-    function hideLockScreen() {
-
-        const lockOverlay = document.getElementById('session-lock-overlay');
-        if (lockOverlay) {
-            lockOverlay.style.animation = 'fadeOut 0.3s ease';
-            setTimeout(() => lockOverlay.remove(), 300);
+        // Stop checking idle (will resume after unlock)
+        if (idleCheckInterval) {
+            clearInterval(idleCheckInterval);
+            idleCheckInterval = null;
         }
-
-        isLocked = false;
-        lastActivity = Date.now();
-
-        debugLog('Lock screen hidden');
-    }
-
-    // ========================================
-    // Unlock Handler
-    // ========================================
-
-    async function handleUnlock(e) {
-
-        e.preventDefault();
-
-        const passwordInput = document.getElementById('lock-password');
-        const unlockBtn = document.getElementById('lock-unlock-btn');
-        const errorDiv = document.getElementById('lock-error');
-        const password = passwordInput?.value;
-
-        if (!password) {
-
-            passwordInput.classList.add('error');
-
-            if (errorDiv) {
-                errorDiv.textContent = 'Please enter your password';
-                errorDiv.classList.add('visible');
-            }
-
-            return;
-        }
-
-        // Show loading state
-        if (unlockBtn) {
-            unlockBtn.disabled = true;
-            unlockBtn.classList.add('loading');
-        }
-
-        passwordInput?.classList.remove('error');
-        errorDiv?.classList.remove('visible');
 
         try {
-
-            // Session is still alive
-
-            const response = await fetch('/Auth/Unlock', {
+            // Tell server to lock the session
+            const response = await fetch('/Auth/TriggerLock', {
                 method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify({ Password: password })
+                headers: getHeaders()
             });
 
-            // If we get 401, session actually expired (user was locked 15+ minutes)
             if (response.status === 401) {
                 handleRealSessionExpired();
                 return;
             }
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-
-                debugLog('Unlock successful');
-                hideLockScreen();
-                showNotification('Welcome back!', 'success');
-
-            } else {
-
-                // Show error
-                passwordInput.classList.add('error');
-
-                if (errorDiv) {
-                    errorDiv.textContent = data.message || 'Invalid password';
-                    errorDiv.classList.add('visible');
-                }
-
-                if (passwordInput) {
-                    passwordInput.value = '';
-                    passwordInput.focus();
-                }
-
-                // Check if too many attempts
-                if (data.locked) {
-                    errorDiv.textContent = 'Account locked. Signing out...';
-                    setTimeout(() => logout(), 2000);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = data.redirectUrl || '/Auth/Lock';
+                    return;
                 }
             }
+
+            // Fallback
+            window.location.href = '/Auth/Lock';
+
         } catch (error) {
 
-            debugLog('Unlock error: ' + error.message);
-
-            if (errorDiv) {
-                errorDiv.textContent = 'Connection error. Please try again.';
-                errorDiv.classList.add('visible');
-            }
-
-        } finally {
-
-            if (unlockBtn) {
-                unlockBtn.disabled = false;
-                unlockBtn.classList.remove('loading');
-            }
+            debugLog('Lock trigger error: ' + error.message);
+            // Fallback: redirect directly  
+            window.location.href = '/Auth/Lock';
         }
+    }
+
+    function hideLockScreen() {
+
+        isLocked = false;
     }
 
     // ========================================
@@ -866,7 +585,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const isAuthPage = path.includes('/auth/');
 
     if (!isAuthPage) {
-        console.log('[SessionManager] Initializing...');
         SessionManager.init();
     } else {
         console.log('[SessionManager] Skipping on auth page');

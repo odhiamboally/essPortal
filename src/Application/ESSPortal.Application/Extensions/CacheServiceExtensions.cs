@@ -1,11 +1,24 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Dtos.Dashboard;
 using ESSPortal.Application.Dtos.Leave;
+using ESSPortal.Application.Dtos.Profile;
 using ESSPortal.Application.Utilities;
 
 namespace ESSPortal.Application.Extensions;
 public static class CacheServiceExtensions
 {
+
+    // USerInfo methods
+    public static UserInfo? GetUserInfo(this ICacheService cache, string employeeNo)
+    {
+        return cache.Get<UserInfo>(CacheKeys.UserInfo(employeeNo));
+    }
+
+    public static void SetUserInfo(this ICacheService cache, string employeeNo, UserInfo data)
+    {
+        cache.Set(CacheKeys.UserInfo(employeeNo), data, CacheExpiration.Dashboard);
+    }
+
     // Dashboard methods
     public static DashboardResponse? GetDashboard(this ICacheService cache, string employeeNo)
     {

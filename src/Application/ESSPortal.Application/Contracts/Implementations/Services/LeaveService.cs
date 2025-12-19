@@ -71,8 +71,6 @@ internal sealed class LeaveService : ILeaveService
                 return ApiResponse<LeaveApplicationResponse>.Failure(createLeaveResponse.Message ?? "Failed to submit leave application");
             }
 
-            _logger.LogInformation("Leave application created successfully for employee {EmployeeNo}", request.EmployeeNo);
-
             _cache.Remove(CacheKeys.LeaveHistory(request.EmployeeNo));
             _cache.InvalidateLeaveSummary(request.EmployeeNo);
             _cache.InvalidateDashboard(request.EmployeeNo);
@@ -90,7 +88,7 @@ internal sealed class LeaveService : ILeaveService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating leave application for employee {EmployeeNo}", request.EmployeeNo);
-            return ApiResponse<LeaveApplicationResponse>.Failure("An error occurred while submitting your leave application");
+            throw;
         }
     }
 
@@ -112,8 +110,6 @@ internal sealed class LeaveService : ILeaveService
                 return ApiResponse<LeaveApplicationResponse>.Failure(createLeaveResponse.Message ?? "Failed to submit leave application");
             }
 
-            _logger.LogInformation("Leave application updated successfully for employee {EmployeeNo}", request.EmployeeNo);
-
             _cache.Remove(CacheKeys.LeaveHistory(request.EmployeeNo));
             _cache.InvalidateLeaveSummary(request.EmployeeNo);
             _cache.InvalidateDashboard(request.EmployeeNo);
@@ -132,7 +128,7 @@ internal sealed class LeaveService : ILeaveService
         {
 
             _logger.LogError(ex, "Error updating leave application for employee {EmployeeNo}", request.EmployeeNo);
-            return ApiResponse<LeaveApplicationResponse>.Failure("An error occurred while submitting your leave application");
+            throw;
         }
     }
 
@@ -143,7 +139,7 @@ internal sealed class LeaveService : ILeaveService
             if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationLists", out var entitySet))
                 return ApiResponse<PagedResult<LeaveHistoryResponse>>.Failure("Leave Application Lists entity set not configured");
 
-            LeaveApplicationListFilter filter = new() { Employee_No = employeeNo };
+            LeaveApplicationCardFilter filter = new() { Employee_No = employeeNo };
             var odataQuery = filter.BuildODataFilter();
             var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
 
@@ -185,13 +181,12 @@ internal sealed class LeaveService : ILeaveService
 
             };
 
-            _logger.LogInformation("Successfully fetched leave history for employee {EmployeeNo}", employeeNo);
 
             return ApiResponse<PagedResult<LeaveHistoryResponse>>.Success("Leave history fetched successfully", result);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-
+            _logger.LogError(ex, "Error occurred while fetching leave history for employee {EmployeeNo}", employeeNo);
             throw;
         }
     }
@@ -214,9 +209,12 @@ internal sealed class LeaveService : ILeaveService
             var leaveApplicationListEntities = leaveApplicationListsTask.Result;
             var leaveApplicationCardEntities = leaveApplicationCardsTask.Result;
 
+            var leaveApplicationCards = leaveApplicationCardEntities.Items.ToLeaveApplicationCards();
+            var leaveApplicationLists = leaveApplicationListEntities.Items.ToLeaveApplicationLists();
+
             var leaveSummary = LeaveSummaryCalculator.CalculateLeaveSummary(
-                leaveApplicationCardEntities,
-                leaveApplicationListEntities,
+                leaveApplicationCards,
+                leaveApplicationLists,
                 currentLeavePeriod);
 
             if (leaveSummary == null)
@@ -229,9 +227,9 @@ internal sealed class LeaveService : ILeaveService
 
             return ApiResponse<AnnualLeaveSummaryResponse>.Success("Leave summary fetched successfully", leaveSummary);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-
+            _logger.LogError(ex, "Error occurred while retrieving annual leave summary");
             throw;
         }
     }
@@ -252,102 +250,133 @@ internal sealed class LeaveService : ILeaveService
             var leaveApplicationCardEntities = leaveApplicationCardsTask.Result;
             var leaveTypesEntities = leaveTypesTask.Result;
 
-            leaveApplicationCardEntities.ToLeaveApplicationCardResponse();
-            leaveTypesEntities.Select(lt => lt.ToLeaveTypeResponse()).ToList();
+            var leaveApplicationCards = leaveApplicationCardEntities.Items.ToLeaveApplicationCards();
+
+            var leaveTypeResponses = LeaveMappingExtensions.ToLeaveTypeResponses(leaveTypesEntities);
 
             var leaveSummary = BCEntityMappingExtensions.ToLeaveSummaryResponse(
                 employeeNo,
                 leaveTypesEntities,
-                leaveApplicationCardEntities);
+                leaveApplicationCards);
 
             _cache.SetLeaveSummary(employeeNo, leaveSummary);
 
             return ApiResponse<LeaveSummaryResponse>.Success("Leave summary retrieved successfully", leaveSummary);
 
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-
+            _logger.LogError(ex, "Error occurred while retrieving leave summary");
             throw;
         }
     }
 
-    private async Task<List<Domain.Entities.LeaveApplicationCard>> GetLeaveApplicationCardsAsync(string employeeNo)
+    private async Task<PagedResult<LeaveApplicationCardResponse>> GetLeaveApplicationCardsAsync(string employeeNo)
     {
-        LeaveApplicationCardFilter filter = new() { Employee_No = employeeNo };
-
-        var response = await _leaveApplicationCardService.SearchLeaveApplicationCardsAsync(filter);
-        if (!response.Successful)
+        try
         {
-            _logger.LogError("Failed to fetch leave application cards for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
-            return new List<Domain.Entities.LeaveApplicationCard>();
-        }
+            LeaveApplicationCardFilter filter = new() { Employee_No = employeeNo };
 
-        if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
+            var response = await _leaveApplicationCardService.SearchLeaveApplicationCardsAsync(filter);
+            if (!response.Successful)
+            {
+                _logger.LogError("Failed to fetch leave application cards for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
+                return new();
+            }
+
+            if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
+            {
+                _logger.LogInformation("No leave application cards found for employee {EmployeeNo}", employeeNo);
+                return new();
+            }
+
+            return response.Data;
+        }
+        catch (Exception ex)
         {
-            _logger.LogInformation("No leave application cards found for employee {EmployeeNo}", employeeNo);
-            return new List<Domain.Entities.LeaveApplicationCard>();
+            _logger.LogError(ex, "Error occurred while fetching leave application cards for employee {EmployeeNo}", employeeNo);
+            throw;
         }
-
-        return response.Data.Items;
     }
 
-    private async Task<List<LeaveApplicationList>> GetLeaveApplicationListsAsync(string employeeNo)
+    private async Task<PagedResult<LeaveApplicationListResponse>> GetLeaveApplicationListsAsync(string employeeNo)
     {
-        LeaveApplicationListFilter filter = new() { Employee_No = employeeNo };
-        var response = await _leaveApplicationListService.SearchLeaveApplicationListsAsync(filter);
-        if (!response.Successful)
+        try
         {
-            _logger.LogError("Failed to fetch leave application lists for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
-            return new List<LeaveApplicationList>();
+            LeaveApplicationListFilter filter = new() { Employee_No = employeeNo };
+
+            var response = await _leaveApplicationListService.SearchLeaveApplicationListsAsync(filter);
+            if (!response.Successful)
+            {
+                _logger.LogError("Failed to fetch leave application lists for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
+                return new ();
+            }
+
+            if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
+            {
+                _logger.LogInformation("No leave application lists found for employee {EmployeeNo}", employeeNo);
+                return new ();
+            }
+
+            return response.Data;
         }
-        if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
+        catch (Exception ex)
         {
-            _logger.LogInformation("No leave application lists found for employee {EmployeeNo}", employeeNo);
-            return new List<LeaveApplicationList>();
+            _logger.LogError(ex, "Error occurred while fetching leave application lists for employee {EmployeeNo}", employeeNo);
+            throw;
         }
-        return response.Data.Items;
 
     }
 
     private async Task<List<LeaveTypes>> GetActiveLeaveTypesAsync()
     {
-        var cachedLeaveTypes = _cache.GetLeaveTypes();
-        if (cachedLeaveTypes != null)
+        try
         {
-            _logger.LogInformation("Returning cached leave types");
-            return cachedLeaveTypes.Select(lt => new LeaveTypes
+            var cachedLeaveTypes = _cache.GetLeaveTypes();
+            if (cachedLeaveTypes != null)
             {
-                Code = lt.Code,
-                Description = lt.Description,
-                Max_Carry_Forward_Days = lt.MaxDays,
-                Days = lt.Days,
-                Gender = lt.Gender,
-                Annual_Leave = lt.AnnualLeave
+                _logger.LogInformation("Returning cached leave types");
+                return cachedLeaveTypes.Select(lt => new LeaveTypes
+                {
+                    Code = lt.Code,
+                    Description = lt.Description,
+                    Max_Carry_Forward_Days = lt.MaxDays,
+                    Days = lt.Days,
+                    Gender = lt.Gender,
+                    Annual_Leave = lt.AnnualLeave
 
-            }).ToList();
+                }).ToList();
+            }
+
+            var response = await _leaveTypeService.GetLeaveTypesAsync();
+            if (!response.Successful)
+            {
+                _logger.LogError("Failed to fetch leave types: {Message}", response.Message);
+                return [];
+            }
+
+            if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
+            {
+                _logger.LogInformation("No active leave types found");
+                return [];
+            }
+
+            var leaveTypeResponses = response.Data.Items;
+
+            _cache.SetLeaveTypes(leaveTypeResponses);
+
+            _logger.LogInformation("Fetched and cached {Count} active leave types", response.Data.Items.Count);
+
+            var leaveTypes = LeaveMappingExtensions.ToLeaveTypes(leaveTypeResponses);
+
+            return leaveTypes;
         }
-
-        var response = await _leaveTypeService.GetLeaveTypesAsync();
-        if (!response.Successful)
+        catch (Exception ex)
         {
-            _logger.LogError("Failed to fetch leave types: {Message}", response.Message);
-            return [];
+            _logger.LogError(ex, "Error occurred while fetching active leave types");
+
+            throw;
         }
-
-        if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
-        {
-            _logger.LogInformation("No active leave types found");
-            return [];
-        }
-
-        var leaveTypeResponses = response.Data.Items.Select(lt => lt.ToLeaveTypeResponse()).ToList();
-
-        _cache.SetLeaveTypes(leaveTypeResponses);
-
-        _logger.LogInformation("Fetched and cached {Count} active leave types", response.Data.Items.Count);
-
-        return response.Data.Items;
     }
 
     private static Task<ApiResponse<PagedResult<T>>> HandleNavisionPagedResponse<T>(ApiResponse<(List<T> Items, string RawJson)> response)

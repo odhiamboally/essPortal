@@ -5,7 +5,6 @@ public class BCSettings
     public string OdataBaseUrl { get; set; } = string.Empty;
     public string SoapServiceBaseUrl { get; set; } = string.Empty;
     public string OnlinePortalServicesEndpoint { get; set; } = string.Empty;
-    public string EmployeeSelfServiceEndpoint_ { get; set; } = string.Empty;
 
 
     // Template-based endpoints

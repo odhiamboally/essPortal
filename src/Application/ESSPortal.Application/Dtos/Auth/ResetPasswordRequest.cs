@@ -2,8 +2,8 @@
 public record ResetPasswordRequest
 {
     public string Email { get; init; } = string.Empty;
-    public string? NewPassword { get; init; }  // Match frontend property name
-    public string? Password { get; init; }     // Keep for backward compatibility
+    public string? NewPassword { get; init; }  
+    public string? Password { get; init; }    
     public string? ConfirmPassword { get; init; }
     public string Token { get; init; } = string.Empty;
     public string? EmployeeNumber { get; init; }

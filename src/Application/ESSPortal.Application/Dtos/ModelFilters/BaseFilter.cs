@@ -17,7 +17,6 @@ public abstract record BaseFilter
 
             string? stringValue = null;
 
-            // Handle different value types properly
             if (prop.PropertyType.IsEnum)
             {
                 // Handle direct enum values

@@ -222,36 +222,53 @@
                         <div class="invalid-feedback">Please select a valid to date</div>
                     </div>
 
-                    <div class="col compact-col">
-                        <label for="ResumptionDate" class="form-label">Resumption Date</label>
-                        <div class="date-input-group">
-                            <input name="ResumptionDate" type="text" class="form-control calculated-field" readonly>
-                            <i class="date-icon">📅</i>
+                    <!-- Replace your current resumption date and checkboxes section with this -->
+                    <div class="col-12">
+
+                        <div class="row g-3">
+                            <!-- Resumption Date -->
+                            <div class="col-md-4">
+                                <label for="resumptionDate" class="form-label">Resumption Date</label>
+                                <div class="date-input-group">
+                                    <input name="ResumptionDate" type="text" class="form-control calculated-field" readonly>
+                                    <i class="date-icon">📅</i>
+                                </div>
+                            </div>
+
+                            <!-- Half Day Leave -->
+                            <div class="col-md-4">
+                                <label class="form-label">Leave Options</label>
+                                <div class="form-check form-switch">
+                                    <input name="HalfDay"
+                                           class="form-check-input"
+                                           type="checkbox"
+                                           id="halfDay"
+                                           value="true">
+                                    <input name="HalfDay" type="hidden" value="false">
+                                    <label class="form-check-label" for="halfDay">
+                                        Half Day Leave (0.5 days)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Leave Allowance Payable -->
+                            <div class="col-md-4">
+                                <label class="form-label"></label>
+                                <div class="form-check form-switch">
+                                    <input name="LeaveAllowancePayable"
+                                           class="form-check-input"
+                                           type="checkbox"
+                                           id="leaveAllowance"
+                                           value="true">
+                                    <input name="LeaveAllowancePayable" type="hidden" value="false">
+                                    <label class="form-check-label" for="leaveAllowance">
+                                        Leave Allowance Payable
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    @* ToDo: Add Toggle for Half Day *@
-                    <div class="col compact-col">
-                        <label class="form-label" style="opacity: 0;">Toggle Options</label>
-
-                        <!-- Half Day Toggle -->
-                        <div class="form-check form-switch mb-2">
-                            <input name="HalfDay" class="form-check-input" type="checkbox" value="true" id="halfDayToggle">
-                            <input name="HalfDay" type="hidden" value="false">
-                            <label class="form-check-label" for="halfDayToggle" style="font-size: 0.75rem;">
-                                Half Day Leave (0.5 days)
-                            </label>
-                        </div>
-
-                        <!-- Leave Allowance Toggle -->
-                        <div class="form-check form-switch">
-                            <input name="LeaveAllowancePayable" class="form-check-input" type="checkbox" value="true" id="leaveAllowanceToggle">
-                            <input name="LeaveAllowancePayable" type="hidden" value="false">
-                            <label class="form-check-label" for="leaveAllowanceToggle" style="font-size: 0.75rem;">
-                                Leave Allowance Payable
-                            </label>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -259,7 +276,7 @@
         <!-- Leave Relievers and Attachments Row -->
         <div class="row equal-height-row">
             <!-- Leave Relievers Card -->
-            <div class="col-lg-7">
+            <div class="col">
                 <div class="form-card equal-height-card">
                     <div class="form-card-header">
                         <h3 class="form-card-title">
@@ -317,33 +334,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Attachments Card -->
-            <div class="col-lg-5">
-                <div class="form-card equal-height-card">
-                    <div class="form-card-header">
-                        <h3 class="form-card-title">
-                            <i class="form-card-icon">📎</i>
-                            Attachments
-                        </h3>
-                        <div class="form-card-subtitle">
-                            Upload supporting documents (optional)
-                        </div>
-                    </div>
-                    <div class="form-card-body attachment-card-body">
-                        <div class="file-upload-area">
-                            <div class="file-upload-icon">📁</div>
-                            <div class="file-upload-text">Select files to upload</div>
-                            <div class="file-upload-hint">Supports: PDF, DOC, XLS, Images, ZIP (Max: 10MB each)</div>
-                            <input name="Attachments" type="file" class="form-control mt-3" multiple
-                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar"
-                                   title="Select files to attach to your leave application">
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-
         <!-- Action Buttons -->
         <div class="action-buttons">
             <div class="d-flex gap-2 justify-content-end">

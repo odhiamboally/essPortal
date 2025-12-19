@@ -1,0 +1,275 @@
+﻿@using ESSPortal.Web.Mvc.ViewModels.Auth
+
+@model LockScreenViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Locked - ESS Portal</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .lock-card {
+            background: white;
+            border-radius: 20px;
+            padding: 48px 44px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+
+        .avatar {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 600;
+            margin: 0 auto 28px;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+        }
+
+            .avatar img {
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                object-fit: cover;
+            }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .user-name {
+            color: #475569;
+            font-size: 16px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+
+            .form-control:focus {
+                outline: none;
+                border-color: #6366f1;
+                background: white;
+                box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            }
+
+            .form-control.input-validation-error,
+            .form-control.error {
+                border-color: #ef4444;
+                background: #fef2f2;
+            }
+
+        .btn-unlock {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+
+            .btn-unlock:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+            }
+
+            .btn-unlock:active {
+                transform: translateY(0);
+            }
+
+            .btn-unlock:disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+            margin: 28px 0;
+        }
+
+        .sign-out-link {
+            color: #6366f1;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+            .sign-out-link:hover {
+                color: #4f46e5;
+                text-decoration: underline;
+            }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border: 1px solid #fecaca;
+        }
+
+        .field-validation-error {
+            color: #dc2626;
+            font-size: 13px;
+            margin-top: 6px;
+            display: block;
+        }
+
+        .loading .btn-unlock {
+            position: relative;
+            color: transparent;
+        }
+
+            .loading .btn-unlock::after {
+                content: "";
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                top: 50%;
+                left: 50%;
+                margin-left: -10px;
+                margin-top: -10px;
+                border: 2px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                border-top-color: white;
+                animation: spin 0.8s linear infinite;
+            }
+
+        @@keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lock-card">
+        <div class="avatar">
+            @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+            {
+                <img src="@Model.ProfilePictureUrl" alt="@Model.Initials" />
+            }
+            else
+            {
+                @Model.Initials
+            }
+        </div>
+
+        <h1>Screen Locked</h1>
+        <p class="user-name">@Model.DisplayName</p>
+        <p class="subtitle">Enter your password to unlock</p>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            var errors = ViewData.ModelState.Values
+            .SelectMany(v => v.Errors)
+            .Select(e => e.ErrorMessage)
+            .Where(m => !string.IsNullOrEmpty(m));
+
+            if (errors.Any())
+            {
+                <div class="error-message">
+                    @string.Join(" ", errors)
+                </div>
+            }
+        }
+
+        <form asp-action="Unlock" asp-controller="Auth" method="post" id="unlockForm">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <input type="password"
+                       name="Password"
+                       id="passwordInput"
+                       class="form-control"
+                       placeholder="Password"
+                       autocomplete="current-password"
+                       autofocus
+                       required />
+                <span class="field-validation-error" id="passwordError"></span>
+            </div>
+
+            <button type="submit" class="btn-unlock" id="unlockBtn">Unlock</button>
+        </form>
+
+        <div class="divider"></div>
+
+        <form asp-action="SignOut" asp-controller="Auth" method="post" id="signOutForm" style="display: inline;">
+            @Html.AntiForgeryToken()
+            <a href="#" class="sign-out-link" onclick="document.getElementById('signOutForm').submit(); return false;">
+                Sign out
+            </a>
+        </form>
+
+    </div>
+
+    <script>
+        // Add loading state on submit
+        document.getElementById('unlockForm').addEventListener('submit', function() {
+            document.body.classList.add('loading');
+            document.getElementById('unlockBtn').disabled = true;
+        });
+
+        // Focus password field
+        document.getElementById('passwordInput').focus();
+    </script>
+</body>
+</html>

@@ -5,7 +5,9 @@ using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Dtos.Profile;
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Mappings;
+using ESSPortal.Web.Mvc.Utilities.Session;
 using ESSPortal.Web.Mvc.Validations.RequestValidators.Profile;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -53,6 +55,10 @@ public class ProfileController : BaseController
             var viewModel = profile.ToUserProfileViewModel();
 
             var userInfo = GetUserInfoFromSession();
+            if (userInfo == null)
+            {
+                userInfo = CacheServiceExtensions.GetUserInfo(_serviceManager.CacheService, _currentUser?.EmployeeNumber ?? string.Empty);
+            }
 
             viewModel.EmploymentDetails.ManagerName = userInfo?.ManagerSupervisor ?? "N/A";
             viewModel.EmploymentDetails.Department = userInfo?.ResponsibilityCenter ?? "N/A";
@@ -359,24 +365,7 @@ public class ProfileController : BaseController
         }
     }
 
-    private UserInfo? GetUserInfoFromSession()
-    {
-        try
-        {
-            var serializedUserInfo = HttpContext.Session.GetString("UserInfo");
-            if (string.IsNullOrWhiteSpace(serializedUserInfo))
-                return null;
-
-            return JsonSerializer.Deserialize<UserInfo>(serializedUserInfo);
-        }
-        catch (JsonException ex)
-        {
-            _logger.LogError(ex, "Failed to deserialize UserInfo from session for employee {EmployeeNo}",
-                _currentUser?.EmployeeNumber);
-            HttpContext.Session.Remove("UserInfo");
-            return null;
-        }
-    }
+    
 
 
 }

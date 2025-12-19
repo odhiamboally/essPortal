@@ -44,12 +44,6 @@ public class ExceptionHandler : IExceptionHandler
                     problemDetails.Detail = httpRequestException.Message;
                     break;
 
-                case NoContentException:
-                    problemDetails.Status = (int)HttpStatusCode.NotFound;
-                    problemDetails.Title = "No Records Found";
-                    problemDetails.Detail = "The requested resource could not be found.";
-                    break;
-
                 case CreatingDuplicateException:
                     problemDetails.Status = (int)HttpStatusCode.Conflict;
                     problemDetails.Title = "Duplicate Record";

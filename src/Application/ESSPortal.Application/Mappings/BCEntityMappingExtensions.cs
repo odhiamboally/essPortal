@@ -78,6 +78,11 @@ public static class BCEntityMappingExtensions
         };
     }
 
+    public static List<LeaveTypeResponse> ToLeaveTypeResponses(this List<LeaveTypes> entities)
+    {
+        return entities.Select(ToLeaveTypeResponse).ToList();
+    }
+
     public static List<LeaveHistoryResponse> ToLeaveHistoryResponses(this List<Domain.Entities.LeaveApplicationCard> entities, List<LeaveTypeResponse>? leaveTypes = null)
     {
         if (entities == null || !entities.Any())

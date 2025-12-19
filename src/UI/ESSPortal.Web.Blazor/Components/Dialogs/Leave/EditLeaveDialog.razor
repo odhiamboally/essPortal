@@ -1,0 +1,338 @@
+﻿@inject IClientServiceManager ServiceManager
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-2" />
+            Edit Leave Application
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        @if (isLoading)
+        {
+            <MudProgressCircular Indeterminate="true" Class="ma-4" />
+        }
+        else
+        {
+            <MudForm @ref="form" Model="@leaveApplicationFormResponse" Validation="@(new LeaveApplicationViewModelValidator())">
+                <MudStack Spacing="3">
+                    <!-- Application Info (Read-only) -->
+                    <MudPaper Outlined="true" Class="pa-3">
+                        <MudGrid Spacing="2">
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Application No</MudText>
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                                    @LeaveApplication?.ApplicationNo
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                                @{
+                                    var (color, icon) = GetStatusDisplay(LeaveApplication?.Status ?? "unknown");
+                                }
+                                <MudChip T="string" Color="@color" Icon="@icon" Size="Size.Small">
+                                    @LeaveApplication?.Status
+                                </MudChip>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+
+                    <!-- Leave Details (Editable) -->
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Leave Details</MudText>
+                    
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="leaveApplicationViewModel.DaysApplied"
+                                          Label="Days Applied"
+                                          For="@(() => leaveApplicationViewModel.DaysApplied)"
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Number"
+                                          Step="0.5"
+                                          Min="0.5"
+                                          Required="true" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudDatePicker @bind-Date="leaveApplicationViewModel.FromDate"
+                                           Label="Start Date"
+                                           For="@(() => leaveApplicationViewModel.FromDate)"
+                                           Variant="Variant.Outlined"
+                                           Required="true"
+                                           MinDate="DateTime.Today"
+                                           DateFormat="dd/MM/yyyy" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudDatePicker @bind-Date="leaveApplicationViewModel.ToDate"
+                                           Label="End Date"
+                                           For="@(() => leaveApplicationViewModel.ToDate)"
+                                           Variant="Variant.Outlined"
+                                           Required="true"
+                                           MinDate="leaveApplicationViewModel.FromDate ?? DateTime.Today"
+                                           DateFormat="dd/MM/yyyy" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudTextField Value="@GetResumptionDate()"
+                                          Label="Resumption Date"
+                                          Variant="Variant.Outlined"
+                                          ReadOnly="true" />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="leaveApplicationViewModel.ReasonForLeave"
+                                          Label="Reason for Leave"
+                                          For="@(() => leaveApplicationViewModel.ReasonForLeave)"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          Lines="3" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudSwitch T="bool"
+                                       @bind-Checked="leaveApplicationViewModel.HalfDay"
+                                       Label="Half Day Leave (0.5 days)"
+                                       Color="Color.Primary" />
+                        </MudItem>
+
+                        <MudItem xs="12" md="6">
+                            <MudSwitch T="bool"
+                                       @bind-Checked="leaveApplicationViewModel.LeaveAllowancePayable"
+                                       Label="Leave Allowance Payable"
+                                       Color="Color.Primary" />
+                        </MudItem>
+                        
+                    </MudGrid>
+
+                    <!-- Reliever (Optional) -->
+                    @if (availableRelievers?.Any() == true)
+                    {
+                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">Leave Reliever (Optional)</MudText>
+                        
+                        <MudAutocomplete T="LeaveRelieverResponse"
+                                         @bind-Value="selectedReliever"
+                                         SearchFunc="@SearchRelievers"
+                                         Label="Search for reliever"
+                                         Variant="Variant.Outlined"
+                                         ToStringFunc="@(r => r == null ? "" : $"{r.EmployeeName} ({r.EmployeeNo})")"
+                                         ResetValueOnEmptyText="true"
+                                         CoerceText="true"
+                                         AdornmentIcon="@Icons.Material.Filled.Search">
+                            <ItemTemplate Context="reliever">
+                                <MudStack Row="false" Spacing="1">
+                                    <MudText Typo="Typo.body1">@reliever.EmployeeName</MudText>
+                                    <MudText Typo="Typo.caption">
+                                        @reliever.EmployeeNo - @reliever.Department
+                                    </MudText>
+                                </MudStack>
+                            </ItemTemplate>
+                        </MudAutocomplete>
+                    }
+                </MudStack>
+            </MudForm>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="Color.Secondary" OnClick="Cancel" Disabled="@isSubmitting">
+            Cancel
+        </MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="SaveAsync"
+                   Disabled="@isSubmitting">
+            @if (isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="ml-2">Saving...</span>
+            }
+            else
+            {
+                <MudIcon Icon="@Icons.Material.Filled.Save" Size="Size.Small" Class="mr-2" />
+                <span>Save Changes</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    MudDialog? MudDialog { get; set; }
+
+    [Parameter]
+    public LeaveHistoryResponse? LeaveApplication { get; set; }
+
+    private MudForm? form;
+    private bool isLoading;
+    private bool isSubmitting;
+    private LeaveApplicationViewModel leaveApplicationViewModel = new();
+    private CreateLeaveApplicationRequest createLeaveApplicationRequest = new();
+    private LeaveApplicationFormResponse leaveApplicationFormResponse = new();
+    
+    // Reliever
+    private LeaveRelieverResponse? selectedReliever;
+    private List<LeaveRelieverResponse> availableRelievers = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFormDataAsync();
+    }
+
+    private async Task LoadFormDataAsync()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Map existing leave application to edit model
+            leaveApplicationViewModel.EmployeeNo = LeaveApplication?.EmployeeNo ?? string.Empty;
+            leaveApplicationViewModel.ApplicationNo = LeaveApplication?.ApplicationNo ?? string.Empty;
+            leaveApplicationViewModel.LeaveType = LeaveApplication?.LeaveType ?? string.Empty;
+            leaveApplicationViewModel.DaysApplied = LeaveApplication?.DaysApplied ?? 0;
+            leaveApplicationViewModel.FromDate = LeaveApplication?.StartDate ?? DateTime.MinValue;
+            leaveApplicationViewModel.ToDate = LeaveApplication?.EndDate ?? DateTime.MinValue;
+            leaveApplicationViewModel.ReasonForLeave = string.Empty;
+            leaveApplicationViewModel.HalfDay = LeaveApplication?.HalfDay ?? false;
+            leaveApplicationViewModel.LeaveAllowancePayable = LeaveApplication?.LeaveAllowancePayable ?? false;
+            leaveApplicationViewModel.LeavePeriod = DateTime.Now.Year.ToString();
+            leaveApplicationViewModel.DutiesTakenOverBy = LeaveApplication?.DutiesTakenOverBy ?? string.Empty;
+
+            // Load available relievers (optional - from form data endpoint)
+            // For now, just set current reliever if exists
+            if (!string.IsNullOrEmpty(LeaveApplication?.DutiesTakenOverBy))
+            {
+                selectedReliever = new LeaveRelieverResponse
+                {
+                    EmployeeNo = LeaveApplication.DutiesTakenOverBy,
+                    EmployeeName = string.Empty, // To:DO: Load name from service if needed - when loading leave history, include reliever name
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading data: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    
+    private async Task<IEnumerable<LeaveRelieverResponse>> SearchRelievers(string searchText, CancellationToken cancellationToken)
+    {
+        await Task.Yield(); // Make async
+
+        if (string.IsNullOrWhiteSpace(searchText))
+            return availableRelievers.Take(10);
+
+        searchText = searchText.ToLowerInvariant();
+
+        return availableRelievers
+            .Where(r =>
+                r.EmployeeName.ToLowerInvariant().Contains(searchText) ||
+                r.EmployeeNo.ToLowerInvariant().Contains(searchText) ||
+                r.Department?.ToLowerInvariant().Contains(searchText) == true ||
+                r.JobTitle?.ToLowerInvariant().Contains(searchText) == true)
+            .Take(10);
+    }
+
+    private string GetResumptionDate()
+    {
+        if (!leaveApplicationViewModel.ToDate.HasValue)
+            return "Select end date";
+
+        var nextDay = leaveApplicationViewModel.ToDate.Value.AddDays(1);
+        
+        // Skip weekends for working day leave types
+        while (nextDay.DayOfWeek == DayOfWeek.Saturday || 
+               nextDay.DayOfWeek == DayOfWeek.Sunday)
+        {
+            nextDay = nextDay.AddDays(1);
+        }
+
+        return nextDay.ToString("dddd, MMMM dd, yyyy");
+    }
+
+    private (Color color, string icon) GetStatusDisplay(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "draft" => (Color.Default, Icons.Material.Filled.Edit),
+            "pending" => (Color.Warning, Icons.Material.Filled.Schedule),
+            "approved" => (Color.Success, Icons.Material.Filled.CheckCircle),
+            "rejected" => (Color.Error, Icons.Material.Filled.Cancel),
+            _ => (Color.Default, Icons.Material.Filled.Info)
+        };
+    }
+
+    private async Task SaveAsync()
+    {
+        await form!.Validate();
+
+        if (!form.IsValid)
+        {
+            Snackbar.Add("Please correct the errors in the form", Severity.Warning);
+            return;
+        }
+
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            // Set reliever if selected
+            if (selectedReliever != null)
+            {
+                leaveApplicationViewModel.DutiesTakenOverBy = selectedReliever.EmployeeNo;
+            }
+
+            var request = new CreateLeaveApplicationRequest
+            {
+                EmployeeNo = leaveApplicationViewModel.EmployeeNo,
+                ApplicationNo = leaveApplicationViewModel.ApplicationNo,
+                LeaveType = leaveApplicationViewModel.LeaveType,
+                DaysApplied = leaveApplicationViewModel.DaysApplied,
+                FromDate = leaveApplicationViewModel.FromDate ?? DateTime.Now,
+                ToDate = leaveApplicationViewModel.ToDate ?? DateTime.Now,
+                HalfDay = leaveApplicationViewModel.HalfDay,
+                LeaveAllowancePayable = leaveApplicationViewModel.LeaveAllowancePayable,
+                DutiesTakenOverBy = leaveApplicationViewModel.DutiesTakenOverBy,
+                LeavePeriod = leaveApplicationViewModel.LeavePeriod
+            };
+
+            // Update leave application
+            var result = await ServiceManager.LeaveService.EditLeaveApplicationAsync(request);
+
+            if (result.Successful)
+            {
+                Snackbar.Add("Leave application updated successfully!", Severity.Success);
+                await MudDialog?.CloseAsync(DialogResult.Ok(result.Data))!;
+            }
+            else
+            {
+                Snackbar.Add(result.Message ?? "Failed to update leave application", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating application: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Cancel()
+    {
+        await MudDialog?.CloseAsync(DialogResult.Cancel())!;
+    }
+}
+ 

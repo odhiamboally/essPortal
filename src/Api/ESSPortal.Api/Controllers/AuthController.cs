@@ -195,9 +195,8 @@ public class AuthController : ControllerBase
         // Update database session if session ID provided
         if (!string.IsNullOrWhiteSpace(sessionId))
         {
-            var validationResult = await _serviceManager.SessionManagementService
-                .IsSessionValidAsync(sessionId, userId);
-
+            var validationResult = await _serviceManager.SessionManagementService.IsSessionValidAsync(sessionId, userId);
+                
             if (!validationResult.Successful)
             {
                 _logger.LogWarning(

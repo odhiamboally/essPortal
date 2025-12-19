@@ -17,7 +17,7 @@ public interface ILeaveApplicationCardService
     Task<AppResponse<List<LeaveApplicationCard>>> CreateMultipleLeaveApplicationCardsAsync(List<LeaveApplicationCard> requests);
 
     // Update operations
-    Task<AppResponse<LeaveApplicationCard>> UpdateLeaveApplicationCardAsync(LeaveApplicationCard request);
+    Task<AppResponse<LeaveApplicationCard>> EditLeaveApplicationCardAsync(LeaveApplicationCard request);
     Task<AppResponse<List<LeaveApplicationCard>>> UpdateMultipleLeaveApplicationCardsAsync(List<LeaveApplicationCard> requests);
 
     // Delete operations

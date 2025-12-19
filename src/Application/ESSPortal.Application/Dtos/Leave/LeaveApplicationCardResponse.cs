@@ -6,12 +6,17 @@ public record LeaveApplicationCardResponse
     public string ApplicationNo { get; init; } = string.Empty;
     public DateTime? ApplicationDate { get; init; }
     public bool ApplyOnBehalf { get; init; }
+    public bool ApplyOnBehalfSpecified { get; init; }
+
     public string? EmployeeNo { get; init; }
     public string? EmployeeName { get; init; }
     public string? EmailAddress { get; init; }
     public string EmploymentType { get; init; } = string.Empty;
     public string? ResponsibilityCenter { get; init; }
     public string? MobileNo { get; init; }
+    public string? ShortcutDimension1Code { get; init; }
+    public string? ShortcutDimension2Code { get; init; }
+
     public string? LeavePeriod { get; init; }
     public string? LeaveCode { get; init; }
     public string? LeaveStatus { get; init; }
@@ -24,6 +29,7 @@ public record LeaveApplicationCardResponse
     public string? DutiesTakenOverBy { get; init; }
     public string? RelievingName { get; init; }
     public bool LeaveAllowancePayable { get; init; }
+    public bool LeaveAllowancePayableSpecified { get; init; }
 
     // Calculated properties
     public LeaveApplicationCardStatus EffectiveStatus => Status;

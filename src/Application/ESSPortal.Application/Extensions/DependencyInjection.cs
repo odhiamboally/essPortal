@@ -5,7 +5,12 @@ using ESSPortal.Application.Contracts.Implementations.Common;
 using ESSPortal.Application.Contracts.Implementations.Services;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
+using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Application.Utilities;
+using ESSPortal.Application.Validations.RequestValidators.Leave;
+
+using FluentValidation;
+
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +27,11 @@ public static  class DependencyInjection
     {
         try
         {
+            var assembly = AppDomain.CurrentDomain.Load("ESSPortal.Application");
+            services.AddSingleton(assembly);
+            services.AddValidatorsFromAssembly(assembly);
+            //services.AddValidatorsFromAssemblyContaining<CreateLeaveApplicationRequestValidator>();
+
             ConfigureApplicationSettings(services, configuration);
 
             ConfigureHttpClients(services, configuration);
