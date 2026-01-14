@@ -1052,9 +1052,9 @@ public class AuthController : BaseController
     }
 
     [AllowAnonymous]
-    public async Task<IActionResult> ResetPassword(string token, string email)
+    public async Task<IActionResult> ResetPassword(string email, string token)
     {
-        if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(email))
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
         {
             _logger.LogWarning("Password reset attempted with invalid parameters from IP: {IpAddress}",
                 HttpContext.Connection.RemoteIpAddress);

@@ -52,7 +52,6 @@ public class TokenRefreshMiddleware
         }
         catch (Exception ex)
         {
-            // Log unexpected exceptions
             _logger.LogError(ex, "Unhandled exception in TokenRefreshMiddleware for {Path}", context.Request.Path);
             throw;
         }

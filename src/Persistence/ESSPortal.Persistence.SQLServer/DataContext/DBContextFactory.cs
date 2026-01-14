@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace ESSPortal.Persistence.SQLServer.DataContext;
-public class DBContextFactory : IDesignTimeDbContextFactory<DBContext>
+public class DBContextFactory(ILogger<DBContext> logger, IHttpContextAccessor httpContextAccessor) : IDesignTimeDbContextFactory<DBContext>
 {
     public DBContext CreateDbContext(string[] args)
     {
@@ -20,6 +22,6 @@ public class DBContextFactory : IDesignTimeDbContextFactory<DBContext>
 
         optionsBuilder.UseSqlServer(connectionString);
 
-        return new DBContext(optionsBuilder.Options, null);
+        return new DBContext(optionsBuilder.Options, httpContextAccessor, logger);
     }
 }

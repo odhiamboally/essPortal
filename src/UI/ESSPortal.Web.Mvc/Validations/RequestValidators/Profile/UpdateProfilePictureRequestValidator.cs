@@ -58,9 +58,9 @@ public class UpdateProfilePictureRequestValidator : AbstractValidator<UpdateProf
 
             return IsValidImageFile(bytes);
         }
-        catch
+        catch(Exception ex) 
         {
-            return false;
+            throw;
         }
     }
 

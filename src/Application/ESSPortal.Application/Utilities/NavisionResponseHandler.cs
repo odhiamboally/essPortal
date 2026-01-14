@@ -28,8 +28,7 @@ public static class NavisionResponseHandler
         }
         catch (JsonException ex)
         {
-            return Task.FromResult(
-                ApiResponse<PagedResult<T>>.Failure($"Deserialization error: {ex.Message}"));
+            throw;
         }
     }
 }

@@ -105,7 +105,7 @@ internal sealed class TotpService : ITotpService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying TOTP code");
-            return false;
+            throw;
         }
     }
 
@@ -136,15 +136,14 @@ internal sealed class TotpService : ITotpService
 
             var verificationWindow = new VerificationWindow(previous: windowSize, future: windowSize);
 
-            long timeStepMatched;
-            var isValid = totp.VerifyTotp(code, out timeStepMatched, verificationWindow);
+            var isValid = totp.VerifyTotp(code, out long timeStepMatched, verificationWindow);
 
             return isValid;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying TOTP code with plain text secret");
-            return false;
+            throw;
         }
     }
 

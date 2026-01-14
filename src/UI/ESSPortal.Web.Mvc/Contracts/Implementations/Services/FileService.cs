@@ -54,7 +54,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reading logo image");
-            return (string.Empty, string.Empty, []);
+            throw;
         }
     }
 
@@ -106,7 +106,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving profile picture for user {UserId}", userId);
-            return AppResponse<ProfilePictureResponse>.Failure("An error occurred while saving the profile picture");
+            throw;
         }
     }
 
@@ -137,7 +137,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reading profile picture: {FileName}", fileName);
-            return ([], string.Empty);
+            throw;
         }
     }
 
@@ -160,7 +160,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reading profile picture as base64: {FileName}", fileName);
-            return (string.Empty, string.Empty);
+            throw;
         }
     }
 
@@ -186,7 +186,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting profile picture: {FileName}", fileName);
-            return false;
+            throw;
         }
     }
 
@@ -217,6 +217,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting old profile pictures for user {UserId}", userId);
+            throw;
         }
     }
 
@@ -269,7 +270,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error extracting filename from URL: {Url}", profilePictureUrl);
-            return string.Empty;
+            throw;
         }
     }
 

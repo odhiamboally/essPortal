@@ -38,7 +38,7 @@ public class TwoFactorController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting 2FA setup info");
-            return StatusCode(500, ApiResponse<TwoFactorSetupInfo>.Failure("An error occurred while getting setup information."));
+            throw;
         }
     }
 
@@ -53,7 +53,7 @@ public class TwoFactorController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting 2FA status");
-            return StatusCode(500, ApiResponse<TwoFactorStatus>.Failure("An error occurred while getting two-factor status."));
+            throw;
         }
     }
    
@@ -73,7 +73,7 @@ public class TwoFactorController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error enabling 2FA");
-            return StatusCode(500, ApiResponse<bool>.Failure("An error occurred while enabling two-factor authentication."));
+            throw;
         }
     }
 
@@ -88,7 +88,7 @@ public class TwoFactorController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error disabling 2FA");
-            return StatusCode(500, ApiResponse<bool>.Failure("An error occurred while disabling two-factor authentication."));
+            throw;
         }
     }
 
@@ -103,7 +103,7 @@ public class TwoFactorController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating backup codes");
-            return StatusCode(500, ApiResponse<BackupCodesInfo>.Failure("An error occurred while generating backup codes."));
+            throw;
         }
     }
 
@@ -123,7 +123,7 @@ public class TwoFactorController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying TOTP code");
-            return StatusCode(500, ApiResponse<bool>.Failure("An error occurred while verifying the TOTP code."));
+            throw;
         }
     }
 

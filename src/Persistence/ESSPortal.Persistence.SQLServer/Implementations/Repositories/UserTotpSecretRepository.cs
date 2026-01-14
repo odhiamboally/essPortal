@@ -47,7 +47,7 @@ internal sealed class UserTotpSecretRepository : BaseRepository<UserTotpSecret>,
         }
         catch (Exception)
         {
-            return false;
+            throw;
         }
     }
 }

@@ -53,7 +53,7 @@ public class DashboardController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting dashboard data for employee {EmployeeNo}", employeeNo);
-            return StatusCode(500, ApiResponse<DashboardResponse>.Failure("An error occurred while retrieving dashboard data"));
+            throw;
         }
     }
 }

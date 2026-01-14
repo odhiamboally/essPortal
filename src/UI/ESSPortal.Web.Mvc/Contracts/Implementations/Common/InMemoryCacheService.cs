@@ -24,7 +24,7 @@ internal sealed class InMemoryCacheService : ICacheService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting cached data for key {Key}", key);
-            return default;
+            throw;
         }
         
     }

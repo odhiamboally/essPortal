@@ -101,14 +101,14 @@ public static class DependencyInjection
                 
             });
 
+            // ToDo: Log
+
             Console.WriteLine($"✓ Authentication configured (timeout: {sessionManagementSettings.SessionTimeoutMinutes} min)");
 
             return services;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error in AddAuthenticationServices: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
             throw;
         }
     }
@@ -126,7 +126,6 @@ public static class DependencyInjection
             var emailValidationSection = configuration.GetSection("EmailValidation");
             if (!emailValidationSection.Exists())
             {
-                Console.WriteLine("⚠️ EmailValidation section not found in configuration, using defaults");
                 services.Configure<EmailValidationSettings>(options =>
                 {
                     options.BlockPersonalDomains = true;
@@ -151,8 +150,7 @@ public static class DependencyInjection
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error in AddApplicationConfiguration: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            
             throw;
         }
 
@@ -545,7 +543,7 @@ public static class DependencyInjection
         {
             if (!configuration.GetSection(section).Exists())
             {
-                Console.WriteLine($"⚠️ Critical section '{section}' is missing from configuration");
+                // ToDo: Log
             }
         }
     }

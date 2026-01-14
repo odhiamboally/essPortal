@@ -89,7 +89,7 @@ public class ExceptionHandler : IExceptionHandler
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while handling another exception.");
-            throw; // Re-throw the exception to allow other handlers or the default error handling middleware to process it
+            throw; 
         }
     }
 

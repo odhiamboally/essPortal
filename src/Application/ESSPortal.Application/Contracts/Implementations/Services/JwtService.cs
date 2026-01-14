@@ -241,12 +241,12 @@ internal sealed class JwtService : IJwtService
         catch (SecurityTokenException ex)
         {
             _logger.LogWarning(ex, "Security token exception while parsing expired token");
-            return ApiResponse<ClaimsPrincipal?>.Failure("Failed to retreive principal");
+            throw;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error parsing expired token");
-            return ApiResponse<ClaimsPrincipal?>.Failure("Failed to retreive principal");
+            throw;
         }
     }
 
@@ -295,17 +295,17 @@ internal sealed class JwtService : IJwtService
 
             return ApiResponse<bool>.Success("Valid", true);
         }
-        catch (SecurityTokenExpiredException)
+        catch (SecurityTokenExpiredException ex)
         {
-            return ApiResponse<bool>.Failure("Token has expired.");
+            throw;
         }
         catch (SecurityTokenValidationException ex)
         {
-            return ApiResponse<bool>.Failure($"Invalid token: {ex.Message}");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<bool>.Failure($"Unexpected error during token validation: {ex.Message}");
+            throw;
         }
     }
 
@@ -339,15 +339,15 @@ internal sealed class JwtService : IJwtService
         }
         catch (SecurityTokenExpiredException)
         {
-            return ApiResponse<bool>.Failure("Token has expired.");
+            throw;
         }
         catch (SecurityTokenValidationException ex)
         {
-            return ApiResponse<bool>.Failure($"Invalid token: {ex.Message}");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<bool>.Failure($"Unexpected error during token validation: {ex.Message}");
+            throw;
         }
     }
 

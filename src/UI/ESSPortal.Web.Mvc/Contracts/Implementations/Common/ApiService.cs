@@ -93,7 +93,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "DELETE request failed for endpoint: {Endpoint}", endpoint);
-            return AppResponse<TResponse?>.Failure(responseMessage);
+            throw;
         }
     }
 
@@ -185,7 +185,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "GET request failed for endpoint: {Endpoint}", endpoint);
-            return AppResponse<TResponse?>.Failure(responseMessage);
+            throw;
         }
     }
 
@@ -257,7 +257,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "POST request failed for endpoint: {Endpoint}", endpoint);
-            return AppResponse<TResponse?>.Failure("An error occurred while processing your request.");
+            throw;
         }
     }
 
@@ -309,7 +309,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "PUT request failed for endpoint: {Endpoint}", endpoint);
-            return AppResponse<TResponse?>.Failure(responseMessage);
+            throw;
         }
     }
     
@@ -342,7 +342,7 @@ internal sealed class ApiService : IApiService
         }
         catch (Exception ex)
         {
-            return AppResponse<PagedResult<TResponse>>.Failure(ex.Message);
+            throw;
         }
 
     }
@@ -380,7 +380,7 @@ internal sealed class ApiService : IApiService
         }
         catch (Exception ex)
         {
-            return AppResponse<PagedResult<TResponse>>.Failure(ex.Message);
+            throw;
         }
     }
 
@@ -427,7 +427,7 @@ internal sealed class ApiService : IApiService
         {
 
             _logger.LogError(ex, "PATCH request failed for endpoint: {Endpoint}", endpoint);
-            return AppResponse<TResponse>.Failure(responseMessage);
+            throw;
         }
     }
 
@@ -498,7 +498,7 @@ internal sealed class ApiService : IApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating token");
-            return false;
+            throw;
         }
     }
 
@@ -548,61 +548,6 @@ internal sealed class ApiService : IApiService
         // Fallback to raw content
         // Only return raw content if it's short and safe (avoid leaking sensitive/long data)
         return content.Length <= 200 ? content : "An error occurred.";
-    }
-
-    private string? ExtractErrorMessage_(string content)
-    {
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-
-        try
-        {
-            // Try to decrypt first if it looks encrypted
-            var decryptedContent = _payloadEncryptionService.Decrypt(content);
-
-            // Try to parse as ApiResponse error format
-            using var document = JsonDocument.Parse(decryptedContent);
-
-            // Check for "message" field (backend ApiResponse format)
-            if (document.RootElement.TryGetProperty("message", out var messageElement))
-            {
-                return messageElement.GetString();
-            }
-
-            // Check for "title" field (ProblemDetails format)
-            if (document.RootElement.TryGetProperty("title", out var titleElement))
-            {
-                return titleElement.GetString();
-            }
-
-            // Check for "error" field
-            if (document.RootElement.TryGetProperty("error", out var errorElement))
-            {
-                return errorElement.GetString();
-            }
-
-            // Check for "errors" array (validation errors)
-            if (document.RootElement.TryGetProperty("errors", out var errorsElement) &&
-                errorsElement.ValueKind == JsonValueKind.Array)
-            {
-                var errors = new List<string>();
-                foreach (var error in errorsElement.EnumerateArray())
-                {
-                    if (error.ValueKind == JsonValueKind.String)
-                    {
-                        errors.Add(error.GetString()!);
-                    }
-                }
-                return errors.Count > 0 ? string.Join("; ", errors) : null;
-            }
-        }
-        catch (JsonException)
-        {
-            // If we can't parse as JSON, return the raw content if it's short enough
-            return content.Length <= 200 ? content : "An error occurred.";
-        }
-
-        return null;
     }
 
     private static bool TryExtractMessage(JsonElement root, out string? message)

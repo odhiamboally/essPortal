@@ -78,9 +78,9 @@ public class UpdateContactInfoRequestValidator : AbstractValidator<UpdateContact
             var addr = new MailAddress(email);
             return addr.Address == email;
         }
-        catch
+        catch(Exception ex) 
         {
-            return false;
+            throw;
         }
     }
 }

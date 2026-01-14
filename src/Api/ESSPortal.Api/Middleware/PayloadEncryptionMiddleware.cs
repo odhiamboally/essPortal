@@ -136,6 +136,7 @@ public class PayloadEncryptionMiddleware
                     _logger.LogWarning(ex, "Failed to encrypt response, sending original");
                     responseBodyStream.Seek(0, SeekOrigin.Begin);
                     await responseBodyStream.CopyToAsync(originalResponseBody);
+                    throw;
                 }
             }
             else

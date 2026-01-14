@@ -36,9 +36,9 @@ public class EnumConverter<T> : JsonConverter<T> where T : struct, Enum
                 return underscoreResult;
             }
 
-            // Log the issue but don't throw - return default value
-            Console.WriteLine($"Warning: Could not parse enum value '{stringValue}' for type {typeof(T).Name}. Using default value.");
-            return default(T);
+            // ToDo: Log the issue but don't throw - return default value
+            
+            return default;
         }
 
         if (reader.TokenType == JsonTokenType.Number)
@@ -48,11 +48,11 @@ public class EnumConverter<T> : JsonConverter<T> where T : struct, Enum
             {
                 return (T)Enum.ToObject(typeof(T), numValue);
             }
-            return default(T);
+            return default;
         }
 
         // For null or other token types, return default
-        return default(T);
+        return default;
     }
 
     public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)

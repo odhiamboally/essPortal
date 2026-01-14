@@ -55,6 +55,7 @@ public class SecurityEventCleanupService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during security event cleanup");
+                throw;
             }
 
             // Run daily

@@ -37,7 +37,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting 2FA setup info");
-            return AppResponse<TwoFactorSetupInfo?>.Failure("An error occurred while getting setup information.");
+            throw;
         }
     }
 
@@ -51,7 +51,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting 2FA status");
-            return AppResponse<TwoFactorStatus?>.Failure("An error occurred while getting two-factor status.");
+            throw;
         }
     }
 
@@ -65,7 +65,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error enabling 2FA");
-            return AppResponse<bool>.Failure("An error occurred while enabling two-factor authentication.");
+            throw;
         }
     }
 
@@ -79,7 +79,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error disabling 2FA");
-            return AppResponse<bool>.Failure("An error occurred while disabling two-factor authentication.");
+            throw;
         }
     }
 
@@ -93,7 +93,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating backup codes");
-            return AppResponse<BackupCodesInfo?>.Failure("An error occurred while generating backup codes.");
+            throw;
         }
     }
 
@@ -107,7 +107,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying TOTP code");
-            return AppResponse<bool>.Failure("An error occurred while verifying the code.");
+            throw;
         }
     }
 

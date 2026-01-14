@@ -48,7 +48,7 @@ internal sealed class SoapService : ISoapService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating P9 for employee {EmployeeNo}", employeeNo);
-            return ApiResponse<string>.Failure($"Error generating P9: {ex.Message}");
+            throw;
         }
     }
 
@@ -80,7 +80,7 @@ internal sealed class SoapService : ISoapService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating PaySlip for employee {EmployeeNo}", employeeNo);
-            return ApiResponse<string>.Failure($"Error generating PaySlip: {ex.Message}");
+            throw;
         }
     }
 

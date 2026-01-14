@@ -343,6 +343,7 @@ public class BaseController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching current user");
+            throw;
         }
     }
 

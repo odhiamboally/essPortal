@@ -53,7 +53,7 @@ internal sealed class FileService : IFileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving logo");
-            return ApiResponse<string>.Failure("Error saving logo");
+            throw;
         }
     }
 }

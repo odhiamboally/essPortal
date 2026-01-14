@@ -288,8 +288,7 @@ public static class DependencyInjection
         }
         catch (Exception ex)
         {
-            // Log the exception for debugging purposes
-            Console.WriteLine($"Rate limit error handler failed: {ex.Message}");
+            
             throw;
         }
         
@@ -478,14 +477,13 @@ public static class DependencyInjection
                 }
                 else
                 {
-                    // Log other JWT validation errors
-                    Console.WriteLine($"JWT Authentication failed: {context.Exception.Message}");
-                    Console.WriteLine($"Exception type: {context.Exception.GetType().Name}");
+                    // ToDo: Log other JWT validation errors
+                    
 
                     // Check for NotBefore issues specifically
                     if (context.Exception.Message.Contains("NotBefore") || context.Exception.Message.Contains("not yet valid"))
                     {
-                        Console.WriteLine("NotBefore validation issue detected");
+                        // ToDo: Log
                     }
                 }
 

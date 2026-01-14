@@ -47,7 +47,7 @@ internal sealed class UserBackupCodeRepository : BaseRepository<UserBackupCode>,
         }
         catch (Exception)
         {
-            return false;
+            throw;
         }
     }
 
@@ -69,7 +69,7 @@ internal sealed class UserBackupCodeRepository : BaseRepository<UserBackupCode>,
         }
         catch (Exception)
         {
-            return false;
+            throw;
         }
     }
 
@@ -78,8 +78,8 @@ internal sealed class UserBackupCodeRepository : BaseRepository<UserBackupCode>,
         return await FindByCondition(x => x.UserId == userId &&
                                          !x.IsUsed &&
                                          !x.IsDeleted &&
-                                         x.ExpiresAt > DateTimeOffset.UtcNow)
-            .CountAsync();
+                                         x.ExpiresAt > DateTimeOffset.UtcNow).CountAsync();
+
     }
 }
 

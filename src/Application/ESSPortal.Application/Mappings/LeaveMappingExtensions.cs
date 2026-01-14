@@ -91,7 +91,6 @@ public static class LeaveMappingExtensions
         return entities.Select(ToLeaveApplicationCard).ToList();
     }
 
-
     public static LeaveApplicationCardResponse ToLeaveApplicationCardResponse(this Domain.NavEntities.LeaveApplication.LeaveApplicationCard card)
     {
         return new LeaveApplicationCardResponse

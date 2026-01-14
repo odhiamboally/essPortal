@@ -11,20 +11,13 @@ using System.Data.Common;
 using System.Security.Claims;
 
 namespace ESSPortal.Persistence.SQLServer.DataContext;
-public class DBContext : IdentityDbContext<AppUser>
+public class DBContext(
+    DbContextOptions<DBContext> options,
+    IHttpContextAccessor? httpContextAccessor,
+    ILogger<DBContext> logger) : IdentityDbContext<AppUser>(options)
 {
-    private readonly IHttpContextAccessor? _httpContextAccessor;
-    private readonly ILogger<DBContext>? _logger;
-
-    public DBContext(
-        DbContextOptions<DBContext> options, 
-        IHttpContextAccessor? httpContextAccessor, 
-        ILogger<DBContext>? logger = null) : base(options) 
-    { 
-        _httpContextAccessor = httpContextAccessor;
-        _logger = logger;
-
-    }
+    private readonly IHttpContextAccessor? _httpContextAccessor = httpContextAccessor;
+    private readonly ILogger<DBContext> _logger = logger;
 
     #region Sets
 
@@ -109,19 +102,19 @@ public class DBContext : IdentityDbContext<AppUser>
             foreach (var entry in ex.Entries)
             {
                 var entryName = entry.Entity.GetType().Name;
-                Console.WriteLine($"Concurrency conflict on: {entryName}");
-                Console.WriteLine($"Entity State: {entry.State}");
-                Console.WriteLine($"Entity: {System.Text.Json.JsonSerializer.Serialize(entry.Entity)}");
+                _logger.LogError($"Concurrency conflict on: {entryName}");
+                _logger.LogError($"Entity State: {entry.State}");
+                _logger.LogError($"Entity: {System.Text.Json.JsonSerializer.Serialize(entry.Entity)}");
 
                 // Get current database values
                 var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
                 if (databaseValues == null)
                 {
-                    Console.WriteLine("Entity has been deleted from database");
+                    _logger.LogInformation("Entity has been deleted from database");
                 }
                 else
                 {
-                    Console.WriteLine($"Database values: {System.Text.Json.JsonSerializer.Serialize(databaseValues.ToObject())}");
+                    _logger.LogInformation($"Database values: {System.Text.Json.JsonSerializer.Serialize(databaseValues.ToObject())}");
                 }
             }
             throw;
@@ -223,35 +216,7 @@ public class DBContext : IdentityDbContext<AppUser>
         return _httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 
-    private static async Task TryRollbackAsync(DbTransaction transaction, CancellationToken ct)
-    {
-        try
-        {
-            // Check if transaction is still active
-            if (transaction.Connection != null && transaction.Connection.State == ConnectionState.Open)
-            {
-                await transaction.RollbackAsync(ct);
-            }
-        }
-        catch (InvalidOperationException)
-        {
-            // Transaction was already completed (committed/rolled back)
-            // No action needed
-        }
-    }
-
-    private static async Task DisposeTransactionSilentlyAsync(DbTransaction transaction)
-    {
-        try
-        {
-            await transaction.DisposeAsync();
-        }
-        catch
-        {
-            // Suppress disposal errors
-            // This is a silent disposal, so we don't log or throw
-        }
-    }
+    
 
 
 

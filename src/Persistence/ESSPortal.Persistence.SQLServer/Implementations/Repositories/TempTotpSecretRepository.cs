@@ -39,7 +39,7 @@ internal sealed class TempTotpSecretRepository : BaseRepository<TempTotpSecret>,
         }
         catch (Exception)
         {
-            return false;
+            throw;
         }
     }
 
@@ -47,7 +47,9 @@ internal sealed class TempTotpSecretRepository : BaseRepository<TempTotpSecret>,
     {
         try
         {
-            var tempSecret = await FindByCondition(x => x.UserId == userId && !x.IsDeleted).FirstOrDefaultAsync();
+            var tempSecret = await FindByCondition(x => x.UserId == userId && !x.IsDeleted)
+                .FirstOrDefaultAsync();
+
             if (tempSecret == null)
                 return false;
 
@@ -61,7 +63,7 @@ internal sealed class TempTotpSecretRepository : BaseRepository<TempTotpSecret>,
         }
         catch (Exception)
         {
-            return false;
+            throw;
         }
     }
 }

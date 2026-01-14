@@ -66,7 +66,7 @@ internal sealed class TwoFactorService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error generating 2FA setup info");
-            return ApiResponse<TwoFactorSetupInfo>.Failure("An error occurred while generating setup information.");
+            throw;
         }
     }
 
@@ -123,7 +123,7 @@ internal sealed class TwoFactorService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error enabling 2FA for user");
-            return ApiResponse<bool>.Failure("An error occurred while enabling two-factor authentication.");
+            throw;
         }
     }
 
@@ -151,7 +151,7 @@ internal sealed class TwoFactorService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error disabling 2FA for user");
-            return ApiResponse<bool>.Failure("An error occurred while disabling two-factor authentication.");
+            throw;
         }
     }
 
@@ -181,7 +181,7 @@ internal sealed class TwoFactorService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error getting 2FA status for user");
-            return ApiResponse<TwoFactorStatus>.Failure("An error occurred while getting two-factor status.");
+            throw;
         }
     }
 
@@ -218,7 +218,7 @@ internal sealed class TwoFactorService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error generating backup codes for user");
-            return ApiResponse<BackupCodesInfo>.Failure("An error occurred while generating backup codes.");
+            throw;
         }
     }
 
@@ -346,7 +346,7 @@ internal sealed class TwoFactorService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error verifying TOTP code for user: {UserId}", request.UserId);
-            return ApiResponse<Verify2FACodeResponse>.Failure("An error occurred while verifying the code.");
+            throw;
         }
     }
 

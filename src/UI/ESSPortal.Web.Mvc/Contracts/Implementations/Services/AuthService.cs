@@ -62,7 +62,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during employee registration");
-            return AppResponse<bool>.Failure("Registration failed. Please try again.");
+            throw;
         }
     }
     
@@ -82,7 +82,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending email confirmation");
-            return AppResponse<bool>.Failure("Failed to send confirmation email. Please try again.");
+            throw;
         }
     }
 
@@ -104,7 +104,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error resending email confirmation");
-            return AppResponse<bool>.Failure("Failed to resend confirmation email. Please try again.");
+            throw;
         }
     }
 
@@ -126,7 +126,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error confirming user email");
-            return AppResponse<bool>.Failure("Email confirmation failed. Please try again.");
+            throw;
         }
     }
 
@@ -172,7 +172,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during login for employee: {EmployeeNumber}", request.EmployeeNumber);
-            return AppResponse<LoginResponse>.Failure("Login failed. Please try again.");
+            throw;
         }
     }
 
@@ -197,7 +197,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during keep-alive");
-            return AppResponse<SessionStatusResponse>.Failure("Keep-alive failed");
+            throw;
         }
     }
 
@@ -220,7 +220,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during unlock");
-            return AppResponse<UnlockResponse>.Failure("Unlock failed");
+            throw;
         }
     }
 
@@ -251,7 +251,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving current user");
-            return AppResponse<CurrentUserResponse>.Failure("Failed to retrieve user information.");
+            throw;
         }
     }
     
@@ -275,7 +275,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving 2FA providers for user: {UserId}", request.UserId);
-            return AppResponse<ProviderResponse>.Failure("Failed to retrieve 2FA providers.");
+            throw;
         }
     }
     
@@ -295,7 +295,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending 2FA code for user: {UserId}", request.UserId);
-            return AppResponse<Send2FACodeResponse>.Failure("Failed to send verification code.");
+            throw;
         }
     }
 
@@ -337,7 +337,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying 2FA code for user: {UserId}", request.UserId);
-            return AppResponse<Verify2FACodeResponse>.Failure("Verification failed. Please try again.");
+            throw;
         }
     }
 
@@ -358,7 +358,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error requesting password reset");
-            return AppResponse<bool>.Failure("Password reset request failed.");
+            throw;
         }
     }
     
@@ -377,7 +377,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating password reset token");
-            return AppResponse<bool>.Failure("Token validation failed.");
+            throw;
         }
     }
     
@@ -397,7 +397,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error resetting password");
-            return AppResponse<bool>.Failure("Password reset failed.");
+            throw;
         }
     }
 
@@ -440,7 +440,7 @@ internal sealed class AuthService : IAuthService
         {
             _logger.LogError(ex, "Error during token refresh");
             ClearStoredTokens();
-            return AppResponse<RefreshTokenResponse>.Failure("Token refresh failed. Please sign in again.");
+            throw;
         }
     }
 
@@ -490,7 +490,7 @@ internal sealed class AuthService : IAuthService
             // Clear tokens even if API call fails
             ClearStoredTokens();
             ClearSessionId();
-            return AppResponse<bool>.Success("Signed out successfully.", true);
+            throw;
         }
 
     }

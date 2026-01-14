@@ -89,7 +89,7 @@ internal sealed class ProfileService : IProfileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving profile for user: {UserId}", userId);
-            return ApiResponse<UserProfileResponse>.Failure("An error occurred while retrieving the profile");
+            throw;
         }
     }
 
@@ -133,7 +133,7 @@ internal sealed class ProfileService : IProfileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating banking information for user: {UserId}", request.UserId);
-            return ApiResponse<bool>.Failure("An error occurred while updating banking information");
+            throw;
         }
     }
 
@@ -195,7 +195,7 @@ internal sealed class ProfileService : IProfileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating contact information for user: {UserId}", request.UserId);
-            return ApiResponse<bool>.Failure("An error occurred while updating contact information");
+            throw;
         }
     }
 
@@ -236,7 +236,7 @@ internal sealed class ProfileService : IProfileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating personal details for user: {UserId}", request.UserId);
-            return ApiResponse<bool>.Failure("An error occurred while updating personal details");
+            throw;
         }
     }
 
@@ -298,7 +298,7 @@ internal sealed class ProfileService : IProfileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating profile picture for user: {UserId}", request.UserId);
-            return ApiResponse<string>.Failure("An error occurred while updating profile picture");
+            throw;
         }
     }
 
@@ -348,7 +348,7 @@ internal sealed class ProfileService : IProfileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating profile for user {UserId}", userId);
-            return ApiResponse<bool>.Failure("An error occurred during profile validation");
+            throw;
         }
     }
 
@@ -406,7 +406,7 @@ internal sealed class ProfileService : IProfileService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error calculating profile completion for user {UserId}", userId);
-            return ApiResponse<int>.Failure("An error occurred while calculating profile completion");
+            throw;
         }
     }
 

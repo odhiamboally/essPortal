@@ -11,11 +11,11 @@ namespace ESSPortal.Application.Contracts.Implementations.Common;
 internal sealed class PayloadEncryptionService : IPayloadEncryptionService
 {
     private readonly byte[] _key;
-    private readonly ILogger<EncryptionService> _logger;
+    private readonly ILogger<PayloadEncryptionService> _logger;
     private readonly SecuritySettings _securitySettings;
 
     public PayloadEncryptionService(
-       ILogger<EncryptionService> logger, 
+       ILogger<PayloadEncryptionService> logger, 
        IOptions<SecuritySettings> securitySettings)
     {
         _logger = logger;
@@ -100,7 +100,7 @@ internal sealed class PayloadEncryptionService : IPayloadEncryptionService
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "IsEncrypted check failed");
-            return false;
+            throw;
         }
     }
 
@@ -119,7 +119,7 @@ internal sealed class PayloadEncryptionService : IPayloadEncryptionService
             }
             catch (FormatException)
             {
-                return false;
+                throw; ;
             }
 
             var decoded = Encoding.UTF8.GetString(decodedBytes);
@@ -141,7 +141,7 @@ internal sealed class PayloadEncryptionService : IPayloadEncryptionService
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "IsEncrypted check failed");
-            return false;
+            throw;
         }
     }
 

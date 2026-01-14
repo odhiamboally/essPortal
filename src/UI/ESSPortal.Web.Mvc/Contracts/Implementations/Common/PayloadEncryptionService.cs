@@ -42,7 +42,7 @@ internal sealed class PayloadEncryptionService : IPayloadEncryptionService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to encrypt payload, returning original");
-            return payload; // Graceful degradation
+            throw; 
         }
     }
 
@@ -71,7 +71,7 @@ internal sealed class PayloadEncryptionService : IPayloadEncryptionService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to decrypt payload, returning original");
-            return encryptedPayload; // Graceful degradation
+            throw; // Graceful degradation
         }
     }
 
@@ -94,7 +94,7 @@ internal sealed class PayloadEncryptionService : IPayloadEncryptionService
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "IsEncrypted check failed");
-            return false;
+            throw;
         }
     }
 

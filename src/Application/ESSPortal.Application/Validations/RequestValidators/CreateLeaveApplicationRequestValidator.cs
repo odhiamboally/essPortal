@@ -273,7 +273,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
         }
         catch (Exception)
         {
-            return true; // Allow BC to handle validation if we can't validate here
+            throw; 
         }
     }
 
@@ -302,8 +302,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
         }
         catch (Exception)
         {
-            // Don't allow validation to pass silently on errors
-            return true;
+            throw;
         }
     }
 

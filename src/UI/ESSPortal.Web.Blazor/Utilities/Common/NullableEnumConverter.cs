@@ -41,8 +41,8 @@ public class NullableEnumConverter<T> : JsonConverter<T?> where T : struct, Enum
                 return underscoreResult;
             }
 
-            // Log and return null instead of throwing
-            Console.WriteLine($"Warning: Could not parse nullable enum value '{stringValue}' for type {typeof(T).Name}. Using null.");
+            // ToDo: Log and return null instead of throwing
+            
             return null;
         }
 

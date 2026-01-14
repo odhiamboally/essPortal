@@ -58,7 +58,6 @@ public static  class DependencyInjection
         var securitySettingsSection = configuration.GetSection("SecuritySettings");
         if (!securitySettingsSection.Exists())
         {
-            Console.WriteLine("⚠️ SecuritySettings section not found in configuration, using defaults");
             services.Configure<SecuritySettings>(options =>
             {
                 //options.SessionManagement = new SessionManagementSettings
@@ -75,7 +74,6 @@ public static  class DependencyInjection
         else
         {
             services.Configure<SecuritySettings>(securitySettingsSection);
-            Console.WriteLine("✓ SecuritySettings configured successfully");
         }
 
         // Configure individual security sub-settings
@@ -84,7 +82,6 @@ public static  class DependencyInjection
         var backgroundServiceSection = configuration.GetSection("BackgroundServices");
         if (!backgroundServiceSection.Exists())
         {
-            Console.WriteLine("⚠️ BackgroundServices section not found in configuration, using defaults");
             services.Configure<BackgroundServiceSettings>(options =>
             {
                 options.EnableSessionCleanup = true;
@@ -97,13 +94,11 @@ public static  class DependencyInjection
         else
         {
             services.Configure<BackgroundServiceSettings>(backgroundServiceSection);
-            Console.WriteLine("✓ BackgroundServiceSettings configured successfully");
         }
 
         var emailValidationSection = configuration.GetSection("EmailValidation");
         if (!emailValidationSection.Exists())
         {
-            Console.WriteLine("⚠️ EmailValidation section not found in configuration, using defaults");
             services.Configure<EmailValidationSettings>(options =>
             {
                 options.BlockPersonalDomains = true;
@@ -115,7 +110,6 @@ public static  class DependencyInjection
         else
         {
             services.Configure<EmailValidationSettings>(emailValidationSection);
-            Console.WriteLine("✓ EmailValidationSettings configured successfully");
         }
 
         var jwtSettingsSection = configuration.GetSection("JwtSettings");
@@ -218,13 +212,11 @@ public static  class DependencyInjection
         if (backgroundSettings?.EnableSessionCleanup == true)
         {
             services.AddHostedService<SessionCleanupService>();
-            Console.WriteLine("✓ SessionCleanupService registered");
         }
 
         if (backgroundSettings?.EnableSecurityEventCleanup == true)
         {
             services.AddHostedService<SecurityEventCleanupService>();
-            Console.WriteLine("✓ SecurityEventCleanupService registered");
         }
     }
 }

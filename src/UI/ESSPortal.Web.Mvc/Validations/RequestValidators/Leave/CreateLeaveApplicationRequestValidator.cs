@@ -267,9 +267,9 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
             // For now, allow if within yearly entitlement
             return request.DaysApplied <= yearlyEntitlement;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return true; // Allow BC to handle validation if we can't validate here
+            throw; 
         }
     }
 
@@ -296,10 +296,10 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
             return totalQualifyingDays >= minimumQualifyingDays;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Don't allow validation to pass silently on errors
-            return true;
+            
+            throw;
         }
     }
 

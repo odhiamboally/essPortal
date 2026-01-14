@@ -125,7 +125,7 @@ internal sealed class EmailService : IEmailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending email to {To}", sendEmailRequest?.To);
-            return ApiResponse<SendEmailResponse>.Failure($"Error sending email: {ex.Message}");
+            throw;
         }
     }
 

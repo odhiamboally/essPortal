@@ -41,8 +41,7 @@ try
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"❌ Error during service registration: {ex.Message}");
-    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    
     throw;
 }
 

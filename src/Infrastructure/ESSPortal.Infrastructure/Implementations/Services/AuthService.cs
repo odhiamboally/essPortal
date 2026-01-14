@@ -223,9 +223,11 @@ internal sealed class AuthService : IAuthService
 
                 _logger.LogCritical("Manual cleanup may be required for employee {EmployeeNumber}. " +
                     "Identity User ID: {UserId}", request.EmployeeNumber, createdUser?.Id);
+
+                throw;
             }
 
-            return ApiResponse<bool>.Failure("Registration failed. Please try again or contact support if the problem persists.");
+            throw;
         }
     }
 
@@ -273,7 +275,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending email confirmation to: {Email}", request.Email);
-            return ApiResponse<bool>.Failure("Unable to send confirmation email");
+            throw;
         }
     }
 
@@ -301,7 +303,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error resending confirmation email to: {Email}", request.Email);
-            return ApiResponse<bool>.Failure("Unable to resend confirmation email. Please try again later.");
+            throw;
         }
     }
 
@@ -336,7 +338,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error confirming email for request: {Email}", confirmEmailRequest.Email);
-            return ApiResponse<bool>.Failure("An error occurred during email confirmation");
+            throw;
         }
     }
 
@@ -684,7 +686,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting 2FA providers for user: {UserId}", providerRequest.UserId);
-            return ApiResponse<ProviderResponse>.Failure("Failed to retrieve 2FA providers.");
+            throw;
         }
     }
 
@@ -908,7 +910,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during 2FA verification for user: {UserId}", verifyCodeRequest.UserId);
-            return ApiResponse<Verify2FACodeResponse>.Failure("An error occurred during verification");
+            throw;
         }
     }
 
@@ -948,7 +950,10 @@ internal sealed class AuthService : IAuthService
                 return ApiResponse<bool>.Success("If the email exists, a reset link has been sent", true);
             }
 
-            var resetUrl = $"{_emailSettings.ClientBaseUrl}Auth/ResetPassword?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(resetToken)}";
+            var resetUrl = 
+                $"{_emailSettings.ClientBaseUrl}Auth/ResetPassword?" +
+                $"email={Uri.EscapeDataString(user.Email!)}&" +
+                $"token={Uri.EscapeDataString(resetToken)}";
 
             string logoUrl = string.Empty;
             if (!string.IsNullOrWhiteSpace(request.LogoBase64))
@@ -993,7 +998,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error requesting password reset for: {Email}", request.Email);
-            return ApiResponse<bool>.Failure("Unable to process password reset request");
+            throw;
         }
     }
 
@@ -1027,7 +1032,6 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating password reset token for: {Email}", request.Email);
-            return ApiResponse<bool>.Failure("Unable to validate reset link");
             throw;
         }
     }
@@ -1183,10 +1187,13 @@ internal sealed class AuthService : IAuthService
             catch (Exception cleanupEx)
             {
                 _logger.LogError(cleanupEx, "Failed to properly rollback password reset changes for email: {Email}", request.Email);
+
                 _logger.LogCritical("Manual intervention may be required for user password reset rollback: {Email}", request.Email);
+
+                throw;
             }
 
-            return ApiResponse<bool>.Failure("Password reset failed. Please try again or contact support if the problem persists.");
+            throw;
         }
     }
 
@@ -1450,7 +1457,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during API sign out");
-            return ApiResponse<bool>.Failure("Sign out failed");
+            throw;
         }
     }
 
@@ -1540,7 +1547,7 @@ internal sealed class AuthService : IAuthService
         {
             _logger.LogError(ex, "Failed to send registration confirmation email to: {Email}", user.Email);
 
-            return false;
+            throw;
         }
     }
 
@@ -1556,7 +1563,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to read password reset timestamp from cache for user {UserId}", userId);
-            return Task.FromResult<DateTimeOffset?>(null); // Fail open
+            throw;
         }
     }
 
@@ -1633,7 +1640,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception while sending password reset confirmation email to: {Email}", user.Email);
-            return false;
+            throw;
         }
     }
 
@@ -1646,7 +1653,7 @@ internal sealed class AuthService : IAuthService
         }
         catch
         {
-            return false;
+            throw;
         }
     }
 
@@ -1707,7 +1714,7 @@ internal sealed class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error preparing refresh token revocation for user: {UserId}", userId);
-            return false;
+            throw;
         }
     }
 

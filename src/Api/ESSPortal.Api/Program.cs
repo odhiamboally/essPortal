@@ -268,6 +268,8 @@ public class SafeSchemaTransformer : IOpenApiSchemaTransformer
         catch (Exception ex)
         {
             Log.Warning(ex, "Error in schema transformation for type {TypeName}", context?.JsonTypeInfo?.Type?.Name);
+
+            throw;
         }
 
         return Task.CompletedTask;

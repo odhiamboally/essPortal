@@ -166,15 +166,15 @@ internal sealed class NavisionService : INavisionService
         }
         catch (JsonException ex)
         {
-            return ApiResponse<T>.Failure($"JSON deserialization failed: {ex.Message}");
+            throw;
         }
         catch (HttpRequestException ex)
         {
-            return ApiResponse<T>.Failure($"HTTP request failed: {ex.Message}");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<T>.Failure($"Unexpected error: {ex.Message}");
+            throw;
         }
     }
 
@@ -208,23 +208,23 @@ internal sealed class NavisionService : INavisionService
         }
         catch (JsonException ex)
         {
-            return ApiResponse<T>.Failure($"JSON deserialization failed: {ex.Message}");
+            throw;
         }
         catch (HttpRequestException ex)
         {
-            return ApiResponse<T>.Failure($"HTTP request failed: {ex.Message}");
+            throw;
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
-            return ApiResponse<T>.Failure($"Request to Business Central timed out");
+            throw;
         }
         catch (Exception ex) when (ex.Message.Contains("copying content to a stream"))
         {
-            return ApiResponse<T>.Failure("Failed to read complete response from Business Central. Please try again.");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<T>.Failure($"Unexpected error: {ex.Message}");
+            throw;
         }
     }
 
@@ -246,7 +246,7 @@ internal sealed class NavisionService : INavisionService
             }
             catch (JsonException ex)
             {
-                return ApiResponse<(List<T>, string)>.Failure($"Failed to deserialize response: {ex.Message}");
+                throw;
             }
 
             if (result.Count == 0)
@@ -258,11 +258,11 @@ internal sealed class NavisionService : INavisionService
         }
         catch (HttpRequestException ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"HTTP request failed: {ex.Message}");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Unexpected error: {ex.Message}");
+            throw;
         }
     }
 
@@ -306,23 +306,23 @@ internal sealed class NavisionService : INavisionService
         }
         catch (HttpRequestException ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"HTTP request failed: {ex.Message}");
+            throw;
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Request to Business Central timed out for: {requestUri}");
+            throw;
         }
         catch (TaskCanceledException ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Request was cancelled: {ex.Message}");
+            throw;
         }
         catch (Exception ex) when (ex.Message.Contains("copying content to a stream"))
         {
-            return ApiResponse<(List<T>, string)>.Failure("Failed to read complete response from Business Central. Please try again.");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Unexpected error: {ex.Message}");
+            throw;
         }
     }
 
@@ -348,15 +348,15 @@ internal sealed class NavisionService : INavisionService
         }
         catch (JsonException ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Failed to deserialize JSON: {ex.Message}");
+            throw;
         }
         catch (HttpRequestException ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"HTTP request failed: {ex.Message}");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Unexpected error: {ex.Message}");
+            throw;
         }
     }
 
@@ -388,23 +388,23 @@ internal sealed class NavisionService : INavisionService
         }
         catch (JsonException ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Failed to deserialize JSON: {ex.Message}");
+            throw;
         }
         catch (HttpRequestException ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"HTTP request failed: {ex.Message}");
+            throw;
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Request to Business Central timed out");
+            throw;
         }
         catch (Exception ex) when (ex.Message.Contains("copying content to a stream"))
         {
-            return ApiResponse<(List<T>, string)>.Failure("Failed to read complete response from Business Central. Please try again.");
+            throw;
         }
         catch (Exception ex)
         {
-            return ApiResponse<(List<T>, string)>.Failure($"Unexpected error: {ex.Message}");
+            throw;
         }
     }
 

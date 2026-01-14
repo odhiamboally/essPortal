@@ -49,7 +49,7 @@ public class PayRollController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating payslip for employee {EmployeeNo}", request.EmployeeNo);
-            return StatusCode(500, ApiResponse<byte[]>.Failure("An error occurred while generating payslip."));
+            throw;
         }
     }
 
@@ -75,7 +75,7 @@ public class PayRollController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating P9 for employee {EmployeeNo}", request.EmployeeNo);
-            return StatusCode(500, ApiResponse<byte[]>.Failure("An error occurred while generating P9."));
+            throw;
         }
     }
 

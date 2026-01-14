@@ -46,7 +46,7 @@ public class ProfileController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting user profile for user {UserId}", userId);
-            return StatusCode(500, ApiResponse<UserProfileResponse>.Failure("An error occurred while retrieving user profile."));
+            throw;
         }
     }
 
@@ -71,7 +71,7 @@ public class ProfileController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating profile data for user {UserId}", userId);
-            return StatusCode(500, ApiResponse<bool>.Failure("An error occurred while validating profile data."));
+            throw;
         }
     }
 
@@ -96,7 +96,7 @@ public class ProfileController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error calculating profile completion for user {UserId}", userId);
-            return StatusCode(500, ApiResponse<int>.Failure("An error occurred while calculating profile completion."));
+            throw;
         }
     }
 
@@ -122,7 +122,7 @@ public class ProfileController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating personal details for user {UserId}", request.UserId);
-            return StatusCode(500, ApiResponse<bool>.Failure("An error occurred while updating personal details."));
+            throw;
         }
     }
 
@@ -147,7 +147,7 @@ public class ProfileController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating contact info for user {UserId}", request.UserId);
-            return StatusCode(500, ApiResponse<bool>.Failure("An error occurred while updating contact information."));
+            throw;
         }
     }
 
@@ -172,7 +172,7 @@ public class ProfileController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating banking info for user {UserId}", request.UserId);
-            return StatusCode(500, ApiResponse<bool>.Failure("An error occurred while updating banking information."));
+            throw;
         }
     }
 
@@ -198,7 +198,7 @@ public class ProfileController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating profile picture for user {UserId}", request.UserId);
-            return StatusCode(500, ApiResponse<string>.Failure("An error occurred while updating profile picture."));
+            throw;
         }
     }
 
