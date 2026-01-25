@@ -1,6 +1,8 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Auth;
+﻿using EssPortal.Shared.Dtos.Auth;
+using EssPortal.Web.Mvc.Configurations;
 
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Utilities.Session;
 using ESSPortal.Web.Mvc.ViewModels.Auth;
@@ -20,19 +22,19 @@ using System.Text.Json;
 namespace EssPortal.Web.Mvc.Controllers;
 
 [Authorize]
-public class BaseController : Controller
+public class BaseController(
+    IClientServiceManager clientServiceManager, 
+    IServiceManager serviceManager,
+    ICacheService cacheService,
+    IOptions<AppSettings> appSettings, 
+    ILogger<BaseController> logger) : Controller
 {
-    protected readonly IServiceManager _serviceManager;
-    protected readonly AppSettings _appSettings;
-    protected readonly ILogger<BaseController> _logger;
+    protected readonly IClientServiceManager _clientServiceManager = clientServiceManager;
+    protected readonly IServiceManager _serviceManager = serviceManager;
+    protected readonly ICacheService _cache = cacheService;
+    protected readonly AppSettings _appSettings = appSettings.Value;
+    protected readonly ILogger<BaseController> _logger = logger;
     protected CurrentUserResponse? _currentUser;
-
-    public BaseController(IServiceManager serviceManager, IOptions<AppSettings> appSettings, ILogger<BaseController> logger)
-    {
-        _serviceManager = serviceManager;
-        _appSettings = appSettings.Value;
-        _logger = logger;
-    }
 
     public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -304,7 +306,7 @@ public class BaseController : Controller
             {
                 _logger.LogInformation("JWT token expiring soon, attempting refresh");
 
-                var refreshResult = await _serviceManager.AuthService.RefreshTokenAsync();
+                var refreshResult = await _clientServiceManager.AuthService.RefreshTokenAsync();
                 if (refreshResult.Successful && refreshResult.Data != null)
                 {
                     // Update the token cookies
@@ -330,7 +332,7 @@ public class BaseController : Controller
     {
         try
         {
-            var currentUserResponse = await _serviceManager.AuthService.GetCurrentUserAsync();
+            var currentUserResponse = await _clientServiceManager.AuthService.GetCurrentUserAsync();
             if (currentUserResponse.Successful && currentUserResponse.Data != null)
             {
                 _currentUser = currentUserResponse.Data;

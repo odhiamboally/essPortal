@@ -1,7 +1,10 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Controllers;
+
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Payroll;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Dtos.Payroll;
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.ViewModels.Payroll;
 
@@ -18,11 +21,14 @@ public class PayrollController : BaseController
     
 
     public PayrollController(
+        IClientServiceManager clientServiceManager,
         IServiceManager serviceManager,
+        ICacheService cacheService,
         IOptions<AppSettings> appSettings,
         ILogger<PayrollController> logger
-        )
-        : base(serviceManager, appSettings, logger)
+
+    ) : base(clientServiceManager, serviceManager, cacheService, appSettings, logger)
+
     {
         
     }
@@ -78,12 +84,12 @@ public class PayrollController : BaseController
 
         try
         {
-            var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+            var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
             _logger.LogInformation("Generating payslip for Employee: {EmployeeNo}, Month: {Month}, Year: {Year}",
                 employeeNumber, model.Month, model.Year);
 
-            var result = await _serviceManager.PayrollService.GeneratePayslipAsync(request);
+            var result = await _clientServiceManager.PayrollService.GeneratePayslipAsync(request);
 
             if (!result.Successful)
             {
@@ -146,7 +152,7 @@ public class PayrollController : BaseController
             try
             {
                 // Get logo for branding
-                var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+                var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
                 PrintPaySlipRequest request = new PrintPaySlipRequest
                 {
@@ -159,7 +165,7 @@ public class PayrollController : BaseController
                 _logger.LogInformation("Generating recent payslip for Employee: {EmployeeNo}, Month: {Month}, Year: {Year}",
                     employeeNumber, targetMonth, targetYear);
 
-                var result = await _serviceManager.PayrollService.GeneratePayslipAsync(request);
+                var result = await _clientServiceManager.PayrollService.GeneratePayslipAsync(request);
 
                 if (result == null)
                 {
@@ -245,7 +251,7 @@ public class PayrollController : BaseController
             try
             {
                 // Get logo for branding
-                var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+                var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
                 PrintPaySlipRequest request = new PrintPaySlipRequest
                 {
@@ -258,7 +264,7 @@ public class PayrollController : BaseController
                 _logger.LogInformation("Generating current payslip for Employee: {EmployeeNo}, Month: {Month}, Year: {Year}",
                     employeeNumber, targetMonth, targetYear);
 
-                var result = await _serviceManager.PayrollService.GeneratePayslipAsync(request);
+                var result = await _clientServiceManager.PayrollService.GeneratePayslipAsync(request);
 
                 if (result == null)
                 {
@@ -371,11 +377,11 @@ public class PayrollController : BaseController
                 Year = model.Year
             };
 
-            var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+            var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
             _logger.LogInformation("Generating P9 for Employee: {EmployeeNo}, Year: {Year}", employeeNumber, model.Year);
 
-            var result = await _serviceManager.PayrollService.GenerateP9Async(request);
+            var result = await _clientServiceManager.PayrollService.GenerateP9Async(request);
 
             if (!result.Successful)
             {
@@ -428,7 +434,7 @@ public class PayrollController : BaseController
 
             try
             {
-                var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+                var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
                 PrintP9Request request = new PrintP9Request
                 {
@@ -440,7 +446,7 @@ public class PayrollController : BaseController
                 _logger.LogInformation("Generating recent P9 for Employee: {EmployeeNo}, Year: {Year}",
                     employeeNumber, targetYear);
 
-                var result = await _serviceManager.PayrollService.GenerateP9Async(request);
+                var result = await _clientServiceManager.PayrollService.GenerateP9Async(request);
 
                 if (result == null)
                 {
@@ -522,7 +528,7 @@ public class PayrollController : BaseController
             try
             {
                 // Get logo for branding
-                var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+                var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
                 PrintP9Request request = new PrintP9Request
                 {
@@ -534,7 +540,7 @@ public class PayrollController : BaseController
                 _logger.LogInformation("Generating current P9 for Employee: {EmployeeNo}, Year: {Year}",
                     employeeNumber, currentYear);
 
-                var result = await _serviceManager.PayrollService.GenerateP9Async(request);
+                var result = await _clientServiceManager.PayrollService.GenerateP9Async(request);
 
                 if (result == null)
                 {

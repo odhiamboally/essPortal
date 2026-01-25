@@ -1,9 +1,12 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Controllers;
 
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Dashboard;
+using ESSPortal.Shared.Dtos.Leave;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Dtos.Dashboard;
-using ESSPortal.Web.Mvc.Dtos.Leave;
+
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Utilities.Session;
 using ESSPortal.Web.Mvc.Validations.RequestValidators.Leave;
@@ -17,21 +20,17 @@ using System.Text.Json;
 namespace ESSPortal.Web.Mvc.Controllers;
 
 [Authorize]
-public class LeaveController : BaseController
+public class LeaveController(
+    IClientServiceManager clientServiceManager,
+    IServiceManager serviceManager,
+    ICacheService cacheService,
+    IOptions<AppSettings> appSettings,
+    ILogger<LeaveController> logger) 
+    
+    : BaseController(clientServiceManager, serviceManager, cacheService, appSettings, logger)
 {
     
     private const string SessionKey_UserInfo = "UserInfo";
-
-    public LeaveController(
-        IServiceManager serviceManager,
-        IOptions<AppSettings> appSettings,
-        ILogger<LeaveController> logger) : base(serviceManager, appSettings, logger)
-        
-        
-    {
-        
-    }
-
 
     public IActionResult Index()
     {
@@ -50,12 +49,12 @@ public class LeaveController : BaseController
             }
 
             // Get cached dashboard data (should already be available)
-            var cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
+            var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(employeeNo);
             if (cachedDashboardData == null)
             {
                 _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", employeeNo);
 
-                var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(employeeNo);
+                var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(employeeNo);
 
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
@@ -111,7 +110,7 @@ public class LeaveController : BaseController
             var userInfo = GetUserInfoFromSession();
             if (userInfo == null) 
             {
-                userInfo = CacheServiceExtensions.GetUserInfo(_serviceManager.CacheService, _currentUser?.EmployeeNumber ?? string.Empty);
+                userInfo = CacheServiceExtensions.GetUserInfo(_clientServiceManager.CacheService, _currentUser?.EmployeeNumber ?? string.Empty);
 
                 if (userInfo == null)
                 {
@@ -141,12 +140,12 @@ public class LeaveController : BaseController
                 }
             }
 
-            var cachedDashboardData = _serviceManager.CacheService.GetDashboard(request.EmployeeNo);
+            var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(request.EmployeeNo);
             if (cachedDashboardData == null)
             {
                 _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", request.EmployeeNo);
 
-                var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
+                var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
                     if (isAjaxRequest)
@@ -205,7 +204,7 @@ public class LeaveController : BaseController
             }
 
             bool isEditing = false;
-            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty, isEditing);
+            var validator = new CreateLeaveApplicationRequestValidator(_clientServiceManager, _currentUser?.Gender ?? string.Empty, isEditing);
 
             var validationResult = await validator.ValidateAsync(request);
             if (!validationResult.IsValid)
@@ -230,11 +229,11 @@ public class LeaveController : BaseController
 
             }
 
-            var result = await _serviceManager.LeaveService.CreateLeaveApplicationAsync(request);
+            var result = await _clientServiceManager.LeaveService.CreateLeaveApplicationAsync(request);
 
             if (result.Successful)
             {
-                _serviceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
+                _clientServiceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
 
                 if (isAjaxRequest)
                 {
@@ -412,12 +411,12 @@ public class LeaveController : BaseController
                 }
             }
 
-            var cachedDashboardData = _serviceManager.CacheService.GetDashboard(request.EmployeeNo);
+            var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(request.EmployeeNo);
             if (cachedDashboardData == null)
             {
                 _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", request.EmployeeNo);
 
-                var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
+                var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
                     this.ToastWarning("Unable to load required data for leave application.", "Data Load Error");
@@ -461,7 +460,7 @@ public class LeaveController : BaseController
             }
 
             bool isEditing = true;
-            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty, isEditing);
+            var validator = new CreateLeaveApplicationRequestValidator(_clientServiceManager, _currentUser?.Gender ?? string.Empty, isEditing);
 
             var validationResult = await validator.ValidateAsync(request);
             if (!validationResult.IsValid)
@@ -475,11 +474,11 @@ public class LeaveController : BaseController
 
             }
 
-            var result = await _serviceManager.LeaveService.EditLeaveApplicationAsync(request);
+            var result = await _clientServiceManager.LeaveService.EditLeaveApplicationAsync(request);
 
             if (result.Successful)
             {
-                _serviceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
+                _clientServiceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
                 return Json(new
                 {
                     success = true,
@@ -541,12 +540,12 @@ public class LeaveController : BaseController
             }
 
             // Get cached leave history data
-            var cachedHistoryData = _serviceManager.CacheService.GetLeaveHistory(employeeNo);
+            var cachedHistoryData = _clientServiceManager.CacheService.GetLeaveHistory(employeeNo);
             if (cachedHistoryData == null)
             {
                 _logger.LogInformation("No cached leave history found for employee {EmployeeNo}, fetching fresh data", employeeNo);
 
-                var historyResponse = await _serviceManager.LeaveService.GetLeaveHistoryAsync(employeeNo);
+                var historyResponse = await _clientServiceManager.LeaveService.GetLeaveHistoryAsync(employeeNo);
                 if (!historyResponse.Successful || historyResponse.Data == null)
                 {
                     this.ToastError("Unable to load leave history. Please try again later.");
@@ -616,11 +615,11 @@ public class LeaveController : BaseController
 
             if (cachedDashboardData == null)
             {
-                cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
+                cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(employeeNo);
 
                 if (cachedDashboardData == null)
                 {
-                    var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(employeeNo);
+                    var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(employeeNo);
                     cachedDashboardData = dashboardResponse?.Data;
                 }
             }

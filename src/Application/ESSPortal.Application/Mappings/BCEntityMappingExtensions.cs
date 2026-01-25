@@ -1,8 +1,8 @@
 ﻿using EssPortal.Domain.Enums.NavEnums;
 
-using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Application.Mappings;
 public static class BCEntityMappingExtensions
@@ -25,7 +25,7 @@ public static class BCEntityMappingExtensions
             LeavePeriod = entity.Leave_Period ?? string.Empty,
             LeaveCode = entity.Leave_Code ?? string.Empty,
             LeaveStatus = entity.Leave_Status,
-            Status = ParseLeaveApplicationCardStatus(entity.Status ?? string.Empty),
+            Status = entity.Status,
             LeaveEarnedToDate = entity.Leave_Earned_to_Date ?? 0,
             DaysApplied = entity.Days_Applied,
             StartDate = entity.Start_Date,

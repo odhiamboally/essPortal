@@ -1,24 +1,25 @@
-﻿using EssPortal.Web.Mvc.Dtos.Common;
-using EssPortal.Web.Mvc.Dtos.ModelFilters;
-using EssPortal.Web.Mvc.Models.Navision;
+﻿using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 
 public interface ILeaveTypeService
 {
     // Read operations
-    Task<AppResponse<List<LeaveTypes>>> GetLeaveTypesAsync();
-    Task<AppResponse<LeaveTypes?>> GetLeaveTypeByCodeAsync(string code);
-    Task<AppResponse<LeaveTypes?>> GetLeaveTypeByRecIdAsync(string recId);
-    Task<AppResponse<List<LeaveTypes>>> SearchLeaveTypesAsync(LeaveTypeFilter filter);
+    Task<AppResponse<List<LeaveTypeResponse>>> GetLeaveTypesAsync();
+    Task<AppResponse<LeaveTypeResponse?>> GetLeaveTypeByCodeAsync(string code);
+    Task<AppResponse<LeaveTypeResponse?>> GetLeaveTypeByRecIdAsync(string recId);
+    Task<AppResponse<List<LeaveTypeResponse>>> SearchLeaveTypesAsync(LeaveTypeFilter filter);
 
     // Create operations
-    Task<AppResponse<LeaveTypes>> CreateLeaveTypeAsync(LeaveTypes request);
-    Task<AppResponse<List<LeaveTypes>>> CreateMultipleLeaveTypesAsync(List<LeaveTypes> requests);
+    Task<AppResponse<LeaveTypeResponse>> CreateLeaveTypeAsync(CreateLeaveTypeRequest request);
+    Task<AppResponse<List<LeaveTypeResponse>>> CreateMultipleLeaveTypesAsync(List<CreateLeaveTypeRequest> requests);
 
     // Update operations
-    Task<AppResponse<LeaveTypes>> UpdateLeaveTypeAsync(LeaveTypes request);
-    Task<AppResponse<List<LeaveTypes>>> UpdateMultipleLeaveTypesAsync(List<LeaveTypes> requests);
+    Task<AppResponse<LeaveTypeResponse>> UpdateLeaveTypeAsync(CreateLeaveTypeRequest request);
+    Task<AppResponse<List<LeaveTypeResponse>>> UpdateMultipleLeaveTypesAsync(List<CreateLeaveTypeRequest> requests);
 
     // Delete operations
     Task<AppResponse<bool>> DeleteLeaveTypeAsync(string key);

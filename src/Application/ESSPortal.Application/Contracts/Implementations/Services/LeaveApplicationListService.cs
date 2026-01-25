@@ -1,15 +1,18 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
+
 using ESSPortal.Application.Extensions;
 using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -39,23 +42,23 @@ internal sealed class LeaveApplicationListService : ILeaveApplicationListService
         _bcSettings = bcSettings.Value;
     }
 
-    public Task<ApiResponse<bool>> CreateLeaveApplicationListAsync(CreateLeaveApplicationListRequest request)
+    public Task<AppResponse<bool>> CreateLeaveApplicationListAsync(CreateLeaveApplicationListRequest request)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveApplicationListResponse>>> GetLeaveApplicationListsAsync()
+    public async Task<AppResponse<PagedResult<LeaveApplicationListResponse>>> GetLeaveApplicationListsAsync()
     {
         if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationLists", out var entitySet))
-            return ApiResponse<PagedResult<LeaveApplicationListResponse>>.Failure("Leave Application Lists Entity set not configured");
+            return AppResponse<PagedResult<LeaveApplicationListResponse>>.Failure("Leave Application Lists Entity set not configured");
 
         var response = await _navisionService.GetMultipleAsync<LeaveApplicationList>(entitySet);
         if (!response.Successful)
-            return ApiResponse<PagedResult<LeaveApplicationListResponse>>.Failure(response.Message ?? "Failed to fetch leave application lists");
+            return AppResponse<PagedResult<LeaveApplicationListResponse>>.Failure(response.Message ?? "Failed to fetch leave application lists");
 
         var (items, rawJson) = response.Data;
         var mappedItems = items.ToLeaveApplicationListResponses().ToList();
-        return ApiResponse<PagedResult<LeaveApplicationListResponse>>.Success("Success", new PagedResult<LeaveApplicationListResponse>
+        return AppResponse<PagedResult<LeaveApplicationListResponse>>.Success("Success", new PagedResult<LeaveApplicationListResponse>
         {
             Items = mappedItems,
             TotalCount = mappedItems.Count,
@@ -63,26 +66,26 @@ internal sealed class LeaveApplicationListService : ILeaveApplicationListService
 
     }
 
-    public async Task<ApiResponse<LeaveApplicationListResponse?>> GetLeaveApplicationListByNoAsync(string applicationNo)
+    public async Task<AppResponse<LeaveApplicationListResponse?>> GetLeaveApplicationListByNoAsync(string applicationNo)
     {
         if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationLists", out var entitySet))
-            return ApiResponse<LeaveApplicationListResponse?>.Failure("Leave Application Lists Entity set not configured");
+            return AppResponse<LeaveApplicationListResponse?>.Failure("Leave Application Lists Entity set not configured");
 
         var requestUri = $"{entitySet}?$filter=Application_No eq '{applicationNo}'";
         var response = await _navisionService.GetSingleAsync<LeaveApplicationList>(requestUri);
 
         if (!response.Successful)
-            return ApiResponse<LeaveApplicationListResponse?>.Failure(response.Message ?? "Failed to fetch leave application list");
+            return AppResponse<LeaveApplicationListResponse?>.Failure(response.Message ?? "Failed to fetch leave application list");
 
         var mappedItem = response.Data?.ToLeaveApplicationListResponse();
 
-        return ApiResponse<LeaveApplicationListResponse?>.Success("Success", mappedItem ?? new());
+        return AppResponse<LeaveApplicationListResponse?>.Success("Success", mappedItem ?? new());
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveApplicationListResponse>>> SearchLeaveApplicationListsAsync(LeaveApplicationListFilter filter)
+    public async Task<AppResponse<PagedResult<LeaveApplicationListResponse>>> SearchLeaveApplicationListsAsync(LeaveApplicationListFilter filter)
     {
         if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationLists", out var entitySet))
-            return ApiResponse<PagedResult<LeaveApplicationListResponse>>.Failure("Leave Application Lists Entity set not configured");
+            return AppResponse<PagedResult<LeaveApplicationListResponse>>.Failure("Leave Application Lists Entity set not configured");
 
         var odataQuery = filter.BuildODataFilter();
         var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
@@ -90,13 +93,13 @@ internal sealed class LeaveApplicationListService : ILeaveApplicationListService
         var response = await _navisionService.GetMultipleAsync<LeaveApplicationList>(requestUri);
 
         if (!response.Successful)
-            return ApiResponse<PagedResult<LeaveApplicationListResponse>>.Failure(response.Message ?? "Failed to search leave application lists");
+            return AppResponse<PagedResult<LeaveApplicationListResponse>>.Failure(response.Message ?? "Failed to search leave application lists");
 
         var (items, rawJson) = response.Data;
 
         var mappedItems = items.ToLeaveApplicationListResponses().ToList();
 
-        return ApiResponse<PagedResult<LeaveApplicationListResponse>>.Success("Success", new PagedResult<LeaveApplicationListResponse>
+        return AppResponse<PagedResult<LeaveApplicationListResponse>>.Success("Success", new PagedResult<LeaveApplicationListResponse>
         {
             Items = mappedItems,
             TotalCount = mappedItems.Count,

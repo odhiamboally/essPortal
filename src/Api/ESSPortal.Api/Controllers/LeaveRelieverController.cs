@@ -1,6 +1,6 @@
 ﻿using Asp.Versioning;
 
-using EssPortal.Application.Dtos.ModelFilters;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -45,7 +45,7 @@ public class LeaveRelieverController : BaseController
     }
 
     [HttpPost("search")]
-    public async Task<IActionResult> SearchLeaveRelievers([FromBody] LeaveRelieversFilter filter)
+    public async Task<IActionResult> SearchLeaveRelievers([FromBody] LeaveRelieverFilter filter)
     {
         var response = await _serviceManager.LeaveRelieversService.SearchLeaveRelieversAsync(filter);
         return HandleResponse(response);

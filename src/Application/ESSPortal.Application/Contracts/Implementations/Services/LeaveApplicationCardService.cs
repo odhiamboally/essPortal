@@ -1,15 +1,18 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
+
 using ESSPortal.Application.Extensions;
 using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -39,23 +42,23 @@ internal sealed class LeaveApplicationCardService : ILeaveApplicationCardService
         _bcSettings = bcSettings.Value;
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveApplicationCardResponse>>> GetLeaveApplicationCardsAsync()
+    public async Task<AppResponse<PagedResult<LeaveApplicationCardResponse>>> GetLeaveApplicationCardsAsync()
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationCards", out var entitySet))
-                return ApiResponse<PagedResult<LeaveApplicationCardResponse>>.Failure("Leave Application Cards Entity set not configured");
+                return AppResponse<PagedResult<LeaveApplicationCardResponse>>.Failure("Leave Application Cards Entity set not configured");
 
             var response = await _navisionService.GetMultipleAsync<Domain.Entities.LeaveApplicationCard>(entitySet);
 
             if (!response.Successful)
-                return ApiResponse<PagedResult<LeaveApplicationCardResponse>>.Failure(response.Message ?? "Failed to fetch leave application cards");
+                return AppResponse<PagedResult<LeaveApplicationCardResponse>>.Failure(response.Message ?? "Failed to fetch leave application cards");
 
             var (items, rawJson) = response.Data;
 
             var mappedItems = items.Select(item => item.ToLeaveApplicationCardResponseExtended()).ToList();
 
-            return ApiResponse<PagedResult<LeaveApplicationCardResponse>>.Success("Success", new PagedResult<LeaveApplicationCardResponse>
+            return AppResponse<PagedResult<LeaveApplicationCardResponse>>.Success("Success", new PagedResult<LeaveApplicationCardResponse>
             {
                 Items = mappedItems,
                 TotalCount = mappedItems.Count
@@ -70,21 +73,21 @@ internal sealed class LeaveApplicationCardService : ILeaveApplicationCardService
 
     }
 
-    public async Task<ApiResponse<LeaveApplicationCardResponse>> GetLeaveApplicationCardByNoAsync(string applicationNo)
+    public async Task<AppResponse<LeaveApplicationCardResponse>> GetLeaveApplicationCardByNoAsync(string applicationNo)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationCards", out var entitySet))
-                return ApiResponse<LeaveApplicationCardResponse>.Failure("Leave Application Cards Entity set not configured");
+                return AppResponse<LeaveApplicationCardResponse>.Failure("Leave Application Cards Entity set not configured");
 
             var requestUri = $"{entitySet}?$filter=Application_No eq '{applicationNo}'";
             var response = await _navisionService.GetSingleAsync<Domain.Entities.LeaveApplicationCard>(requestUri);
 
             if (!response.Successful)
-                return ApiResponse<LeaveApplicationCardResponse>.Failure(response.Message ?? "Failed to fetch leave application card");
+                return AppResponse<LeaveApplicationCardResponse>.Failure(response.Message ?? "Failed to fetch leave application card");
 
             var mappedData = response.Data?.ToLeaveApplicationCardResponseExtended();
-            return ApiResponse<LeaveApplicationCardResponse>.Success("Success", mappedData ?? new());
+            return AppResponse<LeaveApplicationCardResponse>.Success("Success", mappedData ?? new());
         }
         catch (Exception ex)
         {
@@ -95,25 +98,25 @@ internal sealed class LeaveApplicationCardService : ILeaveApplicationCardService
 
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveApplicationCardResponse>>> SearchLeaveApplicationCardsAsync(LeaveApplicationCardFilter filter)
+    public async Task<AppResponse<PagedResult<LeaveApplicationCardResponse>>> SearchLeaveApplicationCardsAsync(LeaveApplicationCardFilter filter)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationCards", out var entitySet))
-                return ApiResponse<PagedResult<LeaveApplicationCardResponse>>.Failure("Leave Application Cards Entity set not configured");
+                return AppResponse<PagedResult<LeaveApplicationCardResponse>>.Failure("Leave Application Cards Entity set not configured");
 
             var odataQuery = filter.BuildODataFilter();
             var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
 
             var response = await _navisionService.GetMultipleAsync<Domain.Entities.LeaveApplicationCard>(requestUri);
             if (!response.Successful)
-                return ApiResponse<PagedResult<LeaveApplicationCardResponse>>.Failure(response.Message ?? "Failed to fetch leave application cards");
+                return AppResponse<PagedResult<LeaveApplicationCardResponse>>.Failure(response.Message ?? "Failed to fetch leave application cards");
 
             var (items, rawJson) = response.Data;
 
             var mappedItems = items.Select(item => item.ToLeaveApplicationCardResponseExtended()).ToList();
 
-            return ApiResponse<PagedResult<LeaveApplicationCardResponse>>.Success("Success", new PagedResult<LeaveApplicationCardResponse>
+            return AppResponse<PagedResult<LeaveApplicationCardResponse>>.Success("Success", new PagedResult<LeaveApplicationCardResponse>
             {
                 Items = mappedItems,
                 TotalCount = mappedItems.Count
@@ -128,19 +131,19 @@ internal sealed class LeaveApplicationCardService : ILeaveApplicationCardService
 
     }
 
-    public async Task<ApiResponse<bool>> CreateLeaveApplicationCardAsync(CreateLeaveApplicationCardRequest request)
+    public async Task<AppResponse<bool>> CreateLeaveApplicationCardAsync(CreateLeaveApplicationCardRequest request)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationCards", out var entitySet))
-                return ApiResponse<bool>.Failure("Leave Application Cards Entity set not configured");
+                return AppResponse<bool>.Failure("Leave Application Cards Entity set not configured");
 
             var response = await _navisionService.CreateAsync(entitySet, request);
 
             if (!response.Successful)
-                return ApiResponse<bool>.Failure(response.Message ?? "Failed to create leave application card");
+                return AppResponse<bool>.Failure(response.Message ?? "Failed to create leave application card");
 
-            return ApiResponse<bool>.Success("Leave application card created successfully", true);
+            return AppResponse<bool>.Success("Leave application card created successfully", true);
         }
         catch (Exception ex)
         {

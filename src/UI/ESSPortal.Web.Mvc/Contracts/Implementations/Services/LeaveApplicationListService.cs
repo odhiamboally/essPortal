@@ -1,79 +1,80 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Common;
-using EssPortal.Web.Mvc.Dtos.ModelFilters;
-using EssPortal.Web.Mvc.Models.Navision;
+﻿using EssPortal.Shared.Configurations;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
+
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
+using ESSPortal.Shared.Utilities.Api;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Utilities.Api;
 
 using Microsoft.Extensions.Options;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.Services;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
-internal sealed class LeaveApplicationListService : ILeaveApplicationListService
+internal sealed class LeaveApplicationListService(
+    IServiceManager serviceManager,
+    IApiService apiService, 
+    IOptions<ApiSettings> apiSettings
+
+) : ILeaveApplicationListService
 {
-    private readonly IApiService _apiService;
-    private readonly ApiSettings _apiSettings;
-
-    public LeaveApplicationListService(IApiService apiService, IOptions<ApiSettings> apiSettings)
-    {
-        _apiService = apiService;
-        _apiSettings = apiSettings.Value;
-    }
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
 
 
     // Read operations
-    public async Task<AppResponse<List<LeaveApplicationList>>> GetLeaveApplicationListsAsync()
+    public async Task<AppResponse<List<LeaveApplicationListResponse>>> GetLeaveApplicationListsAsync()
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.GetLeaveApplicationLists;
-        return await HandleGetRequest<List<LeaveApplicationList>>(endpoint);
+        return await apiService.HandleGetRequest<List<LeaveApplicationListResponse>>(endpoint);
     }
 
-    public async Task<AppResponse<LeaveApplicationList?>> GetLeaveApplicationListByNoAsync(string applicationNo)
+    public async Task<AppResponse<LeaveApplicationListResponse?>> GetLeaveApplicationListByNoAsync(string applicationNo)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.GetLeaveApplicationListByNo;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "applicationNo", applicationNo } });
-        return await HandleGetRequest<LeaveApplicationList?>(endpoint);
+        return await apiService.HandleGetRequest<LeaveApplicationListResponse?>(endpoint);
     }
 
-    public async Task<AppResponse<LeaveApplicationList?>> GetLeaveApplicationListByRecIdAsync(string recId)
+    public async Task<AppResponse<LeaveApplicationListResponse?>> GetLeaveApplicationListByRecIdAsync(string recId)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.GetLeaveApplicationListByRecId;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "recId", recId } });
-        return await HandleGetRequest<LeaveApplicationList?>(endpoint);
+        return await apiService.HandleGetRequest<LeaveApplicationListResponse?>(endpoint);
     }
 
-    public async Task<AppResponse<List<LeaveApplicationList>>> SearchLeaveApplicationListsAsync(LeaveApplicationListFilter filter)
+    public async Task<AppResponse<List<LeaveApplicationListResponse>>> SearchLeaveApplicationListsAsync(LeaveApplicationListFilter filter)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.SearchLeaveApplicationLists;
-        return await HandlePostRequest<LeaveApplicationListFilter, List<LeaveApplicationList>>(endpoint, filter);
+        return await apiService.HandlePostRequest<LeaveApplicationListFilter, List<LeaveApplicationListResponse>>(endpoint, filter);
     }
 
     // Create operations
-    public async Task<AppResponse<LeaveApplicationList>> CreateLeaveApplicationListAsync(LeaveApplicationList request)
+    public async Task<AppResponse<LeaveApplicationListResponse>> CreateLeaveApplicationListAsync(CreateLeaveApplicationListRequest request)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.CreateLeaveApplicationList;
-        return await HandlePostRequest<LeaveApplicationList, LeaveApplicationList>(endpoint, request);
+        return await apiService.HandlePostRequest<CreateLeaveApplicationListRequest, LeaveApplicationListResponse>(endpoint, request);
     }
 
-    public async Task<AppResponse<List<LeaveApplicationList>>> CreateMultipleLeaveApplicationListsAsync(List<LeaveApplicationList> requests)
+    public async Task<AppResponse<List<LeaveApplicationListResponse>>> CreateMultipleLeaveApplicationListsAsync(List<CreateLeaveApplicationListRequest> requests)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.CreateMultipleLeaveApplicationLists;
-        return await HandlePostRequest<List<LeaveApplicationList>, List<LeaveApplicationList>>(endpoint, requests);
+        return await apiService.HandlePostRequest<List<CreateLeaveApplicationListRequest>, List<LeaveApplicationListResponse>>(endpoint, requests);
     }
 
     // Update operations
-    public async Task<AppResponse<LeaveApplicationList>> EditLeaveApplicationListAsync(LeaveApplicationList request)
+    public async Task<AppResponse<LeaveApplicationListResponse>> EditLeaveApplicationListAsync(CreateLeaveApplicationListRequest request)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.EditLeaveApplicationList;
-        return await HandlePutRequest<LeaveApplicationList, LeaveApplicationList>(endpoint, request);
+        return await apiService.HandlePutRequest<CreateLeaveApplicationListRequest, LeaveApplicationListResponse>(endpoint, request);
     }
 
-    public async Task<AppResponse<List<LeaveApplicationList>>> UpdateMultipleLeaveApplicationListsAsync(List<LeaveApplicationList> requests)
+    public async Task<AppResponse<List<LeaveApplicationListResponse>>> UpdateMultipleLeaveApplicationListsAsync(List<CreateLeaveApplicationListRequest> requests)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.UpdateMultipleLeaveApplicationLists;
-        return await HandlePutRequest<List<LeaveApplicationList>, List<LeaveApplicationList>>(endpoint, requests);
+        return await apiService.HandlePutRequest<List<CreateLeaveApplicationListRequest>, List<LeaveApplicationListResponse>>(endpoint, requests);
     }
 
     // Delete operations
@@ -81,7 +82,7 @@ internal sealed class LeaveApplicationListService : ILeaveApplicationListService
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.DeleteLeaveApplicationList;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleDeleteRequest<bool>(endpoint);
+        return await apiService.HandleDeleteRequest<bool>(endpoint);
     }
 
     // Utility operations
@@ -89,66 +90,15 @@ internal sealed class LeaveApplicationListService : ILeaveApplicationListService
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.GetLeaveApplicationListRecIdFromKey;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleGetRequest<string?>(endpoint);
+        return await apiService.HandleGetRequest<string?>(endpoint);
     }
 
     public async Task<AppResponse<bool>> IsLeaveApplicationListUpdatedAsync(string key)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveApplicationList.IsLeaveApplicationListUpdated;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleGetRequest<bool>(endpoint);
+        return await apiService.HandleGetRequest<bool>(endpoint);
     }
 
-    // Helper methods
-    private async Task<AppResponse<T>> HandleGetRequest<T>(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<T>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.GetAsync<T>(endpoint);
-
-        return apiResponse.Successful
-            ? AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<T>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<TResponse>> HandlePostRequest<TRequest, TResponse>(string endpoint, TRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<TResponse>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.PostAsync<TRequest, TResponse>(endpoint, request);
-
-        return apiResponse.Successful
-            ? AppResponse<TResponse>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<TResponse>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<TResponse>> HandlePutRequest<TRequest, TResponse>(string endpoint, TRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<TResponse>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.PutAsync<TRequest, TResponse>(endpoint, request);
-
-        return apiResponse.Successful
-            ? AppResponse<TResponse>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<TResponse>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<T>> HandleDeleteRequest<T>(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<T>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.DeleteAsync<T>(endpoint);
-
-        return apiResponse.Successful
-            ? AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<T>.Failure(apiResponse.Message!);
-    }
+   
 }

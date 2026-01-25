@@ -1,35 +1,36 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Common;
-using EssPortal.Web.Mvc.Dtos.ModelFilters;
-using EssPortal.Web.Mvc.Models.Navision;
+﻿using EssPortal.Shared.Configurations;
+using EssPortal.Shared.Dtos.ModelFilters;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Utilities.Api;
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+
+using ESSPortal.Shared.Utilities.Api;
 
 using Microsoft.Extensions.Options;
+using ESSPortal.Shared.Dtos.Leave;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
+using EssPortal.Shared.Dtos.Leave;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.Services;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
-internal sealed class LeaveRelieverService : ILeaveRelieverService
+internal sealed class LeaveRelieverService(
+    IServiceManager serviceManager,
+    IApiService apiService, 
+    IOptions<ApiSettings> apiSettings
+
+) : ILeaveRelieverService
 {
-    private readonly IApiService _apiService;
-    private readonly ApiSettings _apiSettings;
-
-    public LeaveRelieverService(IApiService apiService, IOptions<ApiSettings> apiSettings)
-    {
-        _apiService = apiService;
-        _apiSettings = apiSettings.Value;
-    }
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
 
     // Read operations
-    public async Task<AppResponse<List<LeaveReliever>>> GetLeaveRelieversAsync(LeaveRelieverFilter filter)
+    public async Task<AppResponse<List<LeaveRelieverResponse>>> GetLeaveRelieversAsync(LeaveRelieverFilter filter)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.GetLeaveRelievers;
-        return await HandlePostRequest<LeaveRelieverFilter, List<LeaveReliever>>(endpoint, filter);
+        return await apiService.HandlePostRequest<LeaveRelieverFilter, List<LeaveRelieverResponse>>(endpoint, filter);
     }
 
-    public async Task<AppResponse<LeaveReliever?>> GetLeaveRelieverAsync(string leaveCode, string staffNo)
+    public async Task<AppResponse<LeaveRelieverResponse?>> GetLeaveRelieverAsync(string leaveCode, string staffNo)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.GetLeaveRelieverByComposite;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new()
@@ -37,53 +38,53 @@ internal sealed class LeaveRelieverService : ILeaveRelieverService
             { "leaveCode", leaveCode },
             { "staffNo", staffNo }
         });
-        return await HandleGetRequest<LeaveReliever?>(endpoint);
+        return await apiService.HandleGetRequest<LeaveRelieverResponse?>(endpoint);
     }
 
-    public async Task<AppResponse<LeaveReliever?>> GetLeaveRelieverByRecIdAsync(string recId)
+    public async Task<AppResponse<LeaveRelieverResponse?>> GetLeaveRelieverByRecIdAsync(string recId)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.GetLeaveRelieverByRecId;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "recId", recId } });
-        return await HandleGetRequest<LeaveReliever?>(endpoint);
+        return await apiService.HandleGetRequest<LeaveRelieverResponse?>(endpoint);
     }
 
-    public async Task<AppResponse<List<LeaveReliever>>> GetLeaveRelieversByApplicationNoAsync(string applicationNo)
+    public async Task<AppResponse<List<LeaveRelieverResponse>>> GetLeaveRelieversByApplicationNoAsync(string applicationNo)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.GetLeaveRelieversByApplicationNo;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "applicationNo", applicationNo } });
-        return await HandleGetRequest<List<LeaveReliever>>(endpoint);
+        return await apiService.HandleGetRequest<List<LeaveRelieverResponse>>(endpoint);
     }
 
-    public async Task<AppResponse<List<LeaveReliever>>> SearchLeaveRelieversAsync(LeaveRelieverFilter filter)
+    public async Task<AppResponse<List<LeaveRelieverResponse>>> SearchLeaveRelieversAsync(LeaveRelieverFilter filter)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.SearchLeaveRelievers;
-        return await HandlePostRequest<LeaveRelieverFilter, List<LeaveReliever>>(endpoint, filter);
+        return await apiService.HandlePostRequest<LeaveRelieverFilter, List<LeaveRelieverResponse>>(endpoint, filter);
     }
 
     // Create operations
-    public async Task<AppResponse<LeaveReliever>> CreateLeaveRelieverAsync(LeaveReliever request)
+    public async Task<AppResponse<LeaveRelieverResponse>> CreateLeaveRelieverAsync(CreateLeaveRelieverRequest request)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.CreateLeaveReliever;
-        return await HandlePostRequest<LeaveReliever, LeaveReliever>(endpoint, request);
+        return await apiService.HandlePostRequest<CreateLeaveRelieverRequest, LeaveRelieverResponse>(endpoint, request);
     }
 
-    public async Task<AppResponse<List<LeaveReliever>>> CreateMultipleLeaveRelieversAsync(List<LeaveReliever> requests)
+    public async Task<AppResponse<List<LeaveRelieverResponse>>> CreateMultipleLeaveRelieversAsync(List<CreateLeaveRelieverRequest> requests)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.CreateMultipleLeaveRelievers;
-        return await HandlePostRequest<List<LeaveReliever>, List<LeaveReliever>>(endpoint, requests);
+        return await apiService.HandlePostRequest<List<CreateLeaveRelieverRequest>, List<LeaveRelieverResponse>>(endpoint, requests);
     }
 
     // Update operations
-    public async Task<AppResponse<LeaveReliever>> UpdateLeaveRelieverAsync(LeaveReliever request)
+    public async Task<AppResponse<LeaveRelieverResponse>> UpdateLeaveRelieverAsync(CreateLeaveRelieverRequest request)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.UpdateLeaveReliever;
-        return await HandlePutRequest<LeaveReliever, LeaveReliever>(endpoint, request);
+        return await apiService.HandlePutRequest<CreateLeaveRelieverRequest, LeaveRelieverResponse>(endpoint, request);
     }
 
-    public async Task<AppResponse<List<LeaveReliever>>> UpdateMultipleLeaveRelieversAsync(List<LeaveReliever> requests)
+    public async Task<AppResponse<List<LeaveRelieverResponse>>> UpdateMultipleLeaveRelieversAsync(List<CreateLeaveRelieverRequest> requests)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.UpdateMultipleLeaveRelievers;
-        return await HandlePutRequest<List<LeaveReliever>, List<LeaveReliever>>(endpoint, requests);
+        return await apiService.HandlePutRequest<List<CreateLeaveRelieverRequest>, List<LeaveRelieverResponse>>(endpoint, requests);
     }
 
     // Delete operations
@@ -91,7 +92,7 @@ internal sealed class LeaveRelieverService : ILeaveRelieverService
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.DeleteLeaveReliever;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleDeleteRequest<bool>(endpoint);
+        return await apiService.HandleDeleteRequest<bool>(endpoint);
     }
 
     // Utility operations
@@ -99,67 +100,17 @@ internal sealed class LeaveRelieverService : ILeaveRelieverService
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.GetLeaveRelieverRecIdFromKey;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleGetRequest<string?>(endpoint);
+        return await apiService.HandleGetRequest<string?>(endpoint);
     }
 
     public async Task<AppResponse<bool>> IsLeaveRelieverUpdatedAsync(string key)
     {
         var endpoint = _apiSettings.ApiEndpoints.LeaveReliever.IsLeaveRelieverUpdated;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleGetRequest<bool>(endpoint);
+        return await apiService.HandleGetRequest<bool>(endpoint);
     }
 
-    // Helper methods
-    private async Task<AppResponse<T>> HandleGetRequest<T>(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<T>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.GetAsync<T>(endpoint);
-
-        return apiResponse.Successful
-            ? AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<T>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<TResponse>> HandlePostRequest<TRequest, TResponse>(string endpoint, TRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<TResponse>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.PostAsync<TRequest, TResponse>(endpoint, request);
-
-        return apiResponse.Successful
-            ? AppResponse<TResponse>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<TResponse>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<TResponse>> HandlePutRequest<TRequest, TResponse>(string endpoint, TRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<TResponse>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.PutAsync<TRequest, TResponse>(endpoint, request);
-
-        return apiResponse.Successful
-            ? AppResponse<TResponse>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<TResponse>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<T>> HandleDeleteRequest<T>(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<T>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.DeleteAsync<T>(endpoint);
-
-        return apiResponse.Successful
-            ? AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<T>.Failure(apiResponse.Message!);
-    }
+    
+    
 
 }

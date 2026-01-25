@@ -1,24 +1,26 @@
-﻿using EssPortal.Web.Mvc.Dtos.Common;
-using EssPortal.Web.Mvc.Dtos.ModelFilters;
-using EssPortal.Web.Mvc.Models.Navision;
+﻿using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
+
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 
 public interface ILeaveApplicationCardService
 {
     // Read operations
-    Task<AppResponse<List<LeaveApplicationCard>>> GetLeaveApplicationCardsAsync();
-    Task<AppResponse<LeaveApplicationCard?>> GetLeaveApplicationCardByNoAsync(string applicationNo);
-    Task<AppResponse<LeaveApplicationCard?>> GetLeaveApplicationCardByRecIdAsync(string recId);
-    Task<AppResponse<List<LeaveApplicationCard>>> SearchLeaveApplicationCardsAsync(LeaveApplicationCardFilter filter);
+    Task<AppResponse<List<LeaveApplicationCardResponse>>> GetLeaveApplicationCardsAsync();
+    Task<AppResponse<LeaveApplicationCardResponse?>> GetLeaveApplicationCardByNoAsync(string applicationNo);
+    Task<AppResponse<LeaveApplicationCardResponse?>> GetLeaveApplicationCardByRecIdAsync(string recId);
+    Task<AppResponse<List<LeaveApplicationCardResponse>>> SearchLeaveApplicationCardsAsync(LeaveApplicationCardFilter filter);
 
     // Create operations
-    Task<AppResponse<LeaveApplicationCard>> CreateLeaveApplicationCardAsync(LeaveApplicationCard request);
-    Task<AppResponse<List<LeaveApplicationCard>>> CreateMultipleLeaveApplicationCardsAsync(List<LeaveApplicationCard> requests);
+    Task<AppResponse<LeaveApplicationCardResponse>> CreateLeaveApplicationCardAsync(CreateLeaveApplicationCardRequest request);
+    Task<AppResponse<List<LeaveApplicationCardResponse>>> CreateMultipleLeaveApplicationCardsAsync(List<CreateLeaveApplicationCardRequest> requests);
 
     // Update operations
-    Task<AppResponse<LeaveApplicationCard>> EditLeaveApplicationCardAsync(LeaveApplicationCard request);
-    Task<AppResponse<List<LeaveApplicationCard>>> UpdateMultipleLeaveApplicationCardsAsync(List<LeaveApplicationCard> requests);
+    Task<AppResponse<LeaveApplicationCardResponse>> EditLeaveApplicationCardAsync(CreateLeaveApplicationCardRequest request);
+    Task<AppResponse<List<LeaveApplicationCardResponse>>> UpdateMultipleLeaveApplicationCardsAsync(List<CreateLeaveApplicationCardRequest> requests);
 
     // Delete operations
     Task<AppResponse<bool>> DeleteLeaveApplicationCardAsync(string key);

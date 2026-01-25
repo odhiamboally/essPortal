@@ -1,5 +1,5 @@
-﻿using ESSPortal.Application.Dtos.Leave;
-using ESSPortal.Domain.NavEntities;
+﻿using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Leave;
 
 using Microsoft.Extensions.Logging;
 

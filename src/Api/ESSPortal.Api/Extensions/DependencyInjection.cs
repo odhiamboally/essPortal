@@ -286,9 +286,8 @@ public static class DependencyInjection
 
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            
             throw;
         }
         

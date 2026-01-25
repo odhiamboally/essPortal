@@ -1,5 +1,7 @@
 ﻿using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+
 using Microsoft.Extensions.Options;
 
 using System.Text;

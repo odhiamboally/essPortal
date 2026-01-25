@@ -1,5 +1,8 @@
 using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Controllers;
+
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Mappings;
@@ -16,12 +19,14 @@ public class HomeController : BaseController
     
 
     public HomeController(
-        IServiceManager serviceManager, 
+        IClientServiceManager clientServiceManager, 
+        IServiceManager serviceManager,
+        ICacheService cacheService,
         IOptions<AppSettings> appSettings, 
         ILogger<AuthController> logger
         
         )
-        : base(serviceManager, appSettings, logger)
+        : base(clientServiceManager, serviceManager, cacheService, appSettings, logger)
     {
         
         
@@ -44,7 +49,7 @@ public class HomeController : BaseController
             // Fix: Ensure employeeNo is not null before calling GetDashboard
             if (!string.IsNullOrWhiteSpace(employeeNo))
             {
-                var cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
+                var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(employeeNo);
                 if (cachedDashboardData != null)
                 {
                     // If cached data exists, return it directly
@@ -57,7 +62,7 @@ public class HomeController : BaseController
                 }
             }
 
-            var response = await _serviceManager.DashboardService.GetDashboardDataAsync(employeeNo ?? string.Empty);
+            var response = await _clientServiceManager.DashboardService.GetDashboardDataAsync(employeeNo ?? string.Empty);
 
             if (!response.Successful)
             {
@@ -68,7 +73,7 @@ public class HomeController : BaseController
 
             var dashboardData = response.Data ?? new(string.Empty, string.Empty, null, null, [], [], [], [], [], []);
 
-            _serviceManager.CacheService.SetDashboard(employeeNo ?? string.Empty, dashboardData);
+            _clientServiceManager.CacheService.SetDashboard(employeeNo ?? string.Empty, dashboardData);
 
             dashboardViewModel = DashboardMappingExtensions.ToDashboardViewModel(dashboardData);
 

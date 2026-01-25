@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 
-using ESSPortal.Application.Dtos.Common;
+using ESSPortal.Shared.Dtos.Common;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace ESSPortal.Api.Controllers;
@@ -17,7 +18,7 @@ public class BaseController : ControllerBase
             
     }
 
-    protected IActionResult HandleResponse<T>(ApiResponse<T> response)
+    protected IActionResult HandleResponse<T>(AppResponse<T> response)
     {
         if (response.Successful && response.Data != null)
         {

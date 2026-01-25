@@ -1,8 +1,11 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 using EssPortal.Web.Mvc.Controllers;
 
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Profile;
+using ESSPortal.Web.Mvc.Contracts.Implementations.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Dtos.Profile;
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Mappings;
 using ESSPortal.Web.Mvc.Utilities.Session;
@@ -18,19 +21,16 @@ namespace ESSPortal.Web.Mvc.Controllers;
 
 
 [Authorize]
-public class ProfileController : BaseController
+public class ProfileController(
+    IClientServiceManager clientServiceManager,
+    IServiceManager serviceManager,
+    ICacheService cacheService,
+    IOptions<AppSettings> appSettings,
+    ILogger<AuthController> logger
+
+
+        ) : BaseController(clientServiceManager, serviceManager, cacheService, appSettings, logger)
 {
-    
-
-    public ProfileController(
-        IServiceManager serviceManager, 
-        IOptions<AppSettings> appSettings, 
-        ILogger<AuthController> logger 
-        
-
-        ): base(serviceManager, appSettings, logger) { }
-       
-
     [HttpGet]
     public async Task<IActionResult> Index()
     {
@@ -43,7 +43,7 @@ public class ProfileController : BaseController
                 return RedirectToAction("SignIn", "Auth");
             }
 
-            var profileResponse = await _serviceManager.ProfileService.GetUserProfileAsync(userId);
+            var profileResponse = await _clientServiceManager.ProfileService.GetUserProfileAsync(userId);
             if (!profileResponse.Successful || profileResponse.Data == null)
             {
                 this.ToastError("Failed to load profile data.", "Profile Error");
@@ -57,7 +57,7 @@ public class ProfileController : BaseController
             var userInfo = GetUserInfoFromSession();
             if (userInfo == null)
             {
-                userInfo = CacheServiceExtensions.GetUserInfo(_serviceManager.CacheService, _currentUser?.EmployeeNumber ?? string.Empty);
+                userInfo = CacheServiceExtensions.GetUserInfo(_cache, _currentUser?.EmployeeNumber ?? string.Empty);
             }
 
             viewModel.EmploymentDetails.ManagerName = userInfo?.ManagerSupervisor ?? "N/A";
@@ -98,7 +98,7 @@ public class ProfileController : BaseController
 
             request.UserId = userId;
 
-            var response = await _serviceManager.ProfileService.UpdatePersonalDetailsAsync(request);
+            var response = await _clientServiceManager.ProfileService.UpdatePersonalDetailsAsync(request);
 
             if (response.Successful)
             {
@@ -145,7 +145,7 @@ public class ProfileController : BaseController
 
             request.UserId = userId;
 
-            var response = await _serviceManager.ProfileService.UpdateContactInfoAsync(request);
+            var response = await _clientServiceManager.ProfileService.UpdateContactInfoAsync(request);
 
             if (response.Successful)
             {
@@ -193,7 +193,7 @@ public class ProfileController : BaseController
 
             request.UserId = userId;
 
-            var response = await _serviceManager.ProfileService.UpdateBankingInfoAsync(request);
+            var response = await _clientServiceManager.ProfileService.UpdateBankingInfoAsync(request);
 
             if (response.Successful)
             {
@@ -254,7 +254,7 @@ public class ProfileController : BaseController
             request.ContentType = request.ProfilePicture.ContentType ?? "image/jpeg";
             request.Base64Content = base64Content;
 
-            var response = await _serviceManager.ProfileService.UpdateProfilePictureAsync(request);
+            var response = await _clientServiceManager.ProfileService.UpdateProfilePictureAsync(request);
 
             if (response.Successful)
             {
@@ -265,7 +265,7 @@ public class ProfileController : BaseController
                     var fileName = responseParts[1];
 
                     // Save file using FileService
-                    var saveResult = await _serviceManager.FileService.SaveProfilePictureAsync(userId, imageBytes, fileName);
+                    var saveResult = await _clientServiceManager.FileService.SaveProfilePictureAsync(userId, imageBytes, fileName);
 
                     if (saveResult.Successful)
                     {
@@ -313,7 +313,7 @@ public class ProfileController : BaseController
 
         try
         {
-            var (imageBytes, contentType) = await _serviceManager.FileService.ReadProfilePictureAsync(fileName);
+            var (imageBytes, contentType) = await _clientServiceManager.FileService.ReadProfilePictureAsync(fileName);
 
             if (imageBytes.Length == 0)
             {
@@ -345,7 +345,7 @@ public class ProfileController : BaseController
                 return Json(new { success = false, message = "User not authenticated" });
             }
 
-            var profileResponse = await _serviceManager.ProfileService.GetUserProfileAsync(userId);
+            var profileResponse = await _clientServiceManager.ProfileService.GetUserProfileAsync(userId);
             if (!profileResponse.Successful || profileResponse.Data == null)
             {
                 return Json(new { success = false, message = "Failed to load profile" });

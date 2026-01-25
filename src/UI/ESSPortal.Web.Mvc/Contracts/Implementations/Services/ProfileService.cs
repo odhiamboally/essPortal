@@ -1,27 +1,27 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Common;
+﻿using EssPortal.Shared.Configurations;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+
+using ESSPortal.Shared.Dtos.Profile;
+using ESSPortal.Shared.Utilities.Api;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Dtos.Profile;
-using ESSPortal.Web.Mvc.Utilities.Api;
 
 using Microsoft.Extensions.Options;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
-public class ProfileService : IProfileService
+public class ProfileService(
+    IServiceManager serviceManager,
+    IApiService apiService, 
+    ILogger<ProfileService> logger, 
+    IOptions<ApiSettings> apiSettings
+    
+) : IProfileService
 {
-    private readonly IApiService _apiService;
-    private readonly ILogger<ProfileService> _logger;
-    private readonly ApiSettings _apiSettings;
-
-    public ProfileService(IApiService apiService, ILogger<ProfileService> logger, IOptions<ApiSettings> apiSettings)
-    {
-        _apiService = apiService;
-        _logger = logger;
-        _apiSettings = apiSettings.Value;
-    }
+    private readonly ILogger<ProfileService> _logger = logger;
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
 
     public async Task<AppResponse<UserProfileResponse>> GetUserProfileAsync(string userId)
     {
@@ -44,7 +44,7 @@ public class ProfileService : IProfileService
                 { "userId", userId }
             });
 
-            var response = await _apiService.GetAsync<UserProfileResponse>(endpoint);
+            var response = await apiService.GetAsync<UserProfileResponse>(endpoint);
 
             if (!response.Successful)
             {
@@ -78,7 +78,7 @@ public class ProfileService : IProfileService
 
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
             
-            var response = await _apiService.PutAsync<UpdatePersonalDetailsRequest, bool>(endpoint, request);
+            var response = await apiService.PutAsync<UpdatePersonalDetailsRequest, bool>(endpoint, request);
 
             if (!response.Successful)
             {
@@ -114,7 +114,7 @@ public class ProfileService : IProfileService
 
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var response = await _apiService.PutAsync<UpdateContactInfoRequest, bool>(endpoint, request);
+            var response = await apiService.PutAsync<UpdateContactInfoRequest, bool>(endpoint, request);
 
             if (!response.Successful)
             {
@@ -150,7 +150,7 @@ public class ProfileService : IProfileService
 
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var response = await _apiService.PutAsync<UpdateBankingInfoRequest, bool>(endpoint, request);
+            var response = await apiService.PutAsync<UpdateBankingInfoRequest, bool>(endpoint, request);
 
             if (!response.Successful)
             {
@@ -186,7 +186,7 @@ public class ProfileService : IProfileService
 
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var response = await _apiService.PostAsync<UpdateProfilePictureRequest, string>(endpoint, request);
+            var response = await apiService.PostAsync<UpdateProfilePictureRequest, string>(endpoint, request);
 
             if (!response.Successful)
             {

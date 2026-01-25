@@ -1,7 +1,9 @@
 ﻿using Asp.Versioning;
 using ESSPortal.Application.Contracts.Interfaces.Common;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
+
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,16 +26,16 @@ public class LeaveController : BaseController
 
     // Create Leave Application
     [HttpPost("create")]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateLeaveApplication([FromBody] CreateLeaveApplicationRequest request)
     {
         if (request == null)
         {
-            return BadRequest(ApiResponse<LeaveApplicationResponse>.Failure("Invalid leave application request"));
+            return BadRequest(AppResponse<LeaveApplicationResponse>.Failure("Invalid leave application request"));
         }
 
         var response = await _serviceManager.LeaveService.CreateLeaveApplicationAsync(request);
@@ -43,16 +45,16 @@ public class LeaveController : BaseController
 
     // Create Leave Application
     [HttpPut("update")]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveApplicationResponse>), StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AppResponse<LeaveApplicationResponse>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateLeaveApplication([FromBody] CreateLeaveApplicationRequest request)
     {
         if (request == null)
         {
-            return BadRequest(ApiResponse<LeaveApplicationResponse>.Failure("Invalid leave application request"));
+            return BadRequest(AppResponse<LeaveApplicationResponse>.Failure("Invalid leave application request"));
         }
 
         var response = await _serviceManager.LeaveService.UpdateLeaveApplicationAsync(request);
@@ -61,16 +63,16 @@ public class LeaveController : BaseController
     }
 
     [HttpPost("leave-history")]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LeaveHistory([FromBody] string employeeNo)
     {
         if (string.IsNullOrWhiteSpace(employeeNo))
         {
-            return BadRequest(ApiResponse<LeaveHistoryResponse>.Failure("Invalid leave application request"));
+            return BadRequest(AppResponse<LeaveHistoryResponse>.Failure("Invalid leave application request"));
         }
 
         var response = await _serviceManager.LeaveService.GetLeaveHistoryAsync(employeeNo);
@@ -79,16 +81,16 @@ public class LeaveController : BaseController
     }
 
     [HttpPost("annual-leave-summary")]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> AnnualLeaveSummary([FromBody] string employeeNo)
     {
         if (string.IsNullOrWhiteSpace(employeeNo))
         {
-            return BadRequest(ApiResponse<LeaveHistoryResponse>.Failure("Invalid leave application request"));
+            return BadRequest(AppResponse<LeaveHistoryResponse>.Failure("Invalid leave application request"));
         }
 
         var response = await _serviceManager.LeaveService.GetAnnualLeaveSummaryAsync(employeeNo);
@@ -97,16 +99,16 @@ public class LeaveController : BaseController
     }
 
     [HttpPost("leave-summary")]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<LeaveHistoryResponse>), StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AppResponse<LeaveHistoryResponse>), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> LeaveSummary([FromBody] string employeeNo)
     {
         if (string.IsNullOrWhiteSpace(employeeNo))
         {
-            return BadRequest(ApiResponse<LeaveHistoryResponse>.Failure("Invalid leave application request"));
+            return BadRequest(AppResponse<LeaveHistoryResponse>.Failure("Invalid leave application request"));
         }
 
         var response = await _serviceManager.LeaveService.GetLeaveSummaryAsync(employeeNo);

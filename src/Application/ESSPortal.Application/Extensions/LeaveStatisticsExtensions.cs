@@ -1,5 +1,5 @@
-﻿using ESSPortal.Application.Dtos.Leave;
-using ESSPortal.Application.Mappings;
+﻿using ESSPortal.Application.Mappings;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Application.Extensions;
 

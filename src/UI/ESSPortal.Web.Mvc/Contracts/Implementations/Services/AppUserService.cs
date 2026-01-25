@@ -1,12 +1,13 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Auth;
-using EssPortal.Web.Mvc.Dtos.Common;
+﻿using EssPortal.Shared.Configurations;
+using EssPortal.Shared.Dtos.Auth;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
+
 using Microsoft.Extensions.Options;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.Services;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
 internal sealed class AppUserService : IAppUserService
 {

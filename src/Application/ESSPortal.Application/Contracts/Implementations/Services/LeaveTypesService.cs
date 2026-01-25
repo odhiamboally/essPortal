@@ -1,16 +1,18 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Employee;
-using ESSPortal.Application.Dtos.Leave;
+
 using ESSPortal.Application.Extensions;
 using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -41,34 +43,34 @@ internal sealed class LeaveTypesService : ILeaveTypesService
         _bcSettings = bcSettings.Value;
     }
 
-    public async Task<ApiResponse<bool>> CreateLeaveTypeAsync(CreateLeaveTypeRequest request)
+    public async Task<AppResponse<bool>> CreateLeaveTypeAsync(CreateLeaveTypeRequest request)
     {
         if (!_bcSettings.EntitySets.TryGetValue("LeaveTypes", out var entitySet))
-            return ApiResponse<bool>.Failure("Leave Types Entity set not configured");
+            return AppResponse<bool>.Failure("Leave Types Entity set not configured");
 
         var response = await _navisionService.CreateAsync(entitySet, request);
 
         return response.Successful
-            ? ApiResponse<bool>.Success("Leave type created successfully", true)
-            : ApiResponse<bool>.Failure(response.Message ?? "Failed to create leave type");
+            ? AppResponse<bool>.Success("Leave type created successfully", true)
+            : AppResponse<bool>.Failure(response.Message ?? "Failed to create leave type");
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveTypeResponse>>> GetLeaveTypesAsync()
+    public async Task<AppResponse<PagedResult<LeaveTypeResponse>>> GetLeaveTypesAsync()
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveTypes", out var entitySet))
-                return ApiResponse<PagedResult<LeaveTypeResponse>>.Failure("Leave Types Entity set not configured");
+                return AppResponse<PagedResult<LeaveTypeResponse>>.Failure("Leave Types Entity set not configured");
 
             var response = await _navisionService.GetMultipleAsync<LeaveTypes>(entitySet);
             if (!response.Successful)
-                return ApiResponse<PagedResult<LeaveTypeResponse>>.Failure(response.Message ?? "Failed to fetch leave types");
+                return AppResponse<PagedResult<LeaveTypeResponse>>.Failure(response.Message ?? "Failed to fetch leave types");
 
             var (items, _) = response.Data;
 
             var mappedItems = items.ToLeaveTypeResponses();
 
-            return ApiResponse<PagedResult<LeaveTypeResponse>>.Success("Success", new PagedResult<LeaveTypeResponse>
+            return AppResponse<PagedResult<LeaveTypeResponse>>.Success("Success", new PagedResult<LeaveTypeResponse>
             {
                 Items = mappedItems.ToList(),
                 Cursor = null,
@@ -88,25 +90,25 @@ internal sealed class LeaveTypesService : ILeaveTypesService
         }
     }
 
-    public async Task<ApiResponse<LeaveTypeResponse>> GetLeaveTypeByCodeAsync(string code)
+    public async Task<AppResponse<LeaveTypeResponse>> GetLeaveTypeByCodeAsync(string code)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveTypes", out var entitySet))
-                return ApiResponse<LeaveTypeResponse>.Failure("Leave Types Entity set not configured");
+                return AppResponse<LeaveTypeResponse>.Failure("Leave Types Entity set not configured");
 
             var requestUri = $"{entitySet}?$filter=Code eq '{code}'";
             var response = await _navisionService.GetSingleAsync<LeaveTypes>(requestUri);
 
             if (!response.Successful)
-                return ApiResponse<LeaveTypeResponse>.Failure(response.Message ?? "Failed to fetch leave type");
+                return AppResponse<LeaveTypeResponse>.Failure(response.Message ?? "Failed to fetch leave type");
 
             if (response.Data == null)
-                return ApiResponse<LeaveTypeResponse>.Failure("Leave type not found");
+                return AppResponse<LeaveTypeResponse>.Failure("Leave type not found");
 
             var leaveTypeResponse = LeaveMappingExtensions.ToLeaveTypeResponse(response.Data);
 
-            return ApiResponse<LeaveTypeResponse>.Success("Success", leaveTypeResponse);
+            return AppResponse<LeaveTypeResponse>.Success("Success", leaveTypeResponse);
         }
         catch (Exception ex)
         {
@@ -116,12 +118,12 @@ internal sealed class LeaveTypesService : ILeaveTypesService
         }
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveTypeResponse>>> SearchLeaveTypesAsync(LeaveTypeFilter filter)
+    public async Task<AppResponse<PagedResult<LeaveTypeResponse>>> SearchLeaveTypesAsync(LeaveTypeFilter filter)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveTypes", out var entitySet))
-                return ApiResponse<PagedResult<LeaveTypeResponse>>.Failure("Leave Types Entity set not configured");
+                return AppResponse<PagedResult<LeaveTypeResponse>>.Failure("Leave Types Entity set not configured");
 
             var odataQuery = filter.BuildODataFilter();
             var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
@@ -129,13 +131,13 @@ internal sealed class LeaveTypesService : ILeaveTypesService
             var response = await _navisionService.GetMultipleAsync<LeaveTypes>(requestUri);
 
             if (!response.Successful)
-                return ApiResponse<PagedResult<LeaveTypeResponse>>.Failure(response.Message ?? "Failed to fetch leave types");
+                return AppResponse<PagedResult<LeaveTypeResponse>>.Failure(response.Message ?? "Failed to fetch leave types");
 
             var (items, _) = response.Data;
 
             var mappedItems = items.ToLeaveTypeResponses();
 
-            return ApiResponse<PagedResult<LeaveTypeResponse>>.Success("Success", new PagedResult<LeaveTypeResponse>
+            return AppResponse<PagedResult<LeaveTypeResponse>>.Success("Success", new PagedResult<LeaveTypeResponse>
             {
                 Items = mappedItems.ToList(),
                 Cursor = null,

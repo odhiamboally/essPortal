@@ -1,4 +1,6 @@
-﻿namespace ESSPortal.Web.Mvc.Configurations;
+﻿using ESSPortal.Shared.Configuration;
+
+namespace ESSPortal.Web.Mvc.Configurations;
 
 public class SecuritySettings
 {

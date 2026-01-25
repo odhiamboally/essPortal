@@ -1,27 +1,24 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Common;
+﻿using EssPortal.Shared.Configurations;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Payroll;
+using ESSPortal.Shared.Utilities.Api;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Dtos.Payroll;
-using ESSPortal.Web.Mvc.Utilities.Api;
 
 using Microsoft.Extensions.Options;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
-internal sealed class PayrollService : IPayrollService
+internal sealed class PayrollService(
+    IServiceManager serviceManager,
+    IApiService apiService, 
+    IOptions<ApiSettings> apiSettings
+
+ ) : IPayrollService
 {
-    private readonly IApiService _apiService;
-    private readonly ApiSettings _apiSettings;
-
-
-    public PayrollService(IApiService apiService, IOptions<ApiSettings> apiSettings)
-    {
-        _apiService = apiService;
-        _apiSettings = apiSettings.Value;
-
-    }
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
 
     public async Task<AppResponse<byte[]>> GenerateP9Async(PrintP9Request request)
     {
@@ -37,7 +34,7 @@ internal sealed class PayrollService : IPayrollService
 
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<PrintP9Request, byte[]>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<PrintP9Request, byte[]>(endpoint, request);
 
             return apiResponse.Successful
                     ? AppResponse<byte[]>.Success(apiResponse.Message!, apiResponse.Data!)
@@ -64,7 +61,7 @@ internal sealed class PayrollService : IPayrollService
 
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<PrintPaySlipRequest, byte[]>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<PrintPaySlipRequest, byte[]>(endpoint, request);
             return apiResponse.Successful
                     ? AppResponse<byte[]>.Success(apiResponse.Message!, apiResponse.Data!)
                     : AppResponse<byte[]>.Failure(apiResponse.Message!);

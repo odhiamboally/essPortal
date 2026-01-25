@@ -1,15 +1,13 @@
-﻿//using Azure;
+﻿
 
+using EssPortal.Shared.Configurations;
+using EssPortal.Shared.Dtos.Auth;
 
-using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Auth;
-using EssPortal.Web.Mvc.Dtos.Common;
-
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Dtos.Auth;
-using ESSPortal.Web.Mvc.Extensions;
-using ESSPortal.Web.Mvc.Utilities.Api;
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Auth;
+using ESSPortal.Shared.Utilities.Api;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -18,32 +16,29 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Json;
 
-using ForgotPasswordRequest = EssPortal.Web.Mvc.Dtos.Auth.ForgotPasswordRequest;
-using LoginRequest = EssPortal.Web.Mvc.Dtos.Auth.LoginRequest;
-using RegisterEmployeeRequest = EssPortal.Web.Mvc.Dtos.Auth.RegisterEmployeeRequest;
-using ResetPasswordRequest = EssPortal.Web.Mvc.Dtos.Auth.ResetPasswordRequest;
+using ForgotPasswordRequest = EssPortal.Shared.Dtos.Auth.ForgotPasswordRequest;
+using LoginRequest = EssPortal.Shared.Dtos.Auth.LoginRequest;
+using RegisterEmployeeRequest = EssPortal.Shared.Dtos.Auth.RegisterEmployeeRequest;
+using ResetPasswordRequest = EssPortal.Shared.Dtos.Auth.ResetPasswordRequest;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
+using ESSPortal.Web.Mvc.Extensions;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
+namespace ESSPortal.Web.Mvc.Contracts.Implementations.Services;
 
-internal sealed class AuthService : IAuthService
+internal sealed class AuthService(
+    IApiService apiService,
+    ICacheService cacheService,
+    IHttpContextAccessor httpContextAccessor,
+    IOptions<ApiSettings> apiSettings,
+    ILogger<AuthService> logger
+
+
+    ) : IAuthService
 {
-    private readonly IApiService _apiService;
-    private readonly ICacheService _cacheService;
-    private readonly ApiSettings _apiSettings;
-    private readonly ILogger<AuthService> _logger;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
+    private readonly ILogger<AuthService> _logger = logger;
+    
     private const string SessionIdCookieName = "session_id";
-
-
-    public AuthService(IApiService apiService, ICacheService cacheService, IOptions<ApiSettings> apiSettings,  ILogger<AuthService> logger, IHttpContextAccessor httpContextAccessor)
-    {
-        _apiService = apiService;
-        _cacheService = cacheService;
-        _apiSettings = apiSettings.Value;
-        _logger = logger;
-        _httpContextAccessor = httpContextAccessor;
-    }
-
 
     public async Task<AppResponse<bool>> RegisterEmployeeAsync(RegisterEmployeeRequest registerRequest)
     {
@@ -52,7 +47,10 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.RegisterEmployee;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<RegisterEmployeeRequest, bool>(endpoint, registerRequest);
+            var apiResponse = await apiService.PostAsync<RegisterEmployeeRequest, bool>(endpoint, registerRequest);
+
+            // ToD: Client Services should call Backend Service directly
+            //var resp = await _clientServiceManager.AuthService.RegisterEmployeeAsync(registerRequest);
 
             return !apiResponse.Successful
                 ? AppResponse<bool>.Failure(apiResponse.Message!)
@@ -73,7 +71,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.SendEmailConfirmation;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<SendEmailConfirmationRequest, bool>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<SendEmailConfirmationRequest, bool>(endpoint, request);
 
             return !apiResponse.Successful
                 ? AppResponse<bool>.Failure(apiResponse.Message!)
@@ -94,7 +92,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.ResendEmailConfirmation;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<SendEmailConfirmationRequest, bool>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<SendEmailConfirmationRequest, bool>(endpoint, request);
 
             return !apiResponse.Successful
                 ? AppResponse<bool>.Failure(apiResponse.Message!)
@@ -115,7 +113,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.ConfirmUserEmail;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<ConfirmUserEmailRequest, bool>(endpoint, confirmEmailRequest);
+            var apiResponse = await apiService.PostAsync<ConfirmUserEmailRequest, bool>(endpoint, confirmEmailRequest);
 
             return !apiResponse.Successful
                 ? AppResponse<bool>.Failure(apiResponse.Message!)
@@ -137,10 +135,10 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.Login;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<LoginRequest, LoginResponse>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<LoginRequest, LoginResponse>(endpoint, request);
             if (!apiResponse.Successful)
             {
-                return ConvertApiResponse(apiResponse);
+                return apiService.ConvertApiResponse(apiResponse);
             }
 
             // Store authentication tokens securely
@@ -150,7 +148,11 @@ internal sealed class AuthService : IAuthService
             {
                 StoreSessionId(apiResponse.SessionId);
 
-                _cacheService.SetSessionId(apiResponse.Data?.EmployeeNumber ?? string.Empty, apiResponse.SessionId);
+                await cacheService.SetAsync(
+                    apiResponse.Data?.EmployeeNumber ?? string.Empty, 
+                    apiResponse.SessionId,
+                    TimeSpan.FromHours(8)
+                );
 
                 if (apiResponse.Data != null)
                 {
@@ -184,7 +186,7 @@ internal sealed class AuthService : IAuthService
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
             // Session ID is automatically included via SetAuthorizationHeader()
-            var apiResponse = await _apiService.PostAsync<object, SessionStatusResponse>(endpoint, null);
+            var apiResponse = await apiService.PostAsync<object, SessionStatusResponse>(endpoint, null);
 
             if (!apiResponse.Successful)
             {
@@ -208,7 +210,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.SessionUnlock;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<UnlockRequest, UnlockResponse>(endpoint, unlockRequest);
+            var apiResponse = await apiService.PostAsync<UnlockRequest, UnlockResponse>(endpoint, unlockRequest);
 
             if (!apiResponse.Successful)
             {
@@ -231,7 +233,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.GetCurrentUser;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.GetAsync<CurrentUserResponse>(endpoint);
+            var apiResponse = await apiService.GetAsync<CurrentUserResponse>(endpoint);
 
             if (!apiResponse.Successful && IsTokenExpiredError(apiResponse))
             {
@@ -240,7 +242,7 @@ internal sealed class AuthService : IAuthService
                 if (refreshResult.Successful)
                 {
                     // Retry the original request with new token
-                    apiResponse = await _apiService.GetAsync<CurrentUserResponse>(endpoint);
+                    apiResponse = await apiService.GetAsync<CurrentUserResponse>(endpoint);
                 }
             }
 
@@ -266,7 +268,7 @@ internal sealed class AuthService : IAuthService
                 { "userId", request.UserId }
             });
 
-            var apiResponse = await _apiService.GetAsync<ProviderResponse>(endpoint);
+            var apiResponse = await apiService.GetAsync<ProviderResponse>(endpoint);
 
             return !apiResponse.Successful
                ? AppResponse<ProviderResponse>.Failure(apiResponse.Message!)
@@ -286,7 +288,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.Send2FACode;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<Send2FACodeRequest, Send2FACodeResponse>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<Send2FACodeRequest, Send2FACodeResponse>(endpoint, request);
 
             return !apiResponse.Successful
                ? AppResponse<Send2FACodeResponse>.Failure(apiResponse.Message!)
@@ -306,11 +308,11 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.Verify2FACode;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<Verify2FACodeRequest, Verify2FACodeResponse>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<Verify2FACodeRequest, Verify2FACodeResponse>(endpoint, request);
 
             if (!apiResponse.Successful)
             {
-                return ConvertApiResponse(apiResponse);
+                return apiService.ConvertApiResponse(apiResponse);
             }
 
             if (apiResponse.Successful && apiResponse.Data != null)
@@ -341,7 +343,6 @@ internal sealed class AuthService : IAuthService
         }
     }
 
-
     public async Task<AppResponse<bool>> RequestPasswordResetAsync(ForgotPasswordRequest request)
     {
         try
@@ -349,7 +350,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.RequestPasswordReset;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<ForgotPasswordRequest, bool>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<ForgotPasswordRequest, bool>(endpoint, request);
 
             return !apiResponse.Successful
                    ? AppResponse<bool>.Failure(apiResponse.Message!)
@@ -369,7 +370,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.ValidatePasswordResetToken;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<ValidateResetTokenRequest, bool>(endpoint, validateResetTokenRequest);
+            var apiResponse = await apiService.PostAsync<ValidateResetTokenRequest, bool>(endpoint, validateResetTokenRequest);
             return !apiResponse.Successful
                ? AppResponse<bool>.Failure(apiResponse.Message!)
                : AppResponse<bool>.Success(apiResponse.Message!, apiResponse.Data!);
@@ -388,7 +389,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.ResetPassword;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
 
-            var apiResponse = await _apiService.PostAsync<ResetPasswordRequest, bool>(endpoint, request);
+            var apiResponse = await apiService.PostAsync<ResetPasswordRequest, bool>(endpoint, request);
 
             return !apiResponse.Successful
                    ? AppResponse<bool>.Failure(apiResponse.Message!)
@@ -401,8 +402,7 @@ internal sealed class AuthService : IAuthService
         }
     }
 
-
-    public async Task<AppResponse<RefreshTokenResponse>> RefreshTokenAsync()
+    public async Task<AppResponse<RefreshTokenResponse>>   RefreshTokenAsync()
     {
         try
         {
@@ -420,21 +420,21 @@ internal sealed class AuthService : IAuthService
 
             var refreshRequest = new RefreshTokenRequest(accessToken, refreshToken);
 
-            var apiResponse = await _apiService.PostAsync<RefreshTokenRequest, RefreshTokenResponse>(endpoint, refreshRequest);
+            var apiResponse = await apiService.PostAsync<RefreshTokenRequest, RefreshTokenResponse>(endpoint, refreshRequest);
 
             if (!apiResponse.Successful)
             {
                 _logger.LogWarning("Token refresh failed: {Message}", apiResponse.Message);
                 // Clear stored tokens on refresh failure
                 ClearStoredTokens();
-                return ConvertApiResponse(apiResponse);
+                return apiService.ConvertApiResponse(apiResponse);
             }
 
             // Store new tokens
             await StoreRefreshTokensAsync(apiResponse.Data!);
 
             _logger.LogInformation("Token refreshed successfully for user");
-            return ConvertApiResponse(apiResponse);
+            return apiService.ConvertApiResponse(apiResponse);
         }
         catch (Exception ex)
         {
@@ -468,7 +468,7 @@ internal sealed class AuthService : IAuthService
                 return AppResponse<bool>.Success("Signed out successfully.", true);
             }
 
-            var apiResponse = await _apiService.PostAsync<object, bool>(endpoint, null);
+            var apiResponse = await apiService.PostAsync<object, bool>(endpoint, null);
 
             // Always clear local tokens regardless of API response
             ClearStoredTokens();
@@ -495,9 +495,6 @@ internal sealed class AuthService : IAuthService
 
     }
 
-
-
-
     #region Authentication State Management
 
     public bool IsAuthenticated()
@@ -514,7 +511,7 @@ internal sealed class AuthService : IAuthService
 
     public string? GetCurrentUserId()
     {
-        return _httpContextAccessor.HttpContext?.Session.GetString("UserId");
+        return httpContextAccessor.HttpContext?.Session.GetString("UserId");
     }
 
     public async Task<bool> EnsureAuthenticatedAsync()
@@ -536,7 +533,7 @@ internal sealed class AuthService : IAuthService
             var endpoint = _apiSettings.ApiEndpoints?.Auth?.VerifyPassword;
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
             
-            var apiResponse = await _apiService.PostAsync<VerifyPasswordRequest, bool>(endpoint, verifyPasswordRequest);
+            var apiResponse = await apiService.PostAsync<VerifyPasswordRequest, bool>(endpoint, verifyPasswordRequest);
 
             return !apiResponse.Successful
                    ? AppResponse<bool>.Failure(apiResponse.Message!)
@@ -552,9 +549,9 @@ internal sealed class AuthService : IAuthService
 
     public string? GetSessionId()
     {
-        if (string.IsNullOrWhiteSpace(_httpContextAccessor.HttpContext?.Request.Cookies[SessionIdCookieName]))
+        if (string.IsNullOrWhiteSpace(httpContextAccessor.HttpContext?.Request.Cookies[SessionIdCookieName]))
         {
-            return _cacheService.GetSessionId(GetCurrentUserId() ?? string.Empty);
+            return cacheService.GetSessionId(GetCurrentUserId() ?? string.Empty);
         }
 
         return string.Empty;
@@ -564,20 +561,11 @@ internal sealed class AuthService : IAuthService
 
     #region Private Helper Methods
 
-    private AppResponse<T> ConvertApiResponse<T>(AppResponse<T?> apiResponse)
-    {
-        if (apiResponse.Successful && apiResponse.Data != null)
-        {
-            return AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data);
-        }
-
-        return AppResponse<T>.Failure(apiResponse.Message ?? "Unknown error");
-
-    }
+    
 
     private async Task StoreAuthenticationTokensAsync(LoginResponse loginResponse)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) return;
 
         // Store tokens in secure cookies
@@ -616,7 +604,7 @@ internal sealed class AuthService : IAuthService
 
     private async Task Store2FAAuthenticationTokensAsync(Verify2FACodeResponse verifyResponse)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) return;
 
         var cookieOptions = new CookieOptions
@@ -646,7 +634,7 @@ internal sealed class AuthService : IAuthService
 
     private async Task StoreRefreshTokensAsync(RefreshTokenResponse refreshResponse)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) return;
 
         var accessTokenCookieOptions = new CookieOptions
@@ -667,8 +655,8 @@ internal sealed class AuthService : IAuthService
             Path = "/"
         };
 
-        _httpContextAccessor.HttpContext?.Response.Cookies.Delete("auth_token");
-        _httpContextAccessor.HttpContext?.Response.Cookies.Delete("refresh_token");
+        httpContextAccessor.HttpContext?.Response.Cookies.Delete("auth_token");
+        httpContextAccessor.HttpContext?.Response.Cookies.Delete("refresh_token");
 
         httpContext.Response.Cookies.Append("auth_token", refreshResponse.AccessToken, accessTokenCookieOptions);
         httpContext.Response.Cookies.Append("refresh_token", refreshResponse.RefreshToken, refreshTokenCookieOptions);
@@ -684,7 +672,7 @@ internal sealed class AuthService : IAuthService
 
     private async Task StoreSessionInfoAsync<T>(AppResponse<T> response) where T : class
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) return;
 
         var sessionCookieOptions = new CookieOptions
@@ -697,7 +685,7 @@ internal sealed class AuthService : IAuthService
         };
 
 
-        _httpContextAccessor.HttpContext?.Response.Cookies.Delete("session_id");
+        httpContextAccessor.HttpContext?.Response.Cookies.Delete("session_id");
 
         httpContext.Response.Cookies.Append("session_id", response.SessionId ?? string.Empty, sessionCookieOptions);
 
@@ -706,7 +694,7 @@ internal sealed class AuthService : IAuthService
 
     private (string AccessToken, string RefreshToken)? GetStoredTokens()
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null)
         {
             _logger.LogWarning("HttpContext is null when trying to get stored tokens");
@@ -733,7 +721,7 @@ internal sealed class AuthService : IAuthService
 
     private void ClearStoredTokens()
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) return;
 
         // Clear cookies with proper options
@@ -752,7 +740,7 @@ internal sealed class AuthService : IAuthService
         httpContext.Session.Clear();
     }
 
-    private bool IsTokenExpiredError(AppResponse<CurrentUserResponse?> response)
+    private static bool IsTokenExpiredError(AppResponse<CurrentUserResponse?> response)
     {
         return !response.Successful &&
                (response.Message?.Contains("expired", StringComparison.OrdinalIgnoreCase) == true ||
@@ -761,7 +749,7 @@ internal sealed class AuthService : IAuthService
 
     private void StoreSessionId(string sessionId)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null || string.IsNullOrEmpty(sessionId)) return;
 
         var cookieOptions = new CookieOptions
@@ -779,7 +767,7 @@ internal sealed class AuthService : IAuthService
 
     private void ClearSessionId()
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) return;
 
         var cookieOptions = new CookieOptions

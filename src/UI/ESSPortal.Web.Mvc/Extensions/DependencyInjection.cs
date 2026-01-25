@@ -1,9 +1,8 @@
 ﻿using EssPortal.Web.Mvc.Configurations;
 
 using ESSPortal.Web.Mvc.Configurations;
-using ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
-using ESSPortal.Web.Mvc.Contracts.Implementations.Common;
 using ESSPortal.Web.Mvc.Contracts.Implementations.Services;
+using ESSPortal.Web.Mvc.Contracts.Implementations.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 
@@ -36,6 +35,11 @@ using System.Net.Sockets;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using EssPortal.Shared.Configurations;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Implementations.Common;
+using ESSPortal.Shared.Configuration;
+using ESSPortal.Shared.Contracts.Implementations.Services;
 
 namespace EssPortal.Web.Mvc.Utilities;
 
@@ -95,7 +99,7 @@ public static class DependencyInjection
 
             return services;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -188,7 +192,7 @@ public static class DependencyInjection
 
             return services;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             
             throw;
@@ -236,7 +240,7 @@ public static class DependencyInjection
 
             return services;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -294,7 +298,7 @@ public static class DependencyInjection
 
             return services;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
 
             throw;
@@ -306,7 +310,7 @@ public static class DependencyInjection
     {
         try
         {
-            services.AddScoped<IServiceManager, ServiceManager>();
+            services.AddScoped<IClientServiceManager, ClientServiceManager>();
             services.AddScoped<IApiService, ApiService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IAppUserService, AppUserService>();
@@ -315,7 +319,6 @@ public static class DependencyInjection
             services.AddScoped<ILeaveService, LeaveService>();
             services.AddScoped<ILeaveApplicationCardService, LeaveApplicationCardService>();
             services.AddScoped<ILeaveApplicationListService, LeaveApplicationListService>();
-            services.AddScoped<ILeavePlannerLineService, LeavePlannerLineService>();
             services.AddScoped<ILeaveRelieverService, LeaveRelieverService>();
             services.AddScoped<ILeaveStatisticsFactboxService, LeaveStatisticsFactboxService>();
             services.AddScoped<ILeaveTypeService, LeaveTypeService>();
@@ -323,13 +326,12 @@ public static class DependencyInjection
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<ITwoFactorService, TwoFactorService>();
-            services.AddScoped<ICacheService, InMemoryCacheService>();
             services.AddScoped<IPayloadEncryptionService, PayloadEncryptionService>();
 
 
             return services;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
 
             throw;
@@ -361,7 +363,7 @@ public static class DependencyInjection
 
             return services;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
 
             throw;

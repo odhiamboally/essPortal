@@ -1,8 +1,8 @@
 ﻿using Asp.Versioning;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Profile;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Profile;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,7 +37,7 @@ public class ProfileController : BaseController
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest(ApiResponse<UserProfileResponse>.Failure("User ID is required."));
+                return BadRequest(AppResponse<UserProfileResponse>.Failure("User ID is required."));
             }
 
             var result = await _serviceManager.ProfileService.GetUserProfileAsync(userId);
@@ -62,7 +62,7 @@ public class ProfileController : BaseController
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest(ApiResponse<bool>.Failure("User ID is required."));
+                return BadRequest(AppResponse<bool>.Failure("User ID is required."));
             }
 
             var result = await _serviceManager.ProfileService.ValidateProfileDataAsync(userId);
@@ -87,7 +87,7 @@ public class ProfileController : BaseController
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return BadRequest(ApiResponse<int>.Failure("User ID is required."));
+                return BadRequest(AppResponse<int>.Failure("User ID is required."));
             }
 
             var result = await _serviceManager.ProfileService.CalculateProfileCompletionAsync(userId);
@@ -113,7 +113,7 @@ public class ProfileController : BaseController
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<bool>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<bool>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.ProfileService.UpdatePersonalDetailsAsync(request);
@@ -138,7 +138,7 @@ public class ProfileController : BaseController
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<bool>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<bool>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.ProfileService.UpdateContactInfoAsync(request);
@@ -163,7 +163,7 @@ public class ProfileController : BaseController
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<bool>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<bool>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.ProfileService.UpdateBankingInfoAsync(request);
@@ -189,7 +189,7 @@ public class ProfileController : BaseController
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<string>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<string>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.ProfileService.UpdateProfilePictureAsync(request);

@@ -1,13 +1,16 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Infrastructure.Configuration;
-using ESSPortal.Infrastructure.Implementations.Common;
-using ESSPortal.Infrastructure.Implementations.Services;
+using ESSPortal.Infrastructure.Contracts.Implementations.Common;
+using ESSPortal.Infrastructure.Contracts.Implementations.Services;
 using ESSPortal.Infrastructure.Validations;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
 
 using FluentValidation;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using System.Net;
 using System.Net.Mail;
 
@@ -75,6 +78,8 @@ public static class DependencyInjection
         services.AddScoped<ISoapService, SoapService>();
 
         services.AddSingleton<INavisionUrlHelper, NavisionUrlHelper>();
+
+        services.AddSingleton<ICacheService, InMemoryCacheService>();
     }
 
 

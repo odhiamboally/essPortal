@@ -1,170 +1,119 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Common;
-using EssPortal.Web.Mvc.Dtos.ModelFilters;
-using EssPortal.Web.Mvc.Models.Navision;
+﻿using EssPortal.Shared.Configurations;
+using EssPortal.Shared.Dtos.ModelFilters;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Dtos.Employee;
-using ESSPortal.Web.Mvc.Utilities.Api;
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Employee;
+using ESSPortal.Shared.Utilities.Api;
 using Microsoft.Extensions.Options;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
+using EssPortal.Shared.Dtos.Employee;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.Services;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
-internal sealed class EmployeeService : IEmployeeService
+internal sealed class EmployeeService(
+    IServiceManager serviceManager,
+    IApiService apiService,
+    IOptions<ApiSettings> apiSettings
+
+) : IEmployeeService
 {
-    private readonly IApiService _apiService;
-    private readonly ApiSettings _apiSettings;
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
 
-    public EmployeeService(IApiService apiService, IOptions<ApiSettings> apiSettings)
-    {
-        _apiService = apiService;
-        _apiSettings = apiSettings.Value;
-    }
-
-    public async Task<AppResponse<List<Employees>>> GetEmployeesAsync()
+    public async Task<AppResponse<List<EmployeeResponse>>> GetEmployeesAsync()
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.Employees;
-        return await HandleGetRequest<List<Employees>>(endpoint);
+        return await apiService.HandleGetRequest<List<EmployeeResponse>>(endpoint);
     }
 
-    public async Task<AppResponse<Employees>> GetEmployeeByNoAsync(string employeeNo)
+    public async Task<AppResponse<EmployeeResponse>> GetEmployeeByNoAsync(string employeeNo)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeByNo;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "employeeNo", employeeNo } });
-        return await HandleGetRequest<Employees>(endpoint);
+        return await apiService.HandleGetRequest<EmployeeResponse>(endpoint);
     }
 
-    public async Task<AppResponse<Employees>> GetEmployeeByRecIdAsync(string recId)
+    public async Task<AppResponse<EmployeeResponse>> GetEmployeeByRecIdAsync(string recId)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeByRecId;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "recId", recId } });
-        return await HandleGetRequest<Employees>(endpoint);
+        return await apiService.HandleGetRequest<EmployeeResponse>(endpoint);
     }
 
-    public async Task<AppResponse<List<Employees>>> SearchEmployeesAsync(EmployeesFilter filter)
+    public async Task<AppResponse<List<EmployeeResponse>>> SearchEmployeesAsync(EmployeesFilter filter)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.SearchEmployees;
-        return await HandlePostRequest<EmployeesFilter, List<Employees>>(endpoint, filter);
+        return await apiService.HandlePostRequest<EmployeesFilter, List<EmployeeResponse>>(endpoint, filter);
     }
 
-    public async Task<AppResponse<List<EmployeeCard>>> GetEmployeeCardsAsync()
+    public async Task<AppResponse<List<EmployeeCardResponse>>> GetEmployeeCardsAsync()
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCards;
-        return await HandleGetRequest<List<EmployeeCard>>(endpoint);
+        return await apiService.HandleGetRequest<List<EmployeeCardResponse>>(endpoint);
     }
 
-    public async Task<AppResponse<EmployeeCard>> GetEmployeeCardByNoAsync(string employeeNo)
+    public async Task<AppResponse<EmployeeCardResponse>> GetEmployeeCardByNoAsync(string employeeNo)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCardByNo;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "employeeNo", employeeNo } });
-        return await HandleGetRequest<EmployeeCard>(endpoint);
+        return await apiService.HandleGetRequest<EmployeeCardResponse>(endpoint);
     }
 
-    public async Task<AppResponse<EmployeeCard>> GetEmployeeCardByRecIdAsync(string recId)
+    public async Task<AppResponse<EmployeeCardResponse>> GetEmployeeCardByRecIdAsync(string recId)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCardByRecId;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "recId", recId } });
-        return await HandleGetRequest<EmployeeCard>(endpoint);
+        return await apiService.HandleGetRequest<EmployeeCardResponse>(endpoint);
     }
 
     public async Task<AppResponse<bool>> CreateEmployeeCardAsync(CreateEmployeeCardRequest request)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCards;
-        return await HandlePostRequest<CreateEmployeeCardRequest, bool>(endpoint, request);
+        return await apiService.HandlePostRequest<CreateEmployeeCardRequest, bool>(endpoint, request);
     }
 
     public async Task<AppResponse<bool>> UpdateEmployeeCardAsync(CreateEmployeeCardRequest request)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCards;
-        return await HandlePutRequest<CreateEmployeeCardRequest, bool>(endpoint, request);
+        return await apiService.HandlePutRequest<CreateEmployeeCardRequest, bool>(endpoint, request);
     }
 
     public async Task<AppResponse<bool>> DeleteEmployeeCardAsync(string key)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCards;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleDeleteRequest<bool>(endpoint);
+        return await apiService.HandleGetRequest<bool>(endpoint);
     }
 
-    public async Task<AppResponse<List<EmployeeCard>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter)
+    public async Task<AppResponse<List<EmployeeCardResponse>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.SearchEmployeeCards;
-        return await HandlePostRequest<EmployeeCardFilter, List<EmployeeCard>>(endpoint, filter);
+        return await apiService.HandlePostRequest<EmployeeCardFilter, List<EmployeeCardResponse>>(endpoint, filter);
     }
 
     public async Task<AppResponse<string>> GetRecIdFromKeyAsync(string key)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCards;
         endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "key", key } });
-        return await HandleGetRequest<string>(endpoint);
+        return await apiService.HandleGetRequest<string>(endpoint);
     }
 
-    public async Task<AppResponse<EmployeeCard>> GetUserEmailAsync(string? odataQuery = null)
+    public async Task<AppResponse<EmployeeCardResponse>> GetUserEmailAsync(string? odataQuery = null)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCards;
         endpoint = string.IsNullOrWhiteSpace(odataQuery) ? endpoint : $"{endpoint}?{odataQuery}";
-        return await HandleGetRequest<EmployeeCard>(endpoint);
+        return await apiService.HandleGetRequest<EmployeeCardResponse>(endpoint);
     }
 
-    public async Task<AppResponse<EmployeeCard>> CheckEmployeeNumberAsync(string? odataQuery = null)
+    public async Task<AppResponse<EmployeeCardResponse>> CheckEmployeeNumberAsync(string? odataQuery = null)
     {
         var endpoint = _apiSettings.ApiEndpoints.Employee.EmployeeCards;
         endpoint = string.IsNullOrWhiteSpace(odataQuery) ? endpoint : $"{endpoint}?{odataQuery}";
-        return await HandleGetRequest<EmployeeCard>(endpoint);
+        return await apiService.HandleGetRequest<EmployeeCardResponse>(endpoint);
     }
 
 
 
-    private async Task<AppResponse<T>> HandleGetRequest<T>(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<T>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.GetAsync<T>(endpoint);
-
-        return apiResponse.Successful
-            ? AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<T>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<TResponse>> HandlePostRequest<TRequest, TResponse>(string endpoint, TRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<TResponse>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.PostAsync<TRequest, TResponse>(endpoint, request);
-
-        return apiResponse.Successful
-            ? AppResponse<TResponse>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<TResponse>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<TResponse>> HandlePutRequest<TRequest, TResponse>(string endpoint, TRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<TResponse>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.PutAsync<TRequest, TResponse>(endpoint, request);
-
-        return apiResponse.Successful
-            ? AppResponse<TResponse>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<TResponse>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<T>> HandleDeleteRequest<T>(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<T>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.DeleteAsync<T>(endpoint);
-
-        return apiResponse.Successful
-            ? AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<T>.Failure(apiResponse.Message!);
-    }
+    
 }

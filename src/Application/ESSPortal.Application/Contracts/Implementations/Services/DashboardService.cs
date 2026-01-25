@@ -1,15 +1,18 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.ModelFilters;
+
 using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Dashboard;
-using ESSPortal.Application.Dtos.Leave;
-using ESSPortal.Application.Dtos.ModelFilters;
+
 using ESSPortal.Application.Extensions;
 using ESSPortal.Application.Mappings;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Dashboard;
+using ESSPortal.Shared.Dtos.Leave;
+using ESSPortal.Shared.Dtos.ModelFilters;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,45 +20,31 @@ using Microsoft.Extensions.Options;
 using LeaveApplicationCard = ESSPortal.Domain.Entities.LeaveApplicationCard;
 
 namespace ESSPortal.Application.Contracts.Implementations.Services;
-internal sealed class DashboardService : IDashboardService
+internal sealed class DashboardService(ICacheService cacheService,
+    ILogger<DashboardService> logger,
+    IUnitOfWork unitOfWork,
+    IOptions<BCSettings> bcSettings,
+
+    ILeaveApplicationCardService leaveApplicationCardService,
+    ILeaveApplicationListService leaveApplicationListService,
+    ILeaveTypesService leaveTypeService,
+    IApprovedLeaveService approvedLeaveService,
+    IEmployeeService employeeService
+
+        ) : IDashboardService
 {
-    private readonly ILeaveApplicationCardService _leaveApplicationCardService;
-    private readonly ILeaveApplicationListService _leaveApplicationListService;
-    private readonly ILeaveTypesService _leaveTypeService;
-    private readonly IApprovedLeaveService _approvedLeaveService;
-    private readonly IEmployeeService _employeeService;
+    private readonly ILeaveApplicationCardService _leaveApplicationCardService = leaveApplicationCardService;
+    private readonly ILeaveApplicationListService _leaveApplicationListService = leaveApplicationListService;
+    private readonly ILeaveTypesService _leaveTypeService = leaveTypeService;
+    private readonly IApprovedLeaveService _approvedLeaveService = approvedLeaveService;
+    private readonly IEmployeeService _employeeService = employeeService;
 
-    private readonly ICacheService _cache;
-    private readonly ILogger<DashboardService> _logger;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly BCSettings _bcSettings;
+    private readonly ICacheService _cache = cacheService;
+    private readonly ILogger<DashboardService> _logger = logger;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly BCSettings _bcSettings = bcSettings.Value;
 
-    public DashboardService(ICacheService cacheService,
-        ILogger<DashboardService> logger,
-        IUnitOfWork unitOfWork,
-        IOptions<BCSettings> bcSettings,
-
-        ILeaveApplicationCardService leaveApplicationCardService,
-        ILeaveApplicationListService leaveApplicationListService,
-        ILeaveTypesService leaveTypeService,
-        IApprovedLeaveService approvedLeaveService,
-        IEmployeeService employeeService
-
-        )
-    {
-        _cache = cacheService;
-        _logger = logger;
-        _unitOfWork = unitOfWork;
-        _bcSettings = bcSettings.Value;
-        _leaveApplicationCardService = leaveApplicationCardService;
-        _leaveApplicationListService = leaveApplicationListService;
-        _leaveTypeService = leaveTypeService;
-        _approvedLeaveService = approvedLeaveService;
-        _employeeService = employeeService;
-    }
-
-
-    public async Task<ApiResponse<DashboardResponse>> GetDashboardDataAsync(string employeeNo)
+    public async Task<AppResponse<DashboardResponse>> GetDashboardDataAsync(string employeeNo)
     {
         try
         {
@@ -66,7 +55,7 @@ internal sealed class DashboardService : IDashboardService
             if (cachedData != null)
             {
                 _logger.LogInformation("Returning cached dashboard data for employee {EmployeeNo}", employeeNo);
-                return ApiResponse<DashboardResponse>.Success("Dashboard data retrieved from cache", cachedData);
+                return AppResponse<DashboardResponse>.Success("Dashboard data retrieved from cache", cachedData);
             }
 
             // Fetch fresh data
@@ -81,7 +70,7 @@ internal sealed class DashboardService : IDashboardService
         }
     }
 
-    private async Task<ApiResponse<DashboardResponse>> FetchFreshDashboardDataAsync(string employeeNo)
+    private async Task<AppResponse<DashboardResponse>> FetchFreshDashboardDataAsync(string employeeNo)
     {
         var approvedLeavedTask = GetLeaveApprovedLeavesAsync(employeeNo);
         var leaveApplicationCardsTask = GetLeaveApplicationCardsAsync(employeeNo);
@@ -126,10 +115,10 @@ internal sealed class DashboardService : IDashboardService
             employeeName,
             annualLeaveSummary,
             leaveSummary,
+            leaveHistory,
             approvedLeaveResponses,
             leaveApplicationCardResponse,
             [],
-            leaveHistory,
             leaveTypes,
             leaveRelievers
         );
@@ -138,7 +127,7 @@ internal sealed class DashboardService : IDashboardService
 
         _cache.SetDashboard(employeeNo, response);
 
-        return ApiResponse<DashboardResponse>.Success("Dashboard data retrieved successfully", response);
+        return AppResponse<DashboardResponse>.Success("Dashboard data retrieved successfully", response);
     }
 
     private async Task<PagedResult<LeaveApplicationCardResponse>> GetLeaveApplicationCardsAsync(string employeeNo)
@@ -226,12 +215,12 @@ internal sealed class DashboardService : IDashboardService
     {
         try
         {
-            EmployeeCardFilter getResponsibilityCenterFilter = new()
+            EmployeeCardFilter filter = new()
             {
                 No = employeeNo,
             };
 
-            var searchResponse = await _employeeService.SearchEmployeeCardsAsync(getResponsibilityCenterFilter);
+            var searchResponse = await _employeeService.SearchEmployeeCardsAsync(filter);
             if (!searchResponse.Successful || searchResponse.Data == null || !searchResponse.Data.Items.Any())
             {
                 _logger.LogWarning("Failed to retrieve employee card for employee {EmployeeNo}: {Message}", employeeNo, searchResponse.Message);
@@ -250,8 +239,7 @@ internal sealed class DashboardService : IDashboardService
 
             EmployeeCardFilter leaveRelieverFilter = new()
             {
-                //No = employeeNo,
-                Responsibility_Center = employeeCardResponse.ResponsibilityCenter
+                ResponsibilityCenter = employeeCardResponse.ResponsibilityCenter
             };
 
             var potentialRelieversResponse = await _employeeService.SearchEmployeeCardsAsync(leaveRelieverFilter);

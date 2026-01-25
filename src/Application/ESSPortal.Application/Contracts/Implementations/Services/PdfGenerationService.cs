@@ -1,7 +1,7 @@
-﻿using ESSPortal.Application.Dtos.Payroll;
-
+﻿
 using Microsoft.Extensions.Logging;
 using ESSPortal.Application.Contracts.Interfaces.Services;
+using ESSPortal.Shared.Dtos.Payroll;
 
 namespace ESSPortal.Application.Contracts.Implementations.Services;
 

@@ -1,6 +1,7 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Common;
-using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Application.Extensions;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 using FluentValidation;
 

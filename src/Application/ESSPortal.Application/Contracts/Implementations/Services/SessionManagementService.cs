@@ -1,8 +1,8 @@
 ﻿using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
 using ESSPortal.Domain.Entities;
 using ESSPortal.Domain.Interfaces;
+using ESSPortal.Shared.Dtos.Common;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -25,7 +25,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         _sessionSettings = sessionSettings.Value;
     }
 
-    public async Task<ApiResponse<bool>> CheckConcurrentSessionsAsync(string userId)
+    public async Task<AppResponse<bool>> CheckConcurrentSessionsAsync(string userId)
     {
         try
         {
@@ -37,10 +37,10 @@ internal sealed class SessionManagementService : ISessionManagementService
                 _logger.LogWarning("User {UserId} exceeded max concurrent sessions. Active: {Count}, Max: {Max}",
                     userId, sessionCount, _sessionSettings.MaxConcurrentSessions);
 
-                return ApiResponse<bool>.Failure($"Maximum {_sessionSettings.MaxConcurrentSessions} concurrent sessions allowed");
+                return AppResponse<bool>.Failure($"Maximum {_sessionSettings.MaxConcurrentSessions} concurrent sessions allowed");
             }
 
-            return ApiResponse<bool>.Success("Concurrent session check passed", true);
+            return AppResponse<bool>.Success("Concurrent session check passed", true);
         }
         catch (Exception ex)
         {
@@ -49,7 +49,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<ApiResponse<bool>> CreateSessionAsync(string userId, string sessionId, string ipAddress, string userAgent)
+    public async Task<AppResponse<bool>> CreateSessionAsync(string userId, string sessionId, string ipAddress, string userAgent)
     {
         try
         {
@@ -64,7 +64,7 @@ internal sealed class SessionManagementService : ISessionManagementService
                 {
                     _logger.LogError("Failed to end old sessions for user {UserId}: {Message}",
                         userId, endSessionsResponse.Message);
-                    return ApiResponse<bool>.Failure("Failed to end old sessions");
+                    return AppResponse<bool>.Failure("Failed to end old sessions");
                 }
 
                 _logger.LogInformation("Ended old sessions for user {UserId} due to concurrent limit", userId);
@@ -87,7 +87,7 @@ internal sealed class SessionManagementService : ISessionManagementService
             await _unitOfWork.CompleteAsync();
 
             _logger.LogInformation("Session created for user {UserId}: {SessionId}", userId, sessionId);
-            return ApiResponse<bool>.Success("Session created successfully", true);
+            return AppResponse<bool>.Success("Session created successfully", true);
         }
         catch (Exception ex)
         {
@@ -96,7 +96,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<ApiResponse<bool>> CreateSessionAsync_(string userId, string sessionId, string ipAddress, string userAgent, string deviceFingerprint)
+    public async Task<AppResponse<bool>> CreateSessionAsync_(string userId, string sessionId, string ipAddress, string userAgent, string deviceFingerprint)
     {
         try
         {
@@ -162,7 +162,7 @@ internal sealed class SessionManagementService : ISessionManagementService
             await _unitOfWork.CommitTransactionAsync();
 
             _logger.LogInformation("Session created/updated for user {UserId} on device {DeviceFingerprint}", userId, deviceFingerprint);
-            return ApiResponse<bool>.Success("Session created successfully", true);
+            return AppResponse<bool>.Success("Session created successfully", true);
         }
         catch (Exception ex)
         {
@@ -172,7 +172,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<ApiResponse<bool>> CreateSessionAsync(string userId, string sessionId, string ipAddress, string userAgent, string deviceFingerprint)
+    public async Task<AppResponse<bool>> CreateSessionAsync(string userId, string sessionId, string ipAddress, string userAgent, string deviceFingerprint)
     {
         const int maxRetries = 3;
 
@@ -251,7 +251,7 @@ internal sealed class SessionManagementService : ISessionManagementService
 
                 _logger.LogInformation("Session created/updated for user {UserId} on device {DeviceFingerprint}",userId, deviceFingerprint);
                     
-                return ApiResponse<bool>.Success("Session created successfully", true);
+                return AppResponse<bool>.Success("Session created successfully", true);
             }
             catch (DbUpdateConcurrencyException ex) when (attempt < maxRetries)
             {
@@ -283,14 +283,14 @@ internal sealed class SessionManagementService : ISessionManagementService
             
     }
 
-    public async Task<ApiResponse<bool>> EndSessionAsync(string sessionId)
+    public async Task<AppResponse<bool>> EndSessionAsync(string sessionId)
     {
         try
         {
             var session = await _unitOfWork.SessionRepository.FindByCondition(x => x.Id == sessionId).FirstOrDefaultAsync();
             if (session == null)
             {
-                return ApiResponse<bool>.Success("Session not found", true);
+                return AppResponse<bool>.Success("Session not found", true);
             }
 
             session.IsActive = false;
@@ -301,7 +301,7 @@ internal sealed class SessionManagementService : ISessionManagementService
             await _unitOfWork.CompleteAsync();
 
             _logger.LogInformation("Session ended: {SessionId} for user: {UserId}", sessionId, session.UserId);
-            return ApiResponse<bool>.Success("Session ended successfully", true);
+            return AppResponse<bool>.Success("Session ended successfully", true);
         }
         catch (Exception ex)
         {
@@ -310,7 +310,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<ApiResponse<bool>> EndAllUserSessionsAsync(string userId, string? excludeSessionId = null)
+    public async Task<AppResponse<bool>> EndAllUserSessionsAsync(string userId, string? excludeSessionId = null)
     {
         try
         {
@@ -335,7 +335,7 @@ internal sealed class SessionManagementService : ISessionManagementService
             }
 
             _logger.LogInformation("Ended {Count} sessions for user: {UserId}", sessionsToEnd.Count, userId);
-            return ApiResponse<bool>.Success($"Ended {sessionsToEnd.Count} sessions", true);
+            return AppResponse<bool>.Success($"Ended {sessionsToEnd.Count} sessions", true);
         }
         catch (Exception ex)
         {
@@ -344,14 +344,14 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<ApiResponse<List<UserSession>>> GetActiveSessionsAsync(string userId)
+    public async Task<AppResponse<List<UserSession>>> GetActiveSessionsAsync(string userId)
     {
         try
         {
             var sessions = await _unitOfWork.SessionRepository.GetActiveSessionsByUserIdAsync(userId);
             var sessionList = sessions.ToList();
 
-            return ApiResponse<List<UserSession>>.Success("Active sessions retrieved", sessionList);
+            return AppResponse<List<UserSession>>.Success("Active sessions retrieved", sessionList);
         }
         catch (Exception ex)
         {
@@ -360,7 +360,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<ApiResponse<bool>> CleanupExpiredSessionsAsync()
+    public async Task<AppResponse<bool>> CleanupExpiredSessionsAsync()
     {
         try
         {
@@ -382,7 +382,7 @@ internal sealed class SessionManagementService : ISessionManagementService
                 _logger.LogInformation("Cleaned up {Count} expired sessions", expiredList.Count);
             }
 
-            return ApiResponse<bool>.Success($"Cleaned up {expiredList.Count} expired sessions", true);
+            return AppResponse<bool>.Success($"Cleaned up {expiredList.Count} expired sessions", true);
         }
         catch (Exception ex)
         {
@@ -391,7 +391,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<ApiResponse<bool>> IsSessionValidAsync(string sessionId, string userId)
+    public async Task<AppResponse<bool>> IsSessionValidAsync(string sessionId, string userId)
     {
         try
         {
@@ -399,12 +399,12 @@ internal sealed class SessionManagementService : ISessionManagementService
 
             if (session == null || session.UserId != userId)
             {
-                return ApiResponse<bool>.Failure("Session not found");
+                return AppResponse<bool>.Failure("Session not found");
             }
 
             if (!session.IsActive)
             {
-                return ApiResponse<bool>.Failure("Session is not active");
+                return AppResponse<bool>.Failure("Session is not active");
             }
 
             if (session.ExpiresAt <= DateTimeOffset.UtcNow)
@@ -416,7 +416,7 @@ internal sealed class SessionManagementService : ISessionManagementService
                 await _unitOfWork.SessionRepository.UpdateAsync(session);
                 await _unitOfWork.CompleteAsync();
 
-                return ApiResponse<bool>.Failure("Session has expired");
+                return AppResponse<bool>.Failure("Session has expired");
             }
 
             // Update last accessed time
@@ -431,7 +431,7 @@ internal sealed class SessionManagementService : ISessionManagementService
             await _unitOfWork.SessionRepository.UpdateAsync(session);
             await _unitOfWork.CompleteAsync();
 
-            return ApiResponse<bool>.Success("Session is valid", true);
+            return AppResponse<bool>.Success("Session is valid", true);
         }
         catch (Exception ex)
         {

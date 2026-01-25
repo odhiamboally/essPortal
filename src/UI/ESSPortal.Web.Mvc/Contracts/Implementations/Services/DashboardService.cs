@@ -1,26 +1,23 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Common;
+﻿using EssPortal.Shared.Configurations;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Dashboard;
+using ESSPortal.Shared.Utilities.Api;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Dtos.Dashboard;
-using ESSPortal.Web.Mvc.Utilities.Api;
+
 using Microsoft.Extensions.Options;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
-public class DashboardService : IDashboardService
+public class DashboardService(
+    
+    IApiService apiService, 
+    IOptions<ApiSettings> apiSettings
+
+) : IDashboardService
 {
-    private readonly IApiService _apiService;
-    private readonly ApiSettings _apiSettings;
-
-
-    public DashboardService(IApiService apiService, IOptions<ApiSettings> apiSettings )
-    {
-        _apiService = apiService;
-        _apiSettings = apiSettings.Value;
-
-    }
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
 
     public async Task<AppResponse<DashboardResponse>> GetDashboardDataAsync(string employeeNo)
     {
@@ -31,7 +28,7 @@ public class DashboardService : IDashboardService
             endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
             endpoint = EndpointHelper.ReplaceParams(endpoint, new() { { "employeeNo", employeeNo } });
 
-            var apiResponse = await _apiService.GetAsync<DashboardResponse>(endpoint);
+            var apiResponse = await apiService.GetAsync<DashboardResponse>(endpoint);
 
             return apiResponse.Successful
                 ? AppResponse<DashboardResponse>.Success(apiResponse.Message!, apiResponse.Data!)

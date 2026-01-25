@@ -1,4 +1,4 @@
-﻿using ESSPortal.Web.Mvc.Dtos.Leave;
+﻿using ESSPortal.Shared.Dtos.Leave;
 using ESSPortal.Web.Mvc.ViewModels.Leave;
 
 namespace ESSPortal.Web.Mvc.ViewModels.Dashboard;

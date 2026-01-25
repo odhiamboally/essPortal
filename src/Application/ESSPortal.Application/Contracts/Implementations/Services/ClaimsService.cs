@@ -1,6 +1,6 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
 using ESSPortal.Domain.Entities;
+using ESSPortal.Shared.Dtos.Common;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -20,7 +20,7 @@ internal sealed class ClaimsService : IClaimsService
 
     }
 
-    public async Task<ApiResponse<bool>> AddUserClaimAsync(AppUser user, Claim claim)
+    public async Task<AppResponse<bool>> AddUserClaimAsync(AppUser user, Claim claim)
     {
         try
         {
@@ -29,13 +29,13 @@ internal sealed class ClaimsService : IClaimsService
             {
                 _logger.LogInformation("Added claim - {ClaimType}:{ClaimValue} to user {UserId}", claim.Type, claim.Value, user.Id);
                     
-                return ApiResponse<bool>.Success($"Added claim: {claim.Type}:{claim.Value} to user {user.Id}", true);
+                return AppResponse<bool>.Success($"Added claim: {claim.Type}:{claim.Value} to user {user.Id}", true);
             }
 
             _logger.LogWarning("Failed to add claim {ClaimType}:{ClaimValue} to user {UserId}: {Errors}",
                 claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            return ApiResponse<bool>.Failure($"Failed to add claim - {claim.Type}:{claim.Value} to user {user.Id}", false);
+            return AppResponse<bool>.Failure($"Failed to add claim - {claim.Type}:{claim.Value} to user {user.Id}", false);
         }
         catch (Exception ex)
         {
@@ -44,7 +44,7 @@ internal sealed class ClaimsService : IClaimsService
         }
     }
 
-    public async Task<ApiResponse<List<Claim>>> GetUserClaimsAsync(AppUser appUser)
+    public async Task<AppResponse<List<Claim>>> GetUserClaimsAsync(AppUser appUser)
     {
         try
         {
@@ -97,7 +97,7 @@ internal sealed class ClaimsService : IClaimsService
             var userSpecificClaims = await _userManager.GetClaimsAsync(appUser);
             userClaims.AddRange(userSpecificClaims);
 
-            return ApiResponse<List<Claim>>.Success("Success", userClaims);
+            return AppResponse<List<Claim>>.Success("Success", userClaims);
 
         }
         catch (Exception)
@@ -106,7 +106,7 @@ internal sealed class ClaimsService : IClaimsService
         }
     }
 
-    public async Task<ApiResponse<bool>> RemoveUserClaimAsync(AppUser user, Claim claim)
+    public async Task<AppResponse<bool>> RemoveUserClaimAsync(AppUser user, Claim claim)
     {
         try
         {
@@ -116,13 +116,13 @@ internal sealed class ClaimsService : IClaimsService
                 _logger.LogInformation("Removed claim {ClaimType}:{ClaimValue} from user {UserId}",
                     claim.Type, claim.Value, user.Id);
 
-                return ApiResponse<bool>.Success($"Removed claim: {claim.Type}:{claim.Value} from user {user.Id}", true);
+                return AppResponse<bool>.Success($"Removed claim: {claim.Type}:{claim.Value} from user {user.Id}", true);
             }
 
             _logger.LogWarning("Failed to remove claim {ClaimType}:{ClaimValue} from user {UserId}: {Errors}",
                 claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            return ApiResponse<bool>.Failure($"Failed to remove claim - {claim.Type}:{claim.Value} from user {user.Id}");
+            return AppResponse<bool>.Failure($"Failed to remove claim - {claim.Type}:{claim.Value} from user {user.Id}");
         }
         catch (Exception ex)
         {
@@ -131,7 +131,7 @@ internal sealed class ClaimsService : IClaimsService
         }
     }
 
-    public async Task<ApiResponse<bool>> UpdateUserClaimAsync(AppUser user, Claim existingClaim, Claim newClaim)
+    public async Task<AppResponse<bool>> UpdateUserClaimAsync(AppUser user, Claim existingClaim, Claim newClaim)
     {
         try
         {
@@ -140,7 +140,7 @@ internal sealed class ClaimsService : IClaimsService
             if (!removeResult.Succeeded)
             {
                 _logger.LogWarning("Failed to remove existing claim for user {UserId}", user.Id);
-                return ApiResponse<bool>.Failure($"Failed to remove claim - {existingClaim.Type}:{existingClaim.Value} from user {user.Id}");
+                return AppResponse<bool>.Failure($"Failed to remove claim - {existingClaim.Type}:{existingClaim.Value} from user {user.Id}");
             }
 
             var addResult = await _userManager.AddClaimAsync(user, newClaim);
@@ -149,13 +149,13 @@ internal sealed class ClaimsService : IClaimsService
                 // Try to rollback by adding the old claim back
                 await _userManager.AddClaimAsync(user, existingClaim);
                 _logger.LogWarning("Failed to add new claim for user {UserId}, rolled back", user.Id);
-                return ApiResponse<bool>.Failure($"Failed to add new claim - {newClaim.Type}:{newClaim.Value} to user {user.Id} - rolled back");
+                return AppResponse<bool>.Failure($"Failed to add new claim - {newClaim.Type}:{newClaim.Value} to user {user.Id} - rolled back");
             }
 
             _logger.LogInformation("Updated claim for user {UserId}: {OldClaim} -> {NewClaim}",
                 user.Id, $"{existingClaim.Type}:{existingClaim.Value}", $"{newClaim.Type}:{newClaim.Value}");
 
-            return ApiResponse<bool>.Success($"Updated claim claim: {newClaim.Type}:{newClaim.Value} for user {user.Id}", true);
+            return AppResponse<bool>.Success($"Updated claim claim: {newClaim.Type}:{newClaim.Value} for user {user.Id}", true);
         }
         catch (Exception ex)
         {

@@ -1,4 +1,4 @@
-﻿using ESSPortal.Web.Mvc.Dtos.Profile;
+﻿using ESSPortal.Shared.Dtos.Profile;
 using ESSPortal.Web.Mvc.ViewModels.Profile;
 
 namespace ESSPortal.Web.Mvc.Mappings;

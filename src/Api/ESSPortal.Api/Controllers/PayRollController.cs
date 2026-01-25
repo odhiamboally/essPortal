@@ -2,8 +2,8 @@
 
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Payroll;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Payroll;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +34,7 @@ public class PayRollController : ControllerBase
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<byte[]>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<byte[]>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.PayrollService.GeneratePayslipAsync(request);
@@ -60,7 +60,7 @@ public class PayRollController : ControllerBase
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<byte[]>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<byte[]>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.PayrollService.GenerateP9Async(request);

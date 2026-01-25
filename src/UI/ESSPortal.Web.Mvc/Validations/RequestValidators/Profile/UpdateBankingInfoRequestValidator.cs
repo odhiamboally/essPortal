@@ -1,4 +1,5 @@
-﻿using ESSPortal.Web.Mvc.Dtos.Profile;
+﻿using ESSPortal.Shared.Dtos.Profile;
+
 
 using FluentValidation;
 

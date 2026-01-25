@@ -1,11 +1,12 @@
 ﻿
 
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Payroll;
+
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Payroll;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface IPayrollService
 {
-    Task<ApiResponse<byte[]>> GeneratePayslipAsync(PrintPaySlipRequest request);
-    Task<ApiResponse<byte[]>> GenerateP9Async(PrintP9Request request);
+    Task<AppResponse<byte[]>> GeneratePayslipAsync(PrintPaySlipRequest request);
+    Task<AppResponse<byte[]>> GenerateP9Async(PrintP9Request request);
 }

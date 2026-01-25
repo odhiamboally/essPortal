@@ -1,24 +1,25 @@
-﻿using EssPortal.Web.Mvc.Dtos.Common;
-using EssPortal.Web.Mvc.Dtos.ModelFilters;
-using EssPortal.Web.Mvc.Models.Navision;
+﻿using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 
 public interface ILeaveApplicationListService
 {
     // Read operations
-    Task<AppResponse<List<LeaveApplicationList>>> GetLeaveApplicationListsAsync();
-    Task<AppResponse<LeaveApplicationList?>> GetLeaveApplicationListByNoAsync(string applicationNo);
-    Task<AppResponse<LeaveApplicationList?>> GetLeaveApplicationListByRecIdAsync(string recId);
-    Task<AppResponse<List<LeaveApplicationList>>> SearchLeaveApplicationListsAsync(LeaveApplicationListFilter filter);
+    Task<AppResponse<List<LeaveApplicationListResponse>>> GetLeaveApplicationListsAsync();
+    Task<AppResponse<LeaveApplicationListResponse?>> GetLeaveApplicationListByNoAsync(string applicationNo);
+    Task<AppResponse<LeaveApplicationListResponse?>> GetLeaveApplicationListByRecIdAsync(string recId);
+    Task<AppResponse<List<LeaveApplicationListResponse>>> SearchLeaveApplicationListsAsync(LeaveApplicationListFilter filter);
 
     // Create operations
-    Task<AppResponse<LeaveApplicationList>> CreateLeaveApplicationListAsync(LeaveApplicationList request);
-    Task<AppResponse<List<LeaveApplicationList>>> CreateMultipleLeaveApplicationListsAsync(List<LeaveApplicationList> requests);
+    Task<AppResponse<LeaveApplicationListResponse>> CreateLeaveApplicationListAsync(CreateLeaveApplicationListRequest request);
+    Task<AppResponse<List<LeaveApplicationListResponse>>> CreateMultipleLeaveApplicationListsAsync(List<CreateLeaveApplicationListRequest> requests);
 
     // Update operations
-    Task<AppResponse<LeaveApplicationList>> EditLeaveApplicationListAsync(LeaveApplicationList request);
-    Task<AppResponse<List<LeaveApplicationList>>> UpdateMultipleLeaveApplicationListsAsync(List<LeaveApplicationList> requests);
+    Task<AppResponse<LeaveApplicationListResponse>> EditLeaveApplicationListAsync(CreateLeaveApplicationListRequest request);
+    Task<AppResponse<List<LeaveApplicationListResponse>>> UpdateMultipleLeaveApplicationListsAsync(List<CreateLeaveApplicationListRequest> requests);
 
     // Delete operations
     Task<AppResponse<bool>> DeleteLeaveApplicationListAsync(string key);

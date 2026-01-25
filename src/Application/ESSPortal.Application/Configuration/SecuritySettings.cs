@@ -1,4 +1,6 @@
-﻿namespace ESSPortal.Application.Configuration;
+﻿using ESSPortal.Shared.Configuration;
+
+namespace ESSPortal.Application.Configuration;
 public class SecuritySettings
 {
     public SessionManagementSettings SessionManagement { get; set; } = new();

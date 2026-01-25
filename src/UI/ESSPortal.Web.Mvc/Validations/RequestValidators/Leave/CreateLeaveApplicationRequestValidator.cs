@@ -1,5 +1,5 @@
-﻿using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Dtos.Leave;
+﻿using ESSPortal.Shared.Dtos.Leave;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Extensions;
 
 using FluentValidation;
@@ -8,7 +8,7 @@ namespace ESSPortal.Web.Mvc.Validations.RequestValidators.Leave;
 
 public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLeaveApplicationRequest>
 {
-    private readonly IServiceManager _serviceManager;
+    private readonly IClientServiceManager _clientServiceManager;
     private readonly string? _gender;
 
     private readonly Dictionary<string, LeaveTypeConstraints> _leaveTypeConstraints = new()
@@ -80,10 +80,10 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
     };
     
 
-    public CreateLeaveApplicationRequestValidator(IServiceManager serviceManager, string gender, bool isEditing) 
+    public CreateLeaveApplicationRequestValidator(IClientServiceManager clientServiceManager, string gender, bool isEditing) 
     {
         
-        _serviceManager = serviceManager;
+        _clientServiceManager = clientServiceManager;
         _gender = gender;
 
 
@@ -391,20 +391,20 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private async Task<LeaveSummaryResponse?> GetLeaveSummary(string employeeNo)
     {
-        var cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
+        var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(employeeNo);
 
         if (cachedDashboardData?.LeaveSummary != null)
         {
             return cachedDashboardData.LeaveSummary;
         }
 
-        var leaveSummaryResponse = await _serviceManager.LeaveService.GetLeaveSummaryAsync(employeeNo);
+        var leaveSummaryResponse = await _clientServiceManager.LeaveService.GetLeaveSummaryAsync(employeeNo);
         if (!leaveSummaryResponse.Successful || leaveSummaryResponse.Data == null)
         {
             return null;
         }
 
-        _serviceManager.CacheService.SetLeaveSummary(employeeNo, leaveSummaryResponse.Data);
+        _clientServiceManager.CacheService.SetLeaveSummary(employeeNo, leaveSummaryResponse.Data);
         return leaveSummaryResponse.Data;
     }
 

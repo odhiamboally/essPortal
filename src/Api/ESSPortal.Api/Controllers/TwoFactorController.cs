@@ -1,8 +1,9 @@
 ﻿using Asp.Versioning;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.TwoFactor;
+
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.TwoFactor;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -64,7 +65,7 @@ public class TwoFactorController : ControllerBase
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<bool>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<bool>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.TwoFactorService.EnableTwoFactorAsync(request);
@@ -114,7 +115,7 @@ public class TwoFactorController : ControllerBase
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ApiResponse<bool>.Failure("Invalid request data."));
+                return BadRequest(AppResponse<bool>.Failure("Invalid request data."));
             }
 
             var result = await _serviceManager.TwoFactorService.VerifyTotpCodeAsync(request);
@@ -130,7 +131,7 @@ public class TwoFactorController : ControllerBase
 
 
 
-    private IActionResult HandleResponse<T>(ApiResponse<T> response)
+    private IActionResult HandleResponse<T>(AppResponse<T> response)
     {
         if (!response.Successful)
         {

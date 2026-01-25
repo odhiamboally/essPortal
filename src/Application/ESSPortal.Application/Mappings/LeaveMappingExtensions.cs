@@ -1,8 +1,9 @@
 ﻿using EssPortal.Domain.Enums.NavEnums;
+using EssPortal.Shared.Dtos.Leave;
 
-using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Domain.Entities;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Leave;
 
 using System;
 using System.Collections.Generic;
@@ -54,7 +55,7 @@ public static class LeaveMappingExtensions
         return new Domain.Entities.LeaveApplicationCard
         {
             Application_No = response.ApplicationNo,
-            Application_Date = response.ApplicationDate ?? default,
+            Application_Date = response.ApplicationDate,
             Apply_on_behalf = response.ApplyOnBehalf,
 
             Employee_No = response.EmployeeNo,
@@ -69,7 +70,7 @@ public static class LeaveMappingExtensions
             Leave_Period = response.LeavePeriod,
             Leave_Code = response.LeaveCode,
             Leave_Status = response.LeaveStatus,
-            Status = GetLeaveApplicationCardStatusDescription(response.Status),
+            Status = response.Status,
 
             Leave_Earned_to_Date = response.LeaveEarnedToDate,
             Days_Applied = response.DaysApplied,
@@ -127,7 +128,7 @@ public static class LeaveMappingExtensions
             LeavePeriod = card.Leave_Period,
             LeaveCode = card.Leave_Code,
             LeaveStatus = card.Leave_Status,
-            Status = ParseLeaveApplicationCardStatus(card.Status ?? string.Empty),
+            Status = card.Status,
 
             LeaveEarnedToDate = card.Leave_Earned_to_Date!.Value,
             DaysApplied = card.Days_Applied,
@@ -186,13 +187,7 @@ public static class LeaveMappingExtensions
             EndDate = entity.End_Date,
             DaysApplied = entity.Days_Applied ?? 0,
             LeavePeriod = entity.Leave_Period ?? string.Empty,
-            Status = Enum.TryParse<LeaveApplicationListStatus>(
-                entity.Status,
-                true,
-                out var status)
-                    ? status
-                    : LeaveApplicationListStatus.Open,
-
+            Status = entity.Status,
             LeaveType = entity.Leave_Period ?? string.Empty
         };
     }

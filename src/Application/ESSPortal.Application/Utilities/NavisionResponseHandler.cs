@@ -1,4 +1,4 @@
-﻿using ESSPortal.Application.Dtos.Common;
+﻿using ESSPortal.Shared.Dtos.Common;
 
 using System;
 using System.Collections.Generic;
@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 namespace ESSPortal.Application.Utilities;
 public static class NavisionResponseHandler
 {
-    public static Task<ApiResponse<PagedResult<T>>> HandlePagedResponse<T>(ApiResponse<(List<T> Items, string RawJson)> response)
+    public static Task<AppResponse<PagedResult<T>>> HandlePagedResponse<T>(AppResponse<(List<T> Items, string RawJson)> response)
     {
         if (!response.Successful)
         {
             return Task.FromResult(
-                ApiResponse<PagedResult<T>>.Failure(response.Message ?? "Failed to fetch records."));
+                AppResponse<PagedResult<T>>.Failure(response.Message ?? "Failed to fetch records."));
         }
 
         try
@@ -23,8 +23,8 @@ public static class NavisionResponseHandler
             var pagedResult = JsonSerializer.Deserialize<PagedResult<T>>(response.Data.RawJson);
             return Task.FromResult(
                 pagedResult == null
-                    ? ApiResponse<PagedResult<T>>.Failure("Failed to deserialize response.")
-                    : ApiResponse<PagedResult<T>>.Success("Success", pagedResult));
+                    ? AppResponse<PagedResult<T>>.Failure("Failed to deserialize response.")
+                    : AppResponse<PagedResult<T>>.Success("Success", pagedResult));
         }
         catch (JsonException ex)
         {

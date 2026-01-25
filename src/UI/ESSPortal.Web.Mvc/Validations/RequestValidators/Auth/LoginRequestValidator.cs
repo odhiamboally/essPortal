@@ -1,4 +1,5 @@
-﻿using EssPortal.Web.Mvc.Dtos.Auth;
+﻿using EssPortal.Shared.Dtos.Auth;
+
 
 using FluentValidation;
 

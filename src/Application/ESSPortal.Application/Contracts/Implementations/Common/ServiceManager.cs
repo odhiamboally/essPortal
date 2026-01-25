@@ -1,5 +1,6 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
 
 using Microsoft.Extensions.DependencyInjection;
 

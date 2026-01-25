@@ -1,8 +1,9 @@
 ﻿using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
+
 using ESSPortal.Domain.Interfaces;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Application.Contracts.Implementations.Services;
 internal sealed class UploadService : IUploadService
@@ -15,27 +16,27 @@ internal sealed class UploadService : IUploadService
 
     }
 
-    public Task<ApiResponse<UploadResponse>> CreateAsync(CreateUploadRequest createUploadRequest)
+    public Task<AppResponse<UploadResponse>> CreateAsync(CreateUploadRequest createUploadRequest)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ApiResponse<UploadResponse>> DeleteAsync(int Id)
+    public Task<AppResponse<UploadResponse>> DeleteAsync(int Id)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ApiResponse<List<UploadResponse>>> FindAllAsync(PaginationSetting paginationSetting)
+    public Task<AppResponse<List<UploadResponse>>> FindAllAsync(PaginationSetting paginationSetting)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ApiResponse<UploadResponse>> FindByIdAsync(int Id)
+    public Task<AppResponse<UploadResponse>> FindByIdAsync(int Id)
     {
         throw new NotImplementedException();
     }
 
-    public Task<ApiResponse<UploadResponse>> UpdateAsync(UpdateUploadRequest request, bool dBWins)
+    public Task<AppResponse<UploadResponse>> UpdateAsync(UpdateUploadRequest request, bool dBWins)
     {
         throw new NotImplementedException();
     }

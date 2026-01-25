@@ -1,13 +1,12 @@
 ﻿using ESSPortal.Application.BackgroundServices;
 using ESSPortal.Application.Configuration;
-using ESSPortal.Application.Contracts.Implementations.Caching;
 using ESSPortal.Application.Contracts.Implementations.Common;
 using ESSPortal.Application.Contracts.Implementations.Services;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Application.Validations.RequestValidators.Leave;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
 
 using FluentValidation;
 
@@ -186,7 +185,7 @@ public static  class DependencyInjection
         services.AddScoped<IPdfGenerationService, PdfGenerationService>();
         services.AddScoped<ISessionManagementService, SessionManagementService>();
         services.AddScoped<IApprovedLeaveService, ApprovedLeaveService>();
-        services.AddSingleton<IPayloadEncryptionService, PayloadEncryptionService>();
+        //services.AddSingleton<IPayloadEncryptionService, PayloadEncryptionService>();
 
     }
 
@@ -201,7 +200,7 @@ public static  class DependencyInjection
 
         services.AddMemoryCache();
 
-        services.AddSingleton<ICacheService, InMemoryCacheService>();
+        
        
     }
 

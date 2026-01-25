@@ -1,12 +1,13 @@
-﻿using EssPortal.Web.Mvc.Dtos.Common;
+﻿
+using ESSPortal.Shared.Dtos.Common;
 
+using ESSPortal.Shared.Dtos.Profile;
 using ESSPortal.Web.Mvc.Configurations;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Dtos.Profile;
 
 using Microsoft.Extensions.Options;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
+namespace ESSPortal.Web.Mvc.Contracts.Implementations.Services;
 
 internal sealed class FileService : IFileService
 {

@@ -1,10 +1,10 @@
-﻿using EssPortal.Web.Mvc.Dtos.Common;
-using LoginRequest = EssPortal.Web.Mvc.Dtos.Auth.LoginRequest;
-using RegisterEmployeeRequest = EssPortal.Web.Mvc.Dtos.Auth.RegisterEmployeeRequest;
-using ResetPasswordRequest = EssPortal.Web.Mvc.Dtos.Auth.ResetPasswordRequest;
-using ForgotPasswordRequest = EssPortal.Web.Mvc.Dtos.Auth.ForgotPasswordRequest;
-using EssPortal.Web.Mvc.Dtos.Auth;
-using ESSPortal.Web.Mvc.Dtos.Auth;
+﻿using LoginRequest = EssPortal.Shared.Dtos.Auth.LoginRequest;
+using RegisterEmployeeRequest = EssPortal.Shared.Dtos.Auth.RegisterEmployeeRequest;
+using ResetPasswordRequest = EssPortal.Shared.Dtos.Auth.ResetPasswordRequest;
+using ForgotPasswordRequest = EssPortal.Shared.Dtos.Auth.ForgotPasswordRequest;
+using EssPortal.Shared.Dtos.Auth;
+using ESSPortal.Shared.Dtos.Auth;
+using ESSPortal.Shared.Dtos.Common;
 
 namespace ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 

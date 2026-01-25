@@ -1,16 +1,18 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿
+using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
 
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface ILeaveApplicationCardService
 {
-    Task<ApiResponse<bool>> CreateLeaveApplicationCardAsync(CreateLeaveApplicationCardRequest request);
-    Task<ApiResponse<PagedResult<LeaveApplicationCardResponse>>> GetLeaveApplicationCardsAsync();
-    Task<ApiResponse<LeaveApplicationCardResponse>> GetLeaveApplicationCardByNoAsync(string applicationNo);
-    Task<ApiResponse<PagedResult<LeaveApplicationCardResponse>>> SearchLeaveApplicationCardsAsync(LeaveApplicationCardFilter filter);
+    Task<AppResponse<bool>> CreateLeaveApplicationCardAsync(CreateLeaveApplicationCardRequest request);
+    Task<AppResponse<PagedResult<LeaveApplicationCardResponse>>> GetLeaveApplicationCardsAsync();
+    Task<AppResponse<LeaveApplicationCardResponse>> GetLeaveApplicationCardByNoAsync(string applicationNo);
+    Task<AppResponse<PagedResult<LeaveApplicationCardResponse>>> SearchLeaveApplicationCardsAsync(LeaveApplicationCardFilter filter);
 
    
 }

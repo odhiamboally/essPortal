@@ -1,21 +1,23 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.Employee;
+using EssPortal.Shared.Dtos.ModelFilters;
 
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Employee;
+
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Employee;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface IEmployeeService
 {
-    Task<ApiResponse<PagedResult<EmployeeResponse>>> GetEmployeesAsync();
-    Task<ApiResponse<EmployeeResponse>> GetEmployeeByNoAsync(string employeeNo);
-    Task<ApiResponse<PagedResult<EmployeeResponse>>> SearchEmployeesAsync(EmployeesFilter filter);
+    Task<AppResponse<PagedResult<EmployeeResponse>>> GetEmployeesAsync();
+    Task<AppResponse<EmployeeResponse>> GetEmployeeByNoAsync(string employeeNo);
+    Task<AppResponse<PagedResult<EmployeeResponse>>> SearchEmployeesAsync(EmployeesFilter filter);
 
-    Task<ApiResponse<bool>> CreateEmployeeCardsAsync(CreateEmployeeCardRequest request);
-    Task<ApiResponse<PagedResult<EmployeeCardResponse>>> GetEmployeeCardsAsync();
-    Task<ApiResponse<EmployeeCardResponse>> GetEmployeeCardByNoAsync(string employeeNo);
+    Task<AppResponse<bool>> CreateEmployeeCardsAsync(CreateEmployeeCardRequest request);
+    Task<AppResponse<PagedResult<EmployeeCardResponse>>> GetEmployeeCardsAsync();
+    Task<AppResponse<EmployeeCardResponse>> GetEmployeeCardByNoAsync(string employeeNo);
 
-    Task<ApiResponse<PagedResult<EmployeeCardResponse>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter);
+    Task<AppResponse<PagedResult<EmployeeCardResponse>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter);
 
 
 }

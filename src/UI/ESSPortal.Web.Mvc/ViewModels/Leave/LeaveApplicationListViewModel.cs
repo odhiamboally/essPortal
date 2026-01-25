@@ -1,5 +1,4 @@
-﻿using EssPortal.Web.Mvc.Enums.NavEnums;
-
+﻿
 namespace ESSPortal.Web.Mvc.ViewModels.Leave;
 
 public class LeaveApplicationListViewModel
@@ -11,7 +10,7 @@ public class LeaveApplicationListViewModel
     public decimal DaysApplied { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public LeaveApplicationListStatus Status { get; set; }
+    public string? Status { get; set; }
     public string? LeavePeriod { get; set; }
 
     // Calculated properties

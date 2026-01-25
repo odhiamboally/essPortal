@@ -1,15 +1,17 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
+
 using ESSPortal.Application.Extensions;
 using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -40,18 +42,18 @@ internal sealed class LeaveStatisticsFactboxService : ILeaveStatisticsFactboxSer
     }
 
     // Read operations
-    public async Task<ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>> GetLeaveStatisticsAsync()
+    public async Task<AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>> GetLeaveStatisticsAsync()
     {
         if (!_bcSettings.EntitySets.TryGetValue("LeaveStatisticsFactbox", out var entitySet))
-            return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure("Leave Statistics Factbox Entity set not configured");
+            return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure("Leave Statistics Factbox Entity set not configured");
 
         var response = await _navisionService.GetMultipleAsync<LeaveStatisticsFactbox>(entitySet);
         if (!response.Successful)
-            return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure(response.Message ?? "Failed to fetch leave statistics factbox data");
+            return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure(response.Message ?? "Failed to fetch leave statistics factbox data");
 
         var (items, _) = response.Data;
         if (items == null || !items.Any())
-            return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("No leave statistics found", new PagedResult<LeaveStatisticsFactboxResponse>
+            return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("No leave statistics found", new PagedResult<LeaveStatisticsFactboxResponse>
             {
                 Items = [],
                 TotalCount = 0,
@@ -64,7 +66,7 @@ internal sealed class LeaveStatisticsFactboxService : ILeaveStatisticsFactboxSer
 
         var mappedItems = items.ToLeaveStatisticsFactboxResponses();
 
-        return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("Leave statistics fetched successfully", new PagedResult<LeaveStatisticsFactboxResponse>
+        return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("Leave statistics fetched successfully", new PagedResult<LeaveStatisticsFactboxResponse>
         {
             Items = mappedItems.ToList(),
             TotalCount = mappedItems.Count()
@@ -72,10 +74,10 @@ internal sealed class LeaveStatisticsFactboxService : ILeaveStatisticsFactboxSer
         });
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>> SearchLeaveStatisticsAsync(LeaveStatisticsFactboxFilter filter)
+    public async Task<AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>> SearchLeaveStatisticsAsync(LeaveStatisticsFactboxFilter filter)
     {
         if (!_bcSettings.EntitySets.TryGetValue("LeaveStatisticsFactbox", out var entitySet))
-            return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure("Leave Statistics Factbox Entity set not configured");
+            return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure("Leave Statistics Factbox Entity set not configured");
 
         var odataQuery = filter.BuildODataFilter();
         var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
@@ -83,11 +85,11 @@ internal sealed class LeaveStatisticsFactboxService : ILeaveStatisticsFactboxSer
         var response = await _navisionService.GetMultipleAsync<LeaveStatisticsFactbox>(requestUri);
 
         if (!response.Successful)
-            return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure(response.Message ?? "Failed to fetch leave statistics factbox data");
+            return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Failure(response.Message ?? "Failed to fetch leave statistics factbox data");
 
         var (items, _) = response.Data;
         if (items == null || !items.Any())
-            return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("No leave statistics found", new PagedResult<LeaveStatisticsFactboxResponse>
+            return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("No leave statistics found", new PagedResult<LeaveStatisticsFactboxResponse>
             {
                 Items = [],
                 TotalCount = 0,
@@ -100,7 +102,7 @@ internal sealed class LeaveStatisticsFactboxService : ILeaveStatisticsFactboxSer
 
         var mappedItems = items.ToLeaveStatisticsFactboxResponses();
 
-        return ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("Leave statistics fetched successfully", new PagedResult<LeaveStatisticsFactboxResponse>
+        return AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>.Success("Leave statistics fetched successfully", new PagedResult<LeaveStatisticsFactboxResponse>
         {
             Items = mappedItems.ToList(),
             TotalCount = mappedItems.Count()

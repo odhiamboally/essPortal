@@ -1,8 +1,11 @@
-﻿using EssPortal.Web.Mvc.Enums.NavEnums;
-using EssPortal.Web.Mvc.Models.Navision;
+﻿
 
-using ESSPortal.Web.Mvc.Dtos.Dashboard;
-using ESSPortal.Web.Mvc.Dtos.Leave;
+using EssPortal.Domain.Enums.NavEnums;
+
+using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Dashboard;
+using ESSPortal.Shared.Dtos.Leave;
+
 using ESSPortal.Web.Mvc.ViewModels.Dashboard;
 using ESSPortal.Web.Mvc.ViewModels.Leave;
 
@@ -96,20 +99,20 @@ public static class DashboardMappingExtensions
             LeaveType = leaveTypeName,
             StartDate = entity.Start_Date,
             EndDate = entity.End_Date,
-            DaysApplied = entity.Days_Applied,
+            DaysApplied = entity.Days_Applied ?? default,
             Status = entity.Status,
             LeavePeriod = entity.LeavePeriod ?? string.Empty,
 
             Duration = duration,
-            DurationText = GetDurationText(entity.Start_Date, entity.End_Date, entity.Days_Applied),
-            StatusDisplayText = GetDisplayStatus(entity.Status),
-            StatusCssClass = GetStatusCssClass(entity.Status),
-            StateText = GetStateText(entity.Status),
-            StateCssClass = GetStateCssClass(entity.Status),
+            DurationText = GetDurationText(entity.Start_Date, entity.End_Date, entity.Days_Applied ?? default),
+            StatusDisplayText = GetDisplayStatus(entity.Status.ToEnum<LeaveApplicationListStatus>()),
+            StatusCssClass = GetStatusCssClass(entity.Status.ToEnum<LeaveApplicationListStatus>()),
+            StateText = GetStateText(entity.Status.ToEnum<LeaveApplicationListStatus>()),
+            StateCssClass = GetStateCssClass(entity.Status.ToEnum<LeaveApplicationListStatus>()),
             IsCurrentYear = entity.Start_Date.Year == DateTime.Now.Year,
-            IsApproved = entity.Status == LeaveApplicationListStatus.Released,
-            IsPending = IsStatusPending(entity.Status),
-            IsRejected = entity.Status == LeaveApplicationListStatus.Rejected
+            IsApproved = entity.Status == GetDisplayStatus(LeaveApplicationListStatus.Released),
+            IsPending = IsStatusPending(entity.Status.ToEnum<LeaveApplicationListStatus>()),
+            IsRejected = entity.Status == GetDisplayStatus(LeaveApplicationListStatus.Rejected)
         };
     }
 
@@ -185,6 +188,35 @@ public static class DashboardMappingExtensions
                         LeaveApplicationListStatus.Pending_Prepayment;
     }
 
+    public static T ToEnum<T>(this string? value, T defaultValue = default) where T : struct, Enum
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return defaultValue;
+        }
 
+        // Handle the specific mappings from your GetDisplayStatus
+        var normalizedValue = value.Trim();
 
+        // Reverse mappings for display strings
+        normalizedValue = normalizedValue switch
+        {
+            "Approved" => "Released",
+            "Draft" => "Open",
+            "Pending Payment" => "Pending_Prepayment",
+            _ => normalizedValue.Replace(" ", "_") // Standardize spaces to underscores
+        };
+
+        // Try to parse the resulting string
+        if (Enum.TryParse<T>(normalizedValue, true, out var result))
+        {
+            return result;
+        }
+
+        return defaultValue;
+    }
 }
+
+
+
+

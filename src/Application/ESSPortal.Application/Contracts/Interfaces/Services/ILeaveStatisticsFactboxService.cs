@@ -1,14 +1,14 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿
+using EssPortal.Shared.Dtos.Leave;
+using EssPortal.Shared.Dtos.ModelFilters;
 
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Common;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface ILeaveStatisticsFactboxService
 {
-    Task<ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>> GetLeaveStatisticsAsync();
-    Task<ApiResponse<PagedResult<LeaveStatisticsFactboxResponse>>> SearchLeaveStatisticsAsync(LeaveStatisticsFactboxFilter filter);
+    Task<AppResponse<PagedResult<LeaveStatisticsFactboxResponse>>> SearchLeaveStatisticsAsync(LeaveStatisticsFactboxFilter filter);
 
    
 }

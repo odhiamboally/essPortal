@@ -1,17 +1,19 @@
 ﻿using AutoMapper;
 
-using EssPortal.Application.Dtos.ModelFilters;
 using EssPortal.Domain.Enums.NavEnums;
+using EssPortal.Shared.Dtos.Employee;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Configuration;
 
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Employee;
+
 using ESSPortal.Application.Extensions;
 using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Employee;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -42,16 +44,16 @@ internal sealed class EmployeeService : IEmployeeService
     }
 
     // Employees
-    public async Task<ApiResponse<PagedResult<EmployeeResponse>>> GetEmployeesAsync()
+    public async Task<AppResponse<PagedResult<EmployeeResponse>>> GetEmployeesAsync()
     {
         if (!_bcSettings.EntitySets.TryGetValue("Employees", out var entitySet))
-            return ApiResponse<PagedResult<EmployeeResponse>>.Failure("Entity set not configured");
+            return AppResponse<PagedResult<EmployeeResponse>>.Failure("Entity set not configured");
 
         var response = await _navisionService.GetMultipleAsync<Employees>(entitySet);
         var (items, rawJson) = response.Data;
         var mappedItems = items.Select(emp => emp.ToEmployeeResponse()).ToList();
 
-        return ApiResponse<PagedResult<EmployeeResponse>>.Success("Success", new PagedResult<EmployeeResponse>
+        return AppResponse<PagedResult<EmployeeResponse>>.Success("Success", new PagedResult<EmployeeResponse>
         {
             Items = mappedItems,
             Cursor = null,
@@ -65,42 +67,42 @@ internal sealed class EmployeeService : IEmployeeService
         });
     }
 
-    public async Task<ApiResponse<EmployeeResponse>> GetEmployeeByNoAsync(string employeeNo)
+    public async Task<AppResponse<EmployeeResponse>> GetEmployeeByNoAsync(string employeeNo)
     {
         if (!_bcSettings.EntitySets.TryGetValue("Employees", out var entitySet))
-            return ApiResponse<EmployeeResponse>.Failure("Entity set not configured");
+            return AppResponse<EmployeeResponse>.Failure("Entity set not configured");
 
         var requestUri = $"{entitySet}?$filter=No eq '{employeeNo}'";
         var response = await _navisionService.GetSingleAsync<Employees>(requestUri);
 
         if (!response.Successful)
-            return ApiResponse<EmployeeResponse>.Failure(response.Message ?? "Failed to fetch employee");
+            return AppResponse<EmployeeResponse>.Failure(response.Message ?? "Failed to fetch employee");
 
         if (response.Data == null)
-            return ApiResponse<EmployeeResponse>.Failure("Employee not found");
+            return AppResponse<EmployeeResponse>.Failure("Employee not found");
 
         var employeeResponse = response.Data.ToEmployeeResponse();
         
-        return ApiResponse<EmployeeResponse>.Success("Success", employeeResponse);
+        return AppResponse<EmployeeResponse>.Success("Success", employeeResponse);
     }
 
-    public async Task<ApiResponse<PagedResult<EmployeeResponse>>> SearchEmployeesAsync(EmployeesFilter filter)
+    public async Task<AppResponse<PagedResult<EmployeeResponse>>> SearchEmployeesAsync(EmployeesFilter filter)
     {
         if (!_bcSettings.EntitySets.TryGetValue("Employees", out var entitySet))
-            return ApiResponse<PagedResult<EmployeeResponse>>.Failure("Entity set not configured");
+            return AppResponse<PagedResult<EmployeeResponse>>.Failure("Entity set not configured");
 
         var odataQuery = filter.BuildODataFilter();
         var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
 
         var response = await _navisionService.GetMultipleAsync<Employees>(requestUri);
         if (!response.Successful)
-            return ApiResponse<PagedResult<EmployeeResponse>>.Failure(response.Message ?? "Failed to fetch employee records");
+            return AppResponse<PagedResult<EmployeeResponse>>.Failure(response.Message ?? "Failed to fetch employee records");
 
         var (items, rawJson) = response.Data;
 
         var mappedItems = items.Select(emp => emp.ToEmployeeResponse()).ToList();
 
-        return ApiResponse<PagedResult<EmployeeResponse>>.Success("Success", new PagedResult<EmployeeResponse>
+        return AppResponse<PagedResult<EmployeeResponse>>.Success("Success", new PagedResult<EmployeeResponse>
         {
             Items = mappedItems,
             Cursor = null,
@@ -114,24 +116,24 @@ internal sealed class EmployeeService : IEmployeeService
         });
     }
 
-    public Task<ApiResponse<bool>> CreateEmployeeCardsAsync(CreateEmployeeCardRequest request)
+    public Task<AppResponse<bool>> CreateEmployeeCardsAsync(CreateEmployeeCardRequest request)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ApiResponse<PagedResult<EmployeeCardResponse>>> GetEmployeeCardsAsync()
+    public async Task<AppResponse<PagedResult<EmployeeCardResponse>>> GetEmployeeCardsAsync()
     {
         if (!_bcSettings.EntitySets.TryGetValue("EmployeeCards", out var entitySet))
-            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure("Entity set not configured");
+            return AppResponse<PagedResult<EmployeeCardResponse>>.Failure("Entity set not configured");
 
         var response = await _navisionService.GetMultipleAsync<EmployeeCard>(entitySet);
         if (!response.Successful)
-            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure(response.Message ?? "Failed to fetch employee cards");
+            return AppResponse<PagedResult<EmployeeCardResponse>>.Failure(response.Message ?? "Failed to fetch employee cards");
 
         var (items, rawJson) = response.Data;
         var mappedItems = items.Select(card => card.ToEmployeeCardResponse()).ToList();
 
-        return ApiResponse<PagedResult<EmployeeCardResponse>>.Success("Success", new PagedResult<EmployeeCardResponse>
+        return AppResponse<PagedResult<EmployeeCardResponse>>.Success("Success", new PagedResult<EmployeeCardResponse>
         {
             Items = mappedItems,
             Cursor = null,
@@ -146,41 +148,41 @@ internal sealed class EmployeeService : IEmployeeService
 
     }
 
-    public async Task<ApiResponse<EmployeeCardResponse>> GetEmployeeCardByNoAsync(string employeeNo)
+    public async Task<AppResponse<EmployeeCardResponse>> GetEmployeeCardByNoAsync(string employeeNo)
     {
         if (!_bcSettings.EntitySets.TryGetValue("EmployeeCards", out var entitySet))
-            return ApiResponse<EmployeeCardResponse>.Failure("Entity set not configured");
+            return AppResponse<EmployeeCardResponse>.Failure("Entity set not configured");
 
         var requestUri = $"{entitySet}?$filter=No eq '{employeeNo}'";
         var response = await _navisionService.GetSingleAsync<EmployeeCard>(requestUri);
 
         if (!response.Successful)
-            return ApiResponse<EmployeeCardResponse>.Failure(response.Message ?? "Failed to fetch employee card");
+            return AppResponse<EmployeeCardResponse>.Failure(response.Message ?? "Failed to fetch employee card");
 
         if (response.Data == null)
-            return ApiResponse<EmployeeCardResponse>.Failure("Employee card not found");
+            return AppResponse<EmployeeCardResponse>.Failure("Employee card not found");
 
         var employeeCardResponse = response.Data.ToEmployeeCardResponse();
 
-        return ApiResponse<EmployeeCardResponse>.Success("Success", employeeCardResponse);
+        return AppResponse<EmployeeCardResponse>.Success("Success", employeeCardResponse);
     }
 
-    public async Task<ApiResponse<PagedResult<EmployeeCardResponse>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter)
+    public async Task<AppResponse<PagedResult<EmployeeCardResponse>>> SearchEmployeeCardsAsync(EmployeeCardFilter filter)
     {
         if (!_bcSettings.EntitySets.TryGetValue("EmployeeCards", out var entitySet))
-            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure("Entity set not configured");
+            return AppResponse<PagedResult<EmployeeCardResponse>>.Failure("Entity set not configured");
 
         var odataQuery = filter.BuildODataFilter();
         var requestUri = string.IsNullOrWhiteSpace(odataQuery) ? entitySet : $"{entitySet}?{odataQuery}";
 
         var response = await _navisionService.GetMultipleAsync<EmployeeCard>(requestUri);
         if (!response.Successful)
-            return ApiResponse<PagedResult<EmployeeCardResponse>>.Failure(response.Message ?? "Failed to fetch employee card records");
+            return AppResponse<PagedResult<EmployeeCardResponse>>.Failure(response.Message ?? "Failed to fetch employee card records");
 
         var (items, rawJson) = response.Data;
         var mappedItems = items.Select(card => card.ToEmployeeCardResponse()).ToList();
 
-        return ApiResponse<PagedResult<EmployeeCardResponse>>.Success("Success", new PagedResult<EmployeeCardResponse>
+        return AppResponse<PagedResult<EmployeeCardResponse>>.Success("Success", new PagedResult<EmployeeCardResponse>
         {
             Items = mappedItems,
             Cursor = null,

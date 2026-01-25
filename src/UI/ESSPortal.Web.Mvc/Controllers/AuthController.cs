@@ -1,12 +1,15 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Auth;
-using EssPortal.Web.Mvc.Dtos.Common;
+﻿using EssPortal.Shared.Dtos.Auth;
+using EssPortal.Web.Mvc.Configurations;
+
 using EssPortal.Web.Mvc.Utilities.Constants;
 using EssPortal.Web.Mvc.ViewModels.Auth;
 
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Auth;
+using ESSPortal.Shared.Dtos.Common;
 using ESSPortal.Web.Mvc.Configurations;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Dtos.Auth;
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Mappings;
 using ESSPortal.Web.Mvc.Utilities.Session;
@@ -32,12 +35,21 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace EssPortal.Web.Mvc.Controllers;
 
 
-public class AuthController : BaseController
-{
-    private readonly EmailValidationSettings _emailValidationSettings;
-    private readonly SecuritySettings _securitySettings;
+public class AuthController(
+    IClientServiceManager clientServiceManager,
+    IServiceManager serviceManager,
+    ICacheService cacheService,
+    IOptions<AppSettings> appSettings,
+    IOptions<SecuritySettings> securitySettings,
+    ILogger<AuthController> logger,
+    IOptions<EmailValidationSettings> emailValidationSettings, IWebHostEnvironment environment) 
 
-    private readonly IWebHostEnvironment _environment;
+    : BaseController(clientServiceManager, serviceManager, cacheService, appSettings, logger)
+{
+    private readonly EmailValidationSettings _emailValidationSettings = emailValidationSettings.Value;
+    private readonly SecuritySettings _securitySettings = securitySettings.Value;
+
+    private readonly IWebHostEnvironment _environment = environment;
 
     private const string SessionKey_2FA_UserId = "2FA_UserId";
     private const string SessionKey_2FA_Provider = "2FA_Provider";
@@ -48,22 +60,6 @@ public class AuthController : BaseController
     private const string SessionKey_IsLocked = "IsLocked";
     private const string SessionKey_LockedAt = "LockedAt";
     private const string SessionKey_LockReturnUrl = "LockReturnUrl";
-
-    public AuthController(
-        IServiceManager serviceManager, 
-        IOptions<AppSettings> appSettings,
-        IOptions<SecuritySettings> securitySettings,
-        ILogger<AuthController> logger, 
-        IOptions<EmailValidationSettings> emailValidationSettings, IWebHostEnvironment environment)
-        : base(serviceManager, appSettings, logger)
-    {
-        
-        _emailValidationSettings = emailValidationSettings.Value;
-        _securitySettings = securitySettings.Value;
-        _environment = environment;
-    }
-
-
 
     [HttpGet]
     [Route("Auth/SessionConfig")]
@@ -194,7 +190,7 @@ public class AuthController : BaseController
                     authResult.Principal,
                     properties);
 
-                var apiResult = await _serviceManager.AuthService.KeepAliveAsync();
+                var apiResult = await _clientServiceManager.AuthService.KeepAliveAsync();
                 if (!apiResult.Successful)
                 {
                     // Database session was invalidated (admin ended it, concurrent limit, etc.)
@@ -294,7 +290,7 @@ public class AuthController : BaseController
     [Authorize]
     public IActionResult TriggerLock()
     {
-        var returnUrl = Request.Headers["Referer"].ToString();
+        var returnUrl = Request.Headers.Referer.ToString();
         if (string.IsNullOrEmpty(returnUrl))
         {
             returnUrl = "/Home/Index";
@@ -400,7 +396,11 @@ public class AuthController : BaseController
         };
 
 
-        var unlockResult = await _serviceManager.AuthService.UnlockSessionAsync(unlockRequest);
+        var unlockResult = await _clientServiceManager.AuthService.UnlockSessionAsync(unlockRequest);
+        
+        //ToDo: Call Application Services Directly (Just when possible, becuase client services alsi have important business logic
+
+        //var unlockResult = await _serviceManager.AuthService.VerifyPasswordAsync(unlockRequest);
 
         if (!unlockResult.Successful)
         {
@@ -473,7 +473,7 @@ public class AuthController : BaseController
                 
             };
             
-            var response = await _serviceManager.AuthService.RegisterEmployeeAsync(request);
+            var response = await _clientServiceManager.AuthService.RegisterEmployeeAsync(request);
 
             if (!response.Successful)
             {
@@ -558,7 +558,7 @@ public class AuthController : BaseController
 
         try
         {
-            var response = await _serviceManager.AuthService.SignInAsync(request);
+            var response = await _clientServiceManager.AuthService.SignInAsync(request);
 
             if (!response.Successful || string.IsNullOrWhiteSpace(response.Data?.Token))
             {
@@ -593,7 +593,7 @@ public class AuthController : BaseController
                 HttpContext.Session.SetString(SessionKey_UserInfo, JsonSerializer.Serialize(loginData.UserInfo, JsonDefaults.Options));
                 await HttpContext.Session.CommitAsync();
 
-                CacheServiceExtensions.SetUserInfo(_serviceManager.CacheService, request.EmployeeNumber, loginData.UserInfo);
+                CacheServiceExtensions.SetUserInfo(_clientServiceManager.CacheService, request.EmployeeNumber, loginData.UserInfo);
 
             }
 
@@ -632,7 +632,7 @@ public class AuthController : BaseController
 
         try
         {
-            var providersResponse = await _serviceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(userId));
+            var providersResponse = await _clientServiceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(userId));
 
             if (!providersResponse.Successful || providersResponse.Data?.Providers == null || !providersResponse.Data.Providers.Any())
             {
@@ -718,7 +718,7 @@ public class AuthController : BaseController
 
         try
         {
-            var response = await _serviceManager.AuthService.Send2FACodeAsync(request);
+            var response = await _clientServiceManager.AuthService.Send2FACodeAsync(request);
 
             if (!response.Successful)
             {
@@ -844,7 +844,7 @@ public class AuthController : BaseController
                 return RedirectToAction(nameof(SignIn));
             }
 
-            var response = await _serviceManager.AuthService.Verify2FACodeAsync(request);
+            var response = await _clientServiceManager.AuthService.Verify2FACodeAsync(request);
 
             if (!response.Successful)
             {
@@ -911,7 +911,7 @@ public class AuthController : BaseController
         try
         {
             var request = new ConfirmUserEmailRequest(email, token);
-            var response = await _serviceManager.AuthService.ConfirmUserEmailAsync(request);
+            var response = await _clientServiceManager.AuthService.ConfirmUserEmailAsync(request);
 
             if (response.Successful)
             {
@@ -951,7 +951,7 @@ public class AuthController : BaseController
 
         try
         {
-            var response = await _serviceManager.AuthService.ResendEmailConfirmationAsync(request);
+            var response = await _clientServiceManager.AuthService.ResendEmailConfirmationAsync(request);
 
             _logger.LogInformation("Email confirmation resend requested for: {Email}", request.Email);
 
@@ -1012,11 +1012,11 @@ public class AuthController : BaseController
 
         try
         {
-            var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+            var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
             var requestWithLogo = request with { LogoBase64 = logoBase64 };
 
-            var response = await _serviceManager.AuthService.RequestPasswordResetAsync(requestWithLogo);
+            var response = await _clientServiceManager.AuthService.RequestPasswordResetAsync(requestWithLogo);
 
             if (!response.Successful)
             {
@@ -1066,7 +1066,7 @@ public class AuthController : BaseController
         try
         {
             var validationRequest = new ValidateResetTokenRequest(email, token);
-            var response = await _serviceManager.AuthService.ValidatePasswordResetTokenAsync(validationRequest);
+            var response = await _clientServiceManager.AuthService.ValidatePasswordResetTokenAsync(validationRequest);
 
             if (!response.Successful)
             {
@@ -1077,7 +1077,7 @@ public class AuthController : BaseController
                 return RedirectToAction(nameof(ForgotPassword));
             }
 
-            var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
+            var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
 
             var resetRequest = new ResetPasswordRequest
             {
@@ -1113,11 +1113,11 @@ public class AuthController : BaseController
         {
             if (string.IsNullOrWhiteSpace(request.LogoBase64))
             {
-                var (logoBase64, _, _) = await _serviceManager.FileService.ReadLogoAsync();
-                request.LogoBase64 = logoBase64;
+                var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
+                request = request with { LogoBase64 = logoBase64 };
             }
 
-            var response = await _serviceManager.AuthService.ResetPasswordAsync(request);
+            var response = await _clientServiceManager.AuthService.ResetPasswordAsync(request);
 
             if (!response.Successful)
             {
@@ -1171,7 +1171,7 @@ public class AuthController : BaseController
             {
                 try
                 {
-                    var response = await _serviceManager.AuthService.SignOutAsync();
+                    var response = await _clientServiceManager.AuthService.SignOutAsync();
                     if (!response.Successful)
                     {
                         _logger.LogWarning("API sign out failed for user: {UserId}. Message: {Message}",
@@ -1448,7 +1448,7 @@ public class AuthController : BaseController
     {
         try
         {
-            var providersResponse = await _serviceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(UserId: request.UserId));
+            var providersResponse = await _clientServiceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(UserId: request.UserId));
 
             if (providersResponse.Successful && providersResponse.Data?.Providers != null)
             {

@@ -1,7 +1,8 @@
 ﻿using Asp.Versioning;
 using ESSPortal.Application.Contracts.Interfaces.Common;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Dashboard;
+
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Dashboard;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,11 +23,11 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("{employeeNo}")]
-    [ProducesResponseType(typeof(ApiResponse<DashboardResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<DashboardResponse>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<DashboardResponse>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<DashboardResponse>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<DashboardResponse>), StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(AppResponse<DashboardResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AppResponse<DashboardResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(AppResponse<DashboardResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(AppResponse<DashboardResponse>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(AppResponse<DashboardResponse>), StatusCodes.Status500InternalServerError)]
 
     public async Task<IActionResult> GetDashboardData(string employeeNo)
     {
@@ -45,10 +46,10 @@ public class DashboardController : ControllerBase
 
             if (response.Data == null)
             {
-                return NotFound(ApiResponse<DashboardResponse>.Failure("No dashboard data found for the specified employee number"));
+                return NotFound(AppResponse<DashboardResponse>.Failure("No dashboard data found for the specified employee number"));
             }
 
-            return Ok(ApiResponse<DashboardResponse>.Success("Dashboard data retrieved successfully", response.Data));
+            return Ok(AppResponse<DashboardResponse>.Success("Dashboard data retrieved successfully", response.Data));
         }
         catch (Exception ex)
         {

@@ -1,5 +1,5 @@
 ﻿/**
- * Shared Device Fingerprint Generator
+ * Web.Mvc Device Fingerprint Generator
  * Generates a consistent hash based on browser properties.
  */
 window.DeviceFingerprint = (function () {

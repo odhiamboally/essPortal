@@ -1,4 +1,5 @@
 ﻿using EssPortal.Domain.Enums.NavEnums;
+using EssPortal.Shared.Dtos.Auth;
 
 using ESSPortal.Application.Dtos.Auth;
 using ESSPortal.Domain.Entities;
@@ -17,8 +18,7 @@ public static class AppUserMappingExtensions
             MiddleName = dto.MiddleName,
             LastName = dto.LastName,
             PhoneNumber = dto.PhoneNumber,
-            Gender = dto.Gender == Gender.Male ? "Male" :
-                     dto.Gender == Gender.Female ? "Female" : "Other",
+            Gender = dto.Gender,
             Department = string.Empty, // Will be populated later from BC if needed
             JobTitle = string.Empty, // Will be populated later from BC if needed
             ManagerId = null, // Will be populated later from BC if needed

@@ -1,19 +1,20 @@
-﻿using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Profile;
+﻿
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Profile;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface IProfileService
 {
     // Read operations
-    Task<ApiResponse<UserProfileResponse>> GetUserProfileAsync(string userId);
-    Task<ApiResponse<bool>> ValidateProfileDataAsync(string userId);
-    Task<ApiResponse<int>> CalculateProfileCompletionAsync(string userId);
+    Task<AppResponse<UserProfileResponse>> GetUserProfileAsync(string userId);
+    Task<AppResponse<bool>> ValidateProfileDataAsync(string userId);
+    Task<AppResponse<int>> CalculateProfileCompletionAsync(string userId);
 
     // Update operations
-    Task<ApiResponse<bool>> UpdatePersonalDetailsAsync(UpdatePersonalDetailsRequest request);
-    Task<ApiResponse<bool>> UpdateContactInfoAsync(UpdateContactInfoRequest request);
-    Task<ApiResponse<bool>> UpdateBankingInfoAsync(UpdateBankingInfoRequest request);
+    Task<AppResponse<bool>> UpdatePersonalDetailsAsync(UpdatePersonalDetailsRequest request);
+    Task<AppResponse<bool>> UpdateContactInfoAsync(UpdateContactInfoRequest request);
+    Task<AppResponse<bool>> UpdateBankingInfoAsync(UpdateBankingInfoRequest request);
 
     // Create operations
-    Task<ApiResponse<string>> UpdateProfilePictureAsync(UpdateProfilePictureRequest request);
+    Task<AppResponse<string>> UpdateProfilePictureAsync(UpdateProfilePictureRequest request);
 }

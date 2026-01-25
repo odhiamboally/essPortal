@@ -1,6 +1,8 @@
-﻿using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Dtos.Dashboard;
-using ESSPortal.Web.Mvc.Dtos.Leave;
+﻿using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Dashboard;
+using ESSPortal.Shared.Dtos.Leave;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+
 using ESSPortal.Web.Mvc.Utilities.Session;
 
 namespace ESSPortal.Web.Mvc.Extensions;

@@ -1,4 +1,5 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Services;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Common;
 public interface IServiceManager

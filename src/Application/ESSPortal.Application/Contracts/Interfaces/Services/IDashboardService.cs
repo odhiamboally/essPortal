@@ -1,8 +1,10 @@
-﻿using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Dashboard;
+﻿
+
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Dashboard;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface IDashboardService
 {
-    Task<ApiResponse<DashboardResponse>> GetDashboardDataAsync(string employeeNo);
+    Task<AppResponse<DashboardResponse>> GetDashboardDataAsync(string employeeNo);
 }

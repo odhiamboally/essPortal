@@ -1,6 +1,6 @@
 ﻿using Asp.Versioning;
 
-using EssPortal.Application.Dtos.ModelFilters;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -25,7 +25,7 @@ public class LeaveStatisticsFactboxController : BaseController
     [HttpGet("")]
     public async Task<IActionResult> GetLeaveStatistics()
     {
-        var response = await _serviceManager.LeaveStatisticsFactboxService.GetLeaveStatisticsAsync();
+        var response = await _serviceManager.LeaveStatisticsFactboxService.SearchLeaveStatisticsAsync(new());
         return HandleResponse(response);
     }
 

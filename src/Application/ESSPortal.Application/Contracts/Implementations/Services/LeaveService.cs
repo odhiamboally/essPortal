@@ -1,15 +1,19 @@
-﻿using EssPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.ModelFilters;
+
 using ESSPortal.Application.Configuration;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
+
 using ESSPortal.Application.Extensions;
 using ESSPortal.Application.Mappings;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
@@ -53,12 +57,12 @@ internal sealed class LeaveService : ILeaveService
 
 
 
-    public async Task<ApiResponse<LeaveApplicationResponse>> CreateLeaveApplicationAsync(CreateLeaveApplicationRequest request)
+    public async Task<AppResponse<LeaveApplicationResponse>> CreateLeaveApplicationAsync(CreateLeaveApplicationRequest request)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("CreateLeaveApplication", out var createLeaveApplicationEntitySet))
-                return ApiResponse<LeaveApplicationResponse>.Failure("Leave Application entity set not configured");
+                return AppResponse<LeaveApplicationResponse>.Failure("Leave Application entity set not configured");
 
             var leaveApplicationCard = request.ToCreateLeaveApplicationCard();
 
@@ -68,7 +72,7 @@ internal sealed class LeaveService : ILeaveService
             {
                 _logger.LogError("Failed to create leave application in BC: {Message}", createLeaveResponse.Message);
 
-                return ApiResponse<LeaveApplicationResponse>.Failure(createLeaveResponse.Message ?? "Failed to submit leave application");
+                return AppResponse<LeaveApplicationResponse>.Failure(createLeaveResponse.Message ?? "Failed to submit leave application");
             }
 
             _cache.Remove(CacheKeys.LeaveHistory(request.EmployeeNo));
@@ -83,7 +87,7 @@ internal sealed class LeaveService : ILeaveService
                 Message = "Leave application submitted successfully"
             };
 
-            return ApiResponse<LeaveApplicationResponse>.Success("Leave application submitted successfully", result);
+            return AppResponse<LeaveApplicationResponse>.Success("Leave application submitted successfully", result);
         }
         catch (Exception ex)
         {
@@ -92,12 +96,12 @@ internal sealed class LeaveService : ILeaveService
         }
     }
 
-    public async Task<ApiResponse<LeaveApplicationResponse>> UpdateLeaveApplicationAsync(CreateLeaveApplicationRequest request)
+    public async Task<AppResponse<LeaveApplicationResponse>> UpdateLeaveApplicationAsync(CreateLeaveApplicationRequest request)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("UpdateLeaveApplication", out var updateLeaveApplicationEntitySet))
-                return ApiResponse<LeaveApplicationResponse>.Failure("Leave Application entity set not configured");
+                return AppResponse<LeaveApplicationResponse>.Failure("Leave Application entity set not configured");
 
             var leaveApplicationCard = request.ToUpdateLeaveApplicationCard();
 
@@ -107,7 +111,7 @@ internal sealed class LeaveService : ILeaveService
             {
                 _logger.LogError("Failed to create leave application in BC: {Message}", createLeaveResponse.Message);
 
-                return ApiResponse<LeaveApplicationResponse>.Failure(createLeaveResponse.Message ?? "Failed to submit leave application");
+                return AppResponse<LeaveApplicationResponse>.Failure(createLeaveResponse.Message ?? "Failed to submit leave application");
             }
 
             _cache.Remove(CacheKeys.LeaveHistory(request.EmployeeNo));
@@ -122,7 +126,7 @@ internal sealed class LeaveService : ILeaveService
                 Message = "Leave application updated successfully"
             };
 
-            return ApiResponse<LeaveApplicationResponse>.Success("Leave application submitted successfully", result);
+            return AppResponse<LeaveApplicationResponse>.Success("Leave application submitted successfully", result);
         }
         catch (Exception ex)
         {
@@ -132,12 +136,12 @@ internal sealed class LeaveService : ILeaveService
         }
     }
 
-    public async Task<ApiResponse<PagedResult<LeaveHistoryResponse>>> GetLeaveHistoryAsync(string employeeNo)
+    public async Task<AppResponse<PagedResult<LeaveHistoryResponse>>> GetLeaveHistoryAsync(string employeeNo)
     {
         try
         {
             if (!_bcSettings.EntitySets.TryGetValue("LeaveApplicationLists", out var entitySet))
-                return ApiResponse<PagedResult<LeaveHistoryResponse>>.Failure("Leave Application Lists entity set not configured");
+                return AppResponse<PagedResult<LeaveHistoryResponse>>.Failure("Leave Application Lists entity set not configured");
 
             LeaveApplicationCardFilter filter = new() { Employee_No = employeeNo };
             var odataQuery = filter.BuildODataFilter();
@@ -147,7 +151,7 @@ internal sealed class LeaveService : ILeaveService
             if (!response.Successful)
             {
                 _logger.LogError("Failed to fetch leave history for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
-                return ApiResponse<PagedResult<LeaveHistoryResponse>>.Failure(response.Message ?? "Failed to fetch leave history");
+                return AppResponse<PagedResult<LeaveHistoryResponse>>.Failure(response.Message ?? "Failed to fetch leave history");
             }
 
             var (items, _) = response.Data;
@@ -156,7 +160,7 @@ internal sealed class LeaveService : ILeaveService
             if (!pagedResult.Successful)
             {
                 _logger.LogError("Failed to handle paged response for leave history: {Message}", pagedResult.Message);
-                return ApiResponse<PagedResult<LeaveHistoryResponse>>.Failure(pagedResult.Message ?? "We encountered a problem fetching your leave history.");
+                return AppResponse<PagedResult<LeaveHistoryResponse>>.Failure(pagedResult.Message ?? "We encountered a problem fetching your leave history.");
             }
 
             // Map to response DTOs
@@ -164,7 +168,7 @@ internal sealed class LeaveService : ILeaveService
             if (leaveHistoryResponses == null || !leaveHistoryResponses.Any())
             {
                 _logger.LogWarning("No leave history found for employee {EmployeeNo}", employeeNo);
-                return ApiResponse<PagedResult<LeaveHistoryResponse>>.Success("No leave history found", new PagedResult<LeaveHistoryResponse>());
+                return AppResponse<PagedResult<LeaveHistoryResponse>>.Success("No leave history found", new PagedResult<LeaveHistoryResponse>());
             }
 
             var result = new PagedResult<LeaveHistoryResponse>
@@ -182,7 +186,7 @@ internal sealed class LeaveService : ILeaveService
             };
 
 
-            return ApiResponse<PagedResult<LeaveHistoryResponse>>.Success("Leave history fetched successfully", result);
+            return AppResponse<PagedResult<LeaveHistoryResponse>>.Success("Leave history fetched successfully", result);
         }
         catch (Exception ex)
         {
@@ -191,13 +195,13 @@ internal sealed class LeaveService : ILeaveService
         }
     }
 
-    public async Task<ApiResponse<AnnualLeaveSummaryResponse>> GetAnnualLeaveSummaryAsync(string employeeNo)
+    public async Task<AppResponse<AnnualLeaveSummaryResponse>> GetAnnualLeaveSummaryAsync(string employeeNo)
     {
         try
         {
             var cached = _cache.GetAnnualLeaveSummary(employeeNo);
             if (cached != null)
-                return ApiResponse<AnnualLeaveSummaryResponse>.Success(cached);
+                return AppResponse<AnnualLeaveSummaryResponse>.Success(cached);
 
             var currentLeavePeriod = DateTime.Now.Year.ToString();
 
@@ -220,12 +224,12 @@ internal sealed class LeaveService : ILeaveService
             if (leaveSummary == null)
             {
                 _logger.LogWarning("No leave summary found for employee {EmployeeNo}", employeeNo);
-                return ApiResponse<AnnualLeaveSummaryResponse>.Success("No leave summary found", new AnnualLeaveSummaryResponse());
+                return AppResponse<AnnualLeaveSummaryResponse>.Success("No leave summary found", new AnnualLeaveSummaryResponse());
             }
 
             _cache.SetAnnualLeaveSummary(employeeNo, leaveSummary);
 
-            return ApiResponse<AnnualLeaveSummaryResponse>.Success("Leave summary fetched successfully", leaveSummary);
+            return AppResponse<AnnualLeaveSummaryResponse>.Success("Leave summary fetched successfully", leaveSummary);
         }
         catch (Exception ex)
         {
@@ -234,13 +238,13 @@ internal sealed class LeaveService : ILeaveService
         }
     }
 
-    public async Task<ApiResponse<LeaveSummaryResponse>> GetLeaveSummaryAsync(string employeeNo)
+    public async Task<AppResponse<LeaveSummaryResponse>> GetLeaveSummaryAsync(string employeeNo)
     {
         try
         {
             var cached = _cache.GetLeaveSummary(employeeNo);
             if (cached != null)
-                return ApiResponse<LeaveSummaryResponse>.Success(cached);
+                return AppResponse<LeaveSummaryResponse>.Success(cached);
 
             var leaveApplicationCardsTask = GetLeaveApplicationCardsAsync(employeeNo);
             var leaveTypesTask = GetActiveLeaveTypesAsync();
@@ -261,7 +265,7 @@ internal sealed class LeaveService : ILeaveService
 
             _cache.SetLeaveSummary(employeeNo, leaveSummary);
 
-            return ApiResponse<LeaveSummaryResponse>.Success("Leave summary retrieved successfully", leaveSummary);
+            return AppResponse<LeaveSummaryResponse>.Success("Leave summary retrieved successfully", leaveSummary);
 
         }
         catch (Exception ex)
@@ -303,7 +307,7 @@ internal sealed class LeaveService : ILeaveService
     {
         try
         {
-            LeaveApplicationListFilter filter = new() { Employee_No = employeeNo };
+            LeaveApplicationListFilter filter = new() { EmployeeNo = employeeNo };
 
             var response = await _leaveApplicationListService.SearchLeaveApplicationListsAsync(filter);
             if (!response.Successful)
@@ -379,20 +383,20 @@ internal sealed class LeaveService : ILeaveService
         }
     }
 
-    private static Task<ApiResponse<PagedResult<T>>> HandleNavisionPagedResponse<T>(ApiResponse<(List<T> Items, string RawJson)> response)
+    private static Task<AppResponse<PagedResult<T>>> HandleNavisionPagedResponse<T>(AppResponse<(List<T> Items, string RawJson)> response)
     {
         if (!response.Successful)
         {
             return Task.FromResult(
-                ApiResponse<PagedResult<T>>.Failure(response.Message ?? "Failed to fetch records."));
+                AppResponse<PagedResult<T>>.Failure(response.Message ?? "Failed to fetch records."));
         }
 
         var pagedResult = JsonSerializer.Deserialize<PagedResult<T>>(response.Data.RawJson);
 
         return Task.FromResult(
             pagedResult == null
-                ? ApiResponse<PagedResult<T>>.Failure("Failed to deserialize response.")
-                : ApiResponse<PagedResult<T>>.Success("Success", pagedResult));
+                ? AppResponse<PagedResult<T>>.Failure("Failed to deserialize response.")
+                : AppResponse<PagedResult<T>>.Success("Success", pagedResult));
     }
 
 

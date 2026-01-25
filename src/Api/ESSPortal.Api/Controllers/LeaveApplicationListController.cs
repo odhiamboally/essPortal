@@ -1,6 +1,6 @@
 ﻿using Asp.Versioning;
 
-using EssPortal.Application.Dtos.ModelFilters;
+using EssPortal.Shared.Dtos.ModelFilters;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using Microsoft.AspNetCore.Authorization;

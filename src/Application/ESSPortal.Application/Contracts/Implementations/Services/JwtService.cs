@@ -1,8 +1,8 @@
 ﻿using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Entities;
+using ESSPortal.Shared.Dtos.Common;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -34,7 +34,7 @@ internal sealed class JwtService : IJwtService
 
 
 
-    public async Task<ApiResponse<string>> GenerateToken(AppUser user)
+    public async Task<AppResponse<string>> GenerateToken(AppUser user)
     {
         var now = DateTime.UtcNow;
         var key = _jwtSettings.GetSymmetricSecurityKey();
@@ -79,10 +79,10 @@ internal sealed class JwtService : IJwtService
             signingCredentials: credentials
         );
 
-        return ApiResponse<string>.Success("Access token generated successfully", new JwtSecurityTokenHandler().WriteToken(token));
+        return AppResponse<string>.Success("Access token generated successfully", new JwtSecurityTokenHandler().WriteToken(token));
     }
 
-    public ApiResponse<JwtSecurityToken> GenerateToken(List<Claim> userClaims, TimeSpan timeSpan)
+    public AppResponse<JwtSecurityToken> GenerateToken(List<Claim> userClaims, TimeSpan timeSpan)
     {
         try
         {
@@ -106,7 +106,7 @@ internal sealed class JwtService : IJwtService
                 signingCredentials: credentials
             );
 
-            return ApiResponse<JwtSecurityToken>.Success("JWT generated successfully", token);
+            return AppResponse<JwtSecurityToken>.Success("JWT generated successfully", token);
 
         }
         catch (Exception ex)
@@ -115,13 +115,13 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<JwtSecurityToken> GetJwtToken(List<Claim> userClaims)
+    public AppResponse<JwtSecurityToken> GetJwtToken(List<Claim> userClaims)
     {
         var defaultExpiry = TimeSpan.FromMinutes(_jwtSettings.AccessTokenExpiryMinutes);
         return GenerateToken(userClaims, defaultExpiry);
     }
 
-    public ApiResponse<string> GenerateTemporaryToken(List<Claim> claims, TimeSpan expiry)
+    public AppResponse<string> GenerateTemporaryToken(List<Claim> claims, TimeSpan expiry)
     {
         try
         {
@@ -130,7 +130,7 @@ internal sealed class JwtService : IJwtService
 
             var jwtTokenResponse = GenerateToken(tempClaims, expiry);
             var jwtToken = jwtTokenResponse.Data;
-            return ApiResponse<string>.Success("Temp token generated successfully", new JwtSecurityTokenHandler().WriteToken(jwtToken));
+            return AppResponse<string>.Success("Temp token generated successfully", new JwtSecurityTokenHandler().WriteToken(jwtToken));
         }
         catch (Exception ex)
         {
@@ -138,7 +138,7 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<string> GenerateRefreshToken(AppUser user)
+    public AppResponse<string> GenerateRefreshToken(AppUser user)
     {
         try
         {
@@ -165,7 +165,7 @@ internal sealed class JwtService : IJwtService
                 signingCredentials: credentials
             );
 
-            return ApiResponse<string>.Success("Refresh token generated successfully", new JwtSecurityTokenHandler().WriteToken(refreshToken));
+            return AppResponse<string>.Success("Refresh token generated successfully", new JwtSecurityTokenHandler().WriteToken(refreshToken));
         }
         catch (Exception)
         {
@@ -173,7 +173,7 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<ClaimsPrincipal?> GetPrincipalFromToken(string token)
+    public AppResponse<ClaimsPrincipal?> GetPrincipalFromToken(string token)
     {
         try
         {
@@ -184,9 +184,9 @@ internal sealed class JwtService : IJwtService
             var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
 
             if (validatedToken is not JwtSecurityToken jwtToken || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-                return ApiResponse<ClaimsPrincipal?>.Failure("Invalid token", null);
+                return AppResponse<ClaimsPrincipal?>.Failure("Invalid token", null);
 
-            return ApiResponse<ClaimsPrincipal?>.Success("ClaimsPrincipal retreived successfully", principal);
+            return AppResponse<ClaimsPrincipal?>.Success("ClaimsPrincipal retreived successfully", principal);
         }
         catch (Exception)
         {
@@ -194,20 +194,20 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<ClaimsPrincipal?> GetPrincipalFromExpiredToken(string token)
+    public AppResponse<ClaimsPrincipal?> GetPrincipalFromExpiredToken(string token)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(token))
             {
                 _logger.LogWarning("Token is null or empty");
-                return ApiResponse<ClaimsPrincipal?>.Failure("Token is null or empty");
+                return AppResponse<ClaimsPrincipal?>.Failure("Token is null or empty");
             }
 
             if (string.IsNullOrWhiteSpace(_jwtSettings.SecretKey))
             {
                 _logger.LogWarning("JWT Security Key is not configured");
-                return ApiResponse<ClaimsPrincipal?>.Failure("JWT Security Key is not configured");
+                return AppResponse<ClaimsPrincipal?>.Failure("JWT Security Key is not configured");
 
             }
 
@@ -233,10 +233,10 @@ internal sealed class JwtService : IJwtService
                 !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
                 _logger.LogWarning("Invalid JWT algorithm or token type");
-                return ApiResponse<ClaimsPrincipal?>.Failure("Failed to retreive principal");
+                return AppResponse<ClaimsPrincipal?>.Failure("Failed to retreive principal");
             }
 
-            return ApiResponse<ClaimsPrincipal?>.Success("Principal retrieved sucessfully", principal);
+            return AppResponse<ClaimsPrincipal?>.Success("Principal retrieved sucessfully", principal);
         }
         catch (SecurityTokenException ex)
         {
@@ -250,13 +250,13 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<DateTimeOffset> GetTokenExpiry(string token)
+    public AppResponse<DateTimeOffset> GetTokenExpiry(string token)
     {
         try
         {
             var handler = new JwtSecurityTokenHandler();
             var jsonToken = handler.ReadJwtToken(token);
-            return ApiResponse<DateTimeOffset>.Success(
+            return AppResponse<DateTimeOffset>.Success(
                 "Token Expiry",
                 DateTimeOffset.FromUnixTimeSeconds(jsonToken.Payload.Expiration ?? 0) 
             );
@@ -267,7 +267,7 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<bool> IsTokenValid(SecurityToken token)
+    public AppResponse<bool> IsTokenValid(SecurityToken token)
     {
         try
         {
@@ -293,7 +293,7 @@ internal sealed class JwtService : IJwtService
             JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             new JwtSecurityTokenHandler().ValidateToken(jwtSecurityTokenHandler.WriteToken(token), tokenValidationParameters, out _);
 
-            return ApiResponse<bool>.Success("Valid", true);
+            return AppResponse<bool>.Success("Valid", true);
         }
         catch (SecurityTokenExpiredException ex)
         {
@@ -309,7 +309,7 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<bool> IsTokenValid(string token)
+    public AppResponse<bool> IsTokenValid(string token)
     {
         try
         {
@@ -335,7 +335,7 @@ internal sealed class JwtService : IJwtService
 
             tokenHandler.ValidateToken(token, tokenValidationParameters, out _);
 
-            return ApiResponse<bool>.Success("Valid", true);
+            return AppResponse<bool>.Success("Valid", true);
         }
         catch (SecurityTokenExpiredException)
         {
@@ -351,38 +351,38 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    public ApiResponse<bool> IsTokenExpired(JwtSecurityToken token)
+    public AppResponse<bool> IsTokenExpired(JwtSecurityToken token)
     {
         if (token.ValidTo > DateTime.UtcNow)
         {
-            return ApiResponse<bool>.Success("Not Expired", true);
+            return AppResponse<bool>.Success("Not Expired", true);
         }
         
-        return ApiResponse<bool>.Failure("Token is expired", false);
+        return AppResponse<bool>.Failure("Token is expired", false);
     }
 
-    public ApiResponse<bool> ValidateRefreshToken(string refreshToken, string userId)
+    public AppResponse<bool> ValidateRefreshToken(string refreshToken, string userId)
     {
         try
         {
             var principal = GetPrincipalFromToken(refreshToken);
             if (!principal.Successful || principal.Data == null)
-                return ApiResponse<bool>.Failure($"Error validating refresh token. | {principal.Message}");
+                return AppResponse<bool>.Failure($"Error validating refresh token. | {principal.Message}");
 
             var tokenUserId = principal.Data.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var tokenType = principal.Data.FindFirst("token_type")?.Value;
 
             var isValid = tokenUserId == userId && tokenType == "refresh";
             if (!isValid)
-                return ApiResponse<bool>.Failure("Invalid refresh token for the user");
+                return AppResponse<bool>.Failure("Invalid refresh token for the user");
 
             // Optionally, you can also check if the token is expired
             var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(refreshToken);
             var isExpired = IsTokenExpired(jwtToken).Data;
             if (isExpired)
-                return ApiResponse<bool>.Failure("Refresh token is expired");
+                return AppResponse<bool>.Failure("Refresh token is expired");
 
-            return ApiResponse<bool>.Success("Refresh token validation successful", isValid);
+            return AppResponse<bool>.Success("Refresh token validation successful", isValid);
         }
         catch (Exception)
         {

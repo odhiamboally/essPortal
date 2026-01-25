@@ -1,8 +1,9 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Common;
-using ESSPortal.Application.Dtos.Dashboard;
-using ESSPortal.Application.Dtos.Leave;
-using ESSPortal.Application.Dtos.Profile;
+
 using ESSPortal.Application.Utilities;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Dashboard;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Application.Extensions;
 public static class CacheServiceExtensions

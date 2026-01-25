@@ -1,4 +1,6 @@
 ﻿using ESSPortal.Application.Dtos.Auth;
+using ESSPortal.Shared.Dtos.Auth;
+
 using System.Security.Claims;
 
 namespace ESSPortal.Application.Mappings;

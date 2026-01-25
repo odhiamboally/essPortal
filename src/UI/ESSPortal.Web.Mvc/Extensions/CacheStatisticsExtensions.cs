@@ -1,4 +1,5 @@
-﻿using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+﻿using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Models.Common;
 using ESSPortal.Web.Mvc.Utilities.Session;
 

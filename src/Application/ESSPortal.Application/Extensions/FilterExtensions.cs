@@ -1,4 +1,5 @@
-﻿using ESSPortal.Application.Dtos.ModelFilters;
+﻿using EssPortal.Shared.Dtos.ModelFilters;
+
 
 namespace ESSPortal.Application.Extensions;
 

@@ -1,4 +1,4 @@
-﻿using ESSPortal.Web.Mvc.Dtos.Auth;
+﻿using ESSPortal.Shared.Dtos.Auth;
 using System.Security.Claims;
 
 namespace ESSPortal.Web.Mvc.Extensions;

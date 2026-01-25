@@ -1,13 +1,13 @@
 ﻿using ESSPortal.Application.Configuration;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Leave;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface IUploadService
 {
-    Task<ApiResponse<UploadResponse>> CreateAsync(CreateUploadRequest createUploadRequest);
-    Task<ApiResponse<List<UploadResponse>>> FindAllAsync(PaginationSetting paginationSetting);
-    Task<ApiResponse<UploadResponse>> FindByIdAsync(int Id);
-    Task<ApiResponse<UploadResponse>> UpdateAsync(UpdateUploadRequest request, bool dBWins);
-    Task<ApiResponse<UploadResponse>> DeleteAsync(int Id);
+    Task<AppResponse<UploadResponse>> CreateAsync(CreateUploadRequest createUploadRequest);
+    Task<AppResponse<List<UploadResponse>>> FindAllAsync(PaginationSetting paginationSetting);
+    Task<AppResponse<UploadResponse>> FindByIdAsync(int Id);
+    Task<AppResponse<UploadResponse>> UpdateAsync(UpdateUploadRequest request, bool dBWins);
+    Task<AppResponse<UploadResponse>> DeleteAsync(int Id);
 }

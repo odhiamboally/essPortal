@@ -1,31 +1,34 @@
-﻿using ESSPortal.Application.Dtos.Auth;
-using ESSPortal.Application.Dtos.Common;
+﻿using EssPortal.Shared.Dtos.Auth;
+
+using ESSPortal.Application.Dtos.Auth;
+using ESSPortal.Shared.Dtos.Auth;
+using ESSPortal.Shared.Dtos.Common;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 public interface IAuthService 
 {
-    Task<ApiResponse<bool>> RegisterEmployeeAsync(RegisterEmployeeRequest request);
-    Task<ApiResponse<bool>> SendEmailConfirmationAsync(SendEmailConfirmationRequest request);
-    Task<ApiResponse<bool>> ResendEmailConfirmationAsync(SendEmailConfirmationRequest request);
-    Task<ApiResponse<bool>> ConfirmUserEmailAsync(ConfirmUserEmailRequest confirmEmailRequest);
+    Task<AppResponse<bool>> RegisterEmployeeAsync(RegisterEmployeeRequest request);
+    Task<AppResponse<bool>> SendEmailConfirmationAsync(SendEmailConfirmationRequest request);
+    Task<AppResponse<bool>> ResendEmailConfirmationAsync(SendEmailConfirmationRequest request);
+    Task<AppResponse<bool>> ConfirmUserEmailAsync(ConfirmUserEmailRequest confirmEmailRequest);
 
-    Task<ApiResponse<LoginResponse>> SignInAsync(LoginRequest loginRequest);
-    Task<ApiResponse<CurrentUserResponse>> GetCurrentUserAsync();
-
-
-    Task<ApiResponse<ProviderResponse>> Get2FAProvidersAsync(Get2FAProviderRequest providersRequest);
-    Task<ApiResponse<Send2FACodeResponse>> Send2FACodeAsync(Send2FACodeRequest sendCodeRequest);
-    Task<ApiResponse<Verify2FACodeResponse>> Verify2FACodeAsync(Verify2FACodeRequest verifyCodeRequest);
+    Task<AppResponse<LoginResponse>> SignInAsync(LoginRequest loginRequest);
+    Task<AppResponse<CurrentUserResponse>> GetCurrentUserAsync();
 
 
-    Task<ApiResponse<bool>> RequestPasswordResetAsync(ForgotPasswordRequest request);
-    Task<ApiResponse<bool>> ValidatePasswordResetTokenAsync(ValidateResetTokenRequest request);
-    Task<ApiResponse<bool>> ResetPasswordAsync(ResetPasswordRequest request);
-    Task<ApiResponse<bool>> VerifyPasswordAsync(VerifyPasswordRequest verifyPasswordRequest);
+    Task<AppResponse<ProviderResponse>> Get2FAProvidersAsync(Get2FAProviderRequest providersRequest);
+    Task<AppResponse<Send2FACodeResponse>> Send2FACodeAsync(Send2FACodeRequest sendCodeRequest);
+    Task<AppResponse<Verify2FACodeResponse>> Verify2FACodeAsync(Verify2FACodeRequest verifyCodeRequest);
 
-    Task<ApiResponse<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
 
-    Task<ApiResponse<bool>> SignOutAsync();
+    Task<AppResponse<bool>> RequestPasswordResetAsync(ForgotPasswordRequest request);
+    Task<AppResponse<bool>> ValidatePasswordResetTokenAsync(ValidateResetTokenRequest request);
+    Task<AppResponse<bool>> ResetPasswordAsync(ResetPasswordRequest request);
+    Task<AppResponse<bool>> VerifyPasswordAsync(VerifyPasswordRequest verifyPasswordRequest);
+
+    Task<AppResponse<RefreshTokenResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+
+    Task<AppResponse<bool>> SignOutAsync();
 
 
 }

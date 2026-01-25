@@ -1,11 +1,15 @@
-﻿using ESSPortal.Application.Contracts.Interfaces.Services;
+﻿using EssPortal.Shared.Dtos.Auth;
+
+using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Application.Dtos.Auth;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Profile;
-using ESSPortal.Application.Dtos.TwoFactor;
+
 using ESSPortal.Domain.Entities;
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Auth;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.TwoFactor;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +30,7 @@ internal sealed class TwoFactorService(
     INavisionService navisionService)
     : ITwoFactorService
 {
-    public async Task<ApiResponse<TwoFactorSetupInfo>> GetSetupInfoAsync()
+    public async Task<AppResponse<TwoFactorSetupInfo>> GetSetupInfoAsync()
     {
         try
         {
@@ -35,7 +39,7 @@ internal sealed class TwoFactorService(
 
             if (user == null)
             {
-                return ApiResponse<TwoFactorSetupInfo>.Failure("User not found.");
+                return AppResponse<TwoFactorSetupInfo>.Failure("User not found.");
             }
 
             var existingTempSecret = await unitOfWork.TempTotpSecretRepository.GetValidTempSecretByUserIdAsync(userId);
@@ -61,7 +65,7 @@ internal sealed class TwoFactorService(
             };
 
             logger.LogInformation("Generated 2FA setup info for user {UserId}", userId);
-            return ApiResponse<TwoFactorSetupInfo>.Success("Setup information generated successfully.", setupInfo);
+            return AppResponse<TwoFactorSetupInfo>.Success("Setup information generated successfully.", setupInfo);
         }
         catch (Exception ex)
         {
@@ -70,7 +74,7 @@ internal sealed class TwoFactorService(
         }
     }
 
-    public async Task<ApiResponse<bool>> EnableTwoFactorAsync(EnableTwoFactorRequest request)
+    public async Task<AppResponse<bool>> EnableTwoFactorAsync(EnableTwoFactorRequest request)
     {
         try
         {
@@ -79,13 +83,13 @@ internal sealed class TwoFactorService(
 
             if (user == null)
             {
-                return ApiResponse<bool>.Failure("User not found.");
+                return AppResponse<bool>.Failure("User not found.");
             }
 
             var tempSecret = await unitOfWork.TempTotpSecretRepository.GetValidTempSecretByUserIdAsync(userId);
             if (tempSecret == null)
             {
-                return ApiResponse<bool>.Failure("Setup session expired. Please start the setup process again.");
+                return AppResponse<bool>.Failure("Setup session expired. Please start the setup process again.");
             }
 
             var decrtyptedSecret = encryptionService.Decrypt(tempSecret.EncryptedSecret);
@@ -95,7 +99,7 @@ internal sealed class TwoFactorService(
             if (!isValidCode)
             {
                 logger.LogWarning("Invalid TOTP code provided for user {UserId}", userId);
-                return ApiResponse<bool>.Failure("Invalid verification code. Please try again.");
+                return AppResponse<bool>.Failure("Invalid verification code. Please try again.");
             }
 
             await unitOfWork.BeginTransactionAsync();
@@ -118,7 +122,7 @@ internal sealed class TwoFactorService(
             }
 
             logger.LogInformation("Two-factor authentication enabled for user {UserId}", userId);
-            return ApiResponse<bool>.Success("Two-factor authentication enabled successfully.", true);
+            return AppResponse<bool>.Success("Two-factor authentication enabled successfully.", true);
         }
         catch (Exception ex)
         {
@@ -127,7 +131,7 @@ internal sealed class TwoFactorService(
         }
     }
 
-    public async Task<ApiResponse<bool>> DisableTwoFactorAsync()
+    public async Task<AppResponse<bool>> DisableTwoFactorAsync()
     {
         try
         {
@@ -136,7 +140,7 @@ internal sealed class TwoFactorService(
 
             if (user == null)
             {
-                return ApiResponse<bool>.Failure("User not found.");
+                return AppResponse<bool>.Failure("User not found.");
             }
 
             // Disable 2FA
@@ -146,7 +150,7 @@ internal sealed class TwoFactorService(
             await ClearAllUserSecretsAsync(userId);
 
             logger.LogInformation("Two-factor authentication disabled for user {UserId}", userId);
-            return ApiResponse<bool>.Success("Two-factor authentication disabled successfully.", true);
+            return AppResponse<bool>.Success("Two-factor authentication disabled successfully.", true);
         }
         catch (Exception ex)
         {
@@ -155,7 +159,7 @@ internal sealed class TwoFactorService(
         }
     }
 
-    public async Task<ApiResponse<TwoFactorStatus>> GetTwoFactorStatusAsync()
+    public async Task<AppResponse<TwoFactorStatus>> GetTwoFactorStatusAsync()
     {
         try
         {
@@ -164,7 +168,7 @@ internal sealed class TwoFactorService(
 
             if (user == null)
             {
-                return ApiResponse<TwoFactorStatus>.Failure("User not found.");
+                return AppResponse<TwoFactorStatus>.Failure("User not found.");
             }
 
             var twoFactorEnabled = await userManager.GetTwoFactorEnabledAsync(user);
@@ -176,7 +180,7 @@ internal sealed class TwoFactorService(
                 HasBackupCodes = hasBackupCodes
             };
 
-            return ApiResponse<TwoFactorStatus>.Success("Status retrieved successfully.", status);
+            return AppResponse<TwoFactorStatus>.Success("Status retrieved successfully.", status);
         }
         catch (Exception ex)
         {
@@ -185,7 +189,7 @@ internal sealed class TwoFactorService(
         }
     }
 
-    public async Task<ApiResponse<BackupCodesInfo>> GenerateBackupCodesAsync()
+    public async Task<AppResponse<BackupCodesInfo>> GenerateBackupCodesAsync()
     {
         try
         {
@@ -194,13 +198,13 @@ internal sealed class TwoFactorService(
 
             if (user == null)
             {
-                return ApiResponse<BackupCodesInfo>.Failure("User not found.");
+                return AppResponse<BackupCodesInfo>.Failure("User not found.");
             }
 
             var twoFactorEnabled = await userManager.GetTwoFactorEnabledAsync(user);
             if (!twoFactorEnabled)
             {
-                return ApiResponse<BackupCodesInfo>.Failure("Two-factor authentication must be enabled first.");
+                return AppResponse<BackupCodesInfo>.Failure("Two-factor authentication must be enabled first.");
             }
 
             var backupCodes = GenerateBackupCodes();
@@ -213,7 +217,7 @@ internal sealed class TwoFactorService(
             };
 
             logger.LogInformation("Backup codes generated for user {UserId}", userId);
-            return ApiResponse<BackupCodesInfo>.Success("Backup codes generated successfully.", backupInfo);
+            return AppResponse<BackupCodesInfo>.Success("Backup codes generated successfully.", backupInfo);
         }
         catch (Exception ex)
         {
@@ -222,7 +226,7 @@ internal sealed class TwoFactorService(
         }
     }
 
-    public async Task<ApiResponse<Verify2FACodeResponse>> VerifyTotpCodeAsync(VerifyTotpCodeRequest request)
+    public async Task<AppResponse<Verify2FACodeResponse>> VerifyTotpCodeAsync(VerifyTotpCodeRequest request)
     {
         try
         {
@@ -230,19 +234,19 @@ internal sealed class TwoFactorService(
 
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return ApiResponse<Verify2FACodeResponse>.Failure("User not found.");
+                return AppResponse<Verify2FACodeResponse>.Failure("User not found.");
             }
 
             var user = await userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                return ApiResponse<Verify2FACodeResponse>.Failure("User not found.");
+                return AppResponse<Verify2FACodeResponse>.Failure("User not found.");
             }
 
             var twoFactorEnabled = await userManager.GetTwoFactorEnabledAsync(user);
             if (!twoFactorEnabled)
             {
-                return ApiResponse<Verify2FACodeResponse>.Failure("Two-factor authentication is not enabled.");
+                return AppResponse<Verify2FACodeResponse>.Failure("Two-factor authentication is not enabled.");
             }
 
             var totpSecret = await unitOfWork.UserTotpSecretRepository.GetActiveSecretByUserIdAsync(userId);
@@ -250,7 +254,7 @@ internal sealed class TwoFactorService(
             {
                 logger.LogWarning("No active TOTP secret found for user: {UserId}", userId);
 
-                return ApiResponse<Verify2FACodeResponse>.Failure("TOTP not configured. Please set up your authenticator app first.");
+                return AppResponse<Verify2FACodeResponse>.Failure("TOTP not configured. Please set up your authenticator app first.");
             }
 
             var decryptedSecret = encryptionService.Decrypt(totpSecret.EncryptedSecret);
@@ -260,7 +264,7 @@ internal sealed class TwoFactorService(
             if (!isValidCode)
             {
                 logger.LogWarning("Invalid TOTP code provided for user: {UserId}", userId);
-                return ApiResponse<Verify2FACodeResponse>.Failure("Invalid verification code. Please try again.");
+                return AppResponse<Verify2FACodeResponse>.Failure("Invalid verification code. Please try again.");
             }
 
             logger.LogInformation("TOTP code verified successfully for user: {UserId}", userId);
@@ -269,7 +273,7 @@ internal sealed class TwoFactorService(
             if (!tokenResponse.Successful || string.IsNullOrWhiteSpace(tokenResponse.Data))
             {
                 logger.LogError("Failed to generate token for user: {UserId}", user.Id);
-                return ApiResponse<Verify2FACodeResponse>.Failure("Could not generate authentication token");
+                return AppResponse<Verify2FACodeResponse>.Failure("Could not generate authentication token");
             }
 
             var tokenExpiry = jWtService.GetTokenExpiry(tokenResponse.Data);
@@ -278,14 +282,14 @@ internal sealed class TwoFactorService(
             if (!refreshToken.Successful || string.IsNullOrWhiteSpace(refreshToken.Data))
             {
                 logger.LogError("Failed to generate refresh token for user: {UserId}", user.Id);
-                return ApiResponse<Verify2FACodeResponse>.Failure("Could not generate refresh token");
+                return AppResponse<Verify2FACodeResponse>.Failure("Could not generate refresh token");
             }
 
             var userClaims = await claimsService.GetUserClaimsAsync(user);
             if (!userClaims.Successful || userClaims.Data == null)
             {
                 logger.LogError("Failed to get user claims for user: {UserId}", user.Id);
-                return ApiResponse<Verify2FACodeResponse>.Failure("Could not retrieve user claims");
+                return AppResponse<Verify2FACodeResponse>.Failure("Could not retrieve user claims");
             }
 
             var roles = await userManager.GetRolesAsync(user);
@@ -341,7 +345,7 @@ internal sealed class TwoFactorService(
 
             );
             
-            return ApiResponse<Verify2FACodeResponse>.Success("TOTP code verified successfully.", response);
+            return AppResponse<Verify2FACodeResponse>.Success("TOTP code verified successfully.", response);
         }
         catch (Exception ex)
         {
@@ -350,20 +354,20 @@ internal sealed class TwoFactorService(
         }
     }
 
-    public async Task<ApiResponse<bool>> VerifyBackupCodeAsync(VerifyBackupCodeRequest request)
+    public async Task<AppResponse<bool>> VerifyBackupCodeAsync(VerifyBackupCodeRequest request)
     {
         try
         {
             var hashedCode = encryptionService.HashCode(request.Code);
             var backupCode = await unitOfWork.UserBackupCodeRepository.GetUnusedCodeByHashAsync(request.UserId, hashedCode);
 
-            if (backupCode == null) return ApiResponse<bool>.Failure("2FA backup code not found");
+            if (backupCode == null) return AppResponse<bool>.Failure("2FA backup code not found");
 
             // Mark as used
             await unitOfWork.UserBackupCodeRepository.MarkCodeAsUsedAsync(backupCode.Id);
             await unitOfWork.CompleteAsync();
 
-            return ApiResponse<bool>.Success("2FA backup code varified", true);
+            return AppResponse<bool>.Success("2FA backup code varified", true);
         }
         catch (Exception)
         {

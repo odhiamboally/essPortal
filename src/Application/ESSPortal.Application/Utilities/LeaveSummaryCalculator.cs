@@ -1,7 +1,8 @@
 ﻿using EssPortal.Domain.Enums.NavEnums;
 
-using ESSPortal.Application.Dtos.Leave;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Leave;
+
 using LeaveApplicationCard = ESSPortal.Domain.Entities.LeaveApplicationCard;
 
 namespace ESSPortal.Application.Utilities;

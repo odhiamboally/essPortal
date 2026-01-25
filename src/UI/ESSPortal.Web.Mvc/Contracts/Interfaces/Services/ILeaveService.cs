@@ -1,5 +1,6 @@
-﻿using EssPortal.Web.Mvc.Dtos.Common;
-using ESSPortal.Web.Mvc.Dtos.Leave;
+﻿
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Leave;
 
 namespace ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 

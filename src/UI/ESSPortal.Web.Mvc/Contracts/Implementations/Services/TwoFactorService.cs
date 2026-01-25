@@ -1,38 +1,34 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Dtos.Common;
+﻿using EssPortal.Shared.Configurations;
 
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
-using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
-using ESSPortal.Web.Mvc.Dtos.TwoFactor;
-using ESSPortal.Web.Mvc.Utilities.Api;
+using ESSPortal.Application.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Common;
+
+using ESSPortal.Shared.Dtos.TwoFactor;
+using ESSPortal.Shared.Utilities.Api;
 
 using Microsoft.Extensions.Options;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 
-namespace ESSPortal.Web.Mvc.Contracts.Implementations.AppServices;
+namespace ESSPortal.Shared.Contracts.Implementations.Services;
 
-internal sealed class TwoFactorService : ITwoFactorService
+internal sealed class TwoFactorService(
+    IServiceManager serviceManager,
+    IApiService apiService,
+    IOptions<ApiSettings> apiSettings,
+    ILogger<TwoFactorService> logger
+    
+) : ITwoFactorService
 {
-    private readonly IApiService _apiService;
-    private readonly ApiSettings _apiSettings;
-    private readonly ILogger<TwoFactorService> _logger;
-
-    public TwoFactorService(
-        IApiService apiService,
-        IOptions<ApiSettings> apiSettings,
-        ILogger<TwoFactorService> logger)
-    {
-        _apiService = apiService;
-        _apiSettings = apiSettings.Value;
-        _logger = logger;
-    }
-
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
+    private readonly ILogger<TwoFactorService> _logger = logger;
 
     public async Task<AppResponse<TwoFactorSetupInfo?>> GetSetupInfoAsync()
     {
         try
         {
             var endpoint = _apiSettings.ApiEndpoints.TwoFactor.GetSetupInfo;
-            return await HandleGetRequest<TwoFactorSetupInfo?>(endpoint);
+            return await apiService.HandleGetRequest<TwoFactorSetupInfo?>(endpoint);
         }
         catch (Exception ex)
         {
@@ -46,7 +42,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         try
         {
             var endpoint = _apiSettings.ApiEndpoints.TwoFactor.GetStatus;
-            return await HandleGetRequest<TwoFactorStatus?>(endpoint);
+            return await apiService.HandleGetRequest<TwoFactorStatus?>(endpoint);
         }
         catch (Exception ex)
         {
@@ -60,7 +56,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         try
         {
             var endpoint = _apiSettings.ApiEndpoints.TwoFactor.Enable;
-            return await HandlePostRequest<EnableTwoFactorRequest, bool>(endpoint, request);
+            return await apiService.HandlePostRequest<EnableTwoFactorRequest, bool>(endpoint, request);
         }
         catch (Exception ex)
         {
@@ -74,7 +70,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         try
         {
             var endpoint = _apiSettings.ApiEndpoints.TwoFactor.Disable;
-            return await HandlePostRequest<object, bool>(endpoint, new { });
+            return await apiService.HandlePostRequest<object, bool>(endpoint, new { });
         }
         catch (Exception ex)
         {
@@ -88,7 +84,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         try
         {
             var endpoint = _apiSettings.ApiEndpoints.TwoFactor.GenerateBackupCodes;
-            return await HandlePostRequest<object, BackupCodesInfo?>(endpoint, new { });
+            return await apiService.HandlePostRequest<object, BackupCodesInfo?>(endpoint, new { });
         }
         catch (Exception ex)
         {
@@ -102,7 +98,7 @@ internal sealed class TwoFactorService : ITwoFactorService
         try
         {
             var endpoint = _apiSettings.ApiEndpoints.TwoFactor.VerifyTotpCode;
-            return await HandlePostRequest<VerifyTotpCodeRequest, bool>(endpoint, request);
+            return await apiService.HandlePostRequest<VerifyTotpCodeRequest, bool>(endpoint, request);
         }
         catch (Exception ex)
         {
@@ -111,33 +107,6 @@ internal sealed class TwoFactorService : ITwoFactorService
         }
     }
 
-
-
-    private async Task<AppResponse<T>> HandleGetRequest<T>(string endpoint)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<T>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.GetAsync<T>(endpoint);
-
-        return apiResponse.Successful
-            ? AppResponse<T>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<T>.Failure(apiResponse.Message!);
-    }
-
-    private async Task<AppResponse<TResponse>> HandlePostRequest<TRequest, TResponse>(string endpoint, TRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(endpoint))
-            return AppResponse<TResponse>.Failure("Endpoint not configured.");
-
-        endpoint = EndpointHelper.ReplaceVersion(endpoint, _apiSettings.Version);
-        var apiResponse = await _apiService.PostAsync<TRequest, TResponse>(endpoint, request);
-
-        return apiResponse.Successful
-            ? AppResponse<TResponse>.Success(apiResponse.Message!, apiResponse.Data!)
-            : AppResponse<TResponse>.Failure(apiResponse.Message!);
-    }
 
     
 }

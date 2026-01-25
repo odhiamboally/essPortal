@@ -1,7 +1,8 @@
 ﻿using EssPortal.Domain.Enums.NavEnums;
+using EssPortal.Shared.Dtos.Employee;
 
-using ESSPortal.Application.Dtos.Employee;
 using ESSPortal.Domain.NavEntities;
+using ESSPortal.Shared.Dtos.Employee;
 
 using System;
 using System.Collections.Generic;
@@ -41,7 +42,7 @@ public static class EmployeeMappingExtensions
             Comment = emp.Comment ?? false,
             CommentSpecified = emp.Comment.HasValue,
 
-            Gender = Enum.TryParse<Gender>(emp.Gender, true, out var gender) ? gender : default,
+            Gender = emp.Gender,
             GenderSpecified = !string.IsNullOrWhiteSpace(emp.Gender),
 
             PINNumber = emp.PIN_Number,
@@ -49,13 +50,13 @@ public static class EmployeeMappingExtensions
             SocialSecurityNo = emp.Social_Security_No,
             NHIFNo = emp.NHIF_No,
 
-            Disabled = Enum.TryParse<Disabled>(emp.Disabled, true, out var disabled) ? disabled : default,
+            Disabled = emp.Disabled,
             DisabledSpecified = !string.IsNullOrWhiteSpace(emp.Disabled),
 
-            EmploymentType = Enum.TryParse<Employment_Type>(emp.Employment_Type, true, out var employmentType) ? employmentType : default,
+            EmploymentType = emp.Employment_Type,
             EmploymentTypeSpecified = !string.IsNullOrWhiteSpace(emp.Employment_Type),
 
-            Status = Enum.TryParse<EmployeesStatus>(emp.Status, true, out var status) ? status : default,
+            Status = emp.Status,
             StatusSpecified = !string.IsNullOrWhiteSpace(emp.Status),
 
             BankAccountNumber = emp.Bank_Account_Number

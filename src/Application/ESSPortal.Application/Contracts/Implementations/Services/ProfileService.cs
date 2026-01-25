@@ -1,8 +1,9 @@
 ﻿using ESSPortal.Application.Contracts.Interfaces.Services;
-using ESSPortal.Application.Dtos.Common;
-using ESSPortal.Application.Dtos.Profile;
+
 using ESSPortal.Domain.Entities;
 using ESSPortal.Domain.Interfaces;
+using ESSPortal.Shared.Dtos.Common;
+using ESSPortal.Shared.Dtos.Profile;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -25,20 +26,20 @@ internal sealed class ProfileService : IProfileService
         _logger = logger;
     }
 
-    public async Task<ApiResponse<UserProfileResponse>> GetUserProfileAsync(string userId)
+    public async Task<AppResponse<UserProfileResponse>> GetUserProfileAsync(string userId)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
-                return ApiResponse<UserProfileResponse>.Failure("User ID is required");
+                return AppResponse<UserProfileResponse>.Failure("User ID is required");
             }
 
             var appUser = await _userManager.FindByIdAsync(userId);
             if (appUser == null)
             {
                 _logger.LogWarning("User not found: {UserId}", userId);
-                return ApiResponse<UserProfileResponse>.Failure("User not found");
+                return AppResponse<UserProfileResponse>.Failure("User not found");
             }
 
             var userProfile = await _unitOfWork.UserProfileRepository.GetByUserIdAsync(userId);
@@ -84,7 +85,7 @@ internal sealed class ProfileService : IProfileService
             );
 
             _logger.LogInformation("Profile retrieved successfully for user: {UserId}", userId);
-            return ApiResponse<UserProfileResponse>.Success("Profile retrieved successfully", response);
+            return AppResponse<UserProfileResponse>.Success("Profile retrieved successfully", response);
         }
         catch (Exception ex)
         {
@@ -93,13 +94,13 @@ internal sealed class ProfileService : IProfileService
         }
     }
 
-    public async Task<ApiResponse<bool>> UpdateBankingInfoAsync(UpdateBankingInfoRequest request)
+    public async Task<AppResponse<bool>> UpdateBankingInfoAsync(UpdateBankingInfoRequest request)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(request.UserId))
             {
-                return ApiResponse<bool>.Failure("User ID is required");
+                return AppResponse<bool>.Failure("User ID is required");
             }
 
             // Get existing profile to preserve contact info
@@ -128,7 +129,7 @@ internal sealed class ProfileService : IProfileService
             await _unitOfWork.UserProfileRepository.CreateOrUpdateAsync(request.UserId, profileToUpdate);
 
             _logger.LogInformation("Banking information updated successfully for user: {UserId}", request.UserId);
-            return ApiResponse<bool>.Success("Banking information updated successfully", true);
+            return AppResponse<bool>.Success("Banking information updated successfully", true);
         }
         catch (Exception ex)
         {
@@ -137,20 +138,20 @@ internal sealed class ProfileService : IProfileService
         }
     }
 
-    public async Task<ApiResponse<bool>> UpdateContactInfoAsync(UpdateContactInfoRequest request)
+    public async Task<AppResponse<bool>> UpdateContactInfoAsync(UpdateContactInfoRequest request)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(request.UserId))
             {
-                return ApiResponse<bool>.Failure("User ID is required");
+                return AppResponse<bool>.Failure("User ID is required");
             }
 
             var appUser = await _userManager.FindByIdAsync(request.UserId);
             if (appUser == null)
             {
                 _logger.LogWarning("User not found for contact info update: {UserId}", request.UserId);
-                return ApiResponse<bool>.Failure("User not found");
+                return AppResponse<bool>.Failure("User not found");
             }
 
             appUser.PhoneNumber = request.MobileNo;
@@ -162,7 +163,7 @@ internal sealed class ProfileService : IProfileService
             {
                 _logger.LogError("Failed to update AppUser contact info: {Errors}",
                     string.Join(", ", userResult.Errors.Select(e => e.Description)));
-                return ApiResponse<bool>.Failure("Failed to update contact information");
+                return AppResponse<bool>.Failure("Failed to update contact information");
             }
 
             var existingProfile = await _unitOfWork.UserProfileRepository.GetByUserIdAsync(request.UserId);
@@ -190,7 +191,7 @@ internal sealed class ProfileService : IProfileService
             await _unitOfWork.UserProfileRepository.CreateOrUpdateAsync(request.UserId, profileToUpdate);
             
             _logger.LogInformation("Contact information updated successfully for user: {UserId}", request.UserId);
-            return ApiResponse<bool>.Success("Contact information updated successfully", true);
+            return AppResponse<bool>.Success("Contact information updated successfully", true);
         }
         catch (Exception ex)
         {
@@ -199,20 +200,20 @@ internal sealed class ProfileService : IProfileService
         }
     }
 
-    public async Task<ApiResponse<bool>> UpdatePersonalDetailsAsync(UpdatePersonalDetailsRequest request)
+    public async Task<AppResponse<bool>> UpdatePersonalDetailsAsync(UpdatePersonalDetailsRequest request)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(request.UserId))
             {
-                return ApiResponse<bool>.Failure("User ID is required");
+                return AppResponse<bool>.Failure("User ID is required");
             }
 
             var appUser = await _userManager.FindByIdAsync(request.UserId);
             if (appUser == null)
             {
                 _logger.LogWarning("User not found for personal details update: {UserId}", request.UserId);
-                return ApiResponse<bool>.Failure("User not found");
+                return AppResponse<bool>.Failure("User not found");
             }
 
             appUser.FirstName = request.FirstName;
@@ -227,11 +228,11 @@ internal sealed class ProfileService : IProfileService
             {
                 _logger.LogError("Failed to update AppUser personal details: {Errors}",
                     string.Join(", ", result.Errors.Select(e => e.Description)));
-                return ApiResponse<bool>.Failure("Failed to update personal details");
+                return AppResponse<bool>.Failure("Failed to update personal details");
             }
 
             _logger.LogInformation("Personal details updated successfully for user: {UserId}", request.UserId);
-            return ApiResponse<bool>.Success("Personal details updated successfully", true);
+            return AppResponse<bool>.Success("Personal details updated successfully", true);
         }
         catch (Exception ex)
         {
@@ -240,20 +241,20 @@ internal sealed class ProfileService : IProfileService
         }
     }
 
-    public async Task<ApiResponse<string>> UpdateProfilePictureAsync(UpdateProfilePictureRequest request)
+    public async Task<AppResponse<string>> UpdateProfilePictureAsync(UpdateProfilePictureRequest request)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(request.UserId))
             {
-                return ApiResponse<string>.Failure("User ID is required");
+                return AppResponse<string>.Failure("User ID is required");
             }
 
             var appUser = await _userManager.FindByIdAsync(request.UserId);
             if (appUser == null)
             {
                 _logger.LogWarning("User not found for profile picture update: {UserId}", request.UserId);
-                return ApiResponse<string>.Failure("User not found");
+                return AppResponse<string>.Failure("User not found");
             }
 
             // Simple file processing - just generate URL since file is handled by frontend FileService
@@ -286,13 +287,13 @@ internal sealed class ProfileService : IProfileService
             {
                 _logger.LogError("Failed to update profile picture URL: {Errors}",
                     string.Join(", ", result.Errors.Select(e => e.Description)));
-                return ApiResponse<string>.Failure("Failed to update profile picture");
+                return AppResponse<string>.Failure("Failed to update profile picture");
             }
 
             _logger.LogInformation("Profile picture updated successfully for user: {UserId}", request.UserId);
 
             // Return both URL and filename so frontend can save the file with matching name
-            return ApiResponse<string>.Success("Profile picture updated successfully", $"{profilePictureUrl}|{fileName}"); // Frontend can split this
+            return AppResponse<string>.Success("Profile picture updated successfully", $"{profilePictureUrl}|{fileName}"); // Frontend can split this
                 
         }
         catch (Exception ex)
@@ -302,14 +303,14 @@ internal sealed class ProfileService : IProfileService
         }
     }
 
-    public async Task<ApiResponse<bool>> ValidateProfileDataAsync(string userId)
+    public async Task<AppResponse<bool>> ValidateProfileDataAsync(string userId)
     {
         try
         {
             var profileResponse = await GetUserProfileAsync(userId);
             if (!profileResponse.Successful || profileResponse.Data == null)
             {
-                return ApiResponse<bool>.Failure("Unable to validate profile - profile not found");
+                return AppResponse<bool>.Failure("Unable to validate profile - profile not found");
             }
 
             var profile = profileResponse.Data;
@@ -340,10 +341,10 @@ internal sealed class ProfileService : IProfileService
 
             if (validationErrors.Any())
             {
-                return ApiResponse<bool>.Failure($"Validation errors: {string.Join(", ", validationErrors)}");
+                return AppResponse<bool>.Failure($"Validation errors: {string.Join(", ", validationErrors)}");
             }
 
-            return ApiResponse<bool>.Success("Profile validation passed", true);
+            return AppResponse<bool>.Success("Profile validation passed", true);
         }
         catch (Exception ex)
         {
@@ -352,14 +353,14 @@ internal sealed class ProfileService : IProfileService
         }
     }
 
-    public async Task<ApiResponse<int>> CalculateProfileCompletionAsync(string userId)
+    public async Task<AppResponse<int>> CalculateProfileCompletionAsync(string userId)
     {
         try
         {
             var profileResponse = await GetUserProfileAsync(userId);
             if (!profileResponse.Successful || profileResponse.Data == null)
             {
-                return ApiResponse<int>.Failure("Unable to calculate completion - profile not found");
+                return AppResponse<int>.Failure("Unable to calculate completion - profile not found");
             }
 
             var profile = profileResponse.Data;
@@ -401,7 +402,7 @@ internal sealed class ProfileService : IProfileService
             _logger.LogDebug("Profile completion calculated for user {UserId}: {Percentage}% ({CompletedFields}/{TotalFields})",
                 userId, percentage, completedFields, totalFields);
 
-            return ApiResponse<int>.Success("Profile completion calculated", percentage);
+            return AppResponse<int>.Success("Profile completion calculated", percentage);
         }
         catch (Exception ex)
         {

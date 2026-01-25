@@ -1,5 +1,6 @@
-﻿using EssPortal.Web.Mvc.Dtos.Auth;
-using EssPortal.Web.Mvc.Dtos.Common;
+﻿using EssPortal.Shared.Dtos.Auth;
+
+using ESSPortal.Shared.Dtos.Common;
 
 namespace ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 

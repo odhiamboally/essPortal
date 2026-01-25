@@ -1,4 +1,6 @@
-﻿using ESSPortal.Application.Dtos.Payroll;
+﻿
+
+using ESSPortal.Shared.Dtos.Payroll;
 
 namespace ESSPortal.Application.Contracts.Interfaces.Services;
 
