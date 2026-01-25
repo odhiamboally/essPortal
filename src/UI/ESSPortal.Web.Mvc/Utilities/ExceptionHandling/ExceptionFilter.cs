@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
 using StackExchange.Redis;
-using EssPortal.Web.Mvc.Exceptions;
+using EssPortal.Shared.Exceptions;
 
 namespace EssPortal.Web.Mvc.Utilities.ExceptionHandling;
 

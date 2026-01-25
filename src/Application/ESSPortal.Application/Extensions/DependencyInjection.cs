@@ -6,6 +6,7 @@ using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Application.Validations.RequestValidators.Leave;
+using ESSPortal.Shared.Configuration;
 using ESSPortal.Shared.Contracts.Interfaces.Common;
 
 using FluentValidation;
@@ -22,7 +23,7 @@ using System.Text;
 namespace ESSPortal.Application.Extensions;
 public static  class DependencyInjection
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApplicationDI(this IServiceCollection services, IConfiguration configuration)
     {
         try
         {
@@ -147,19 +148,6 @@ public static  class DependencyInjection
         .AddTransientHttpErrorPolicy(policy => policy.CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)))
         .AddHttpMessageHandler<BasicAuthHandler>();
 
-
-        services.AddHttpClient("NavisionService.Ess", (serviceProvider, client) =>
-        {
-            var settings = serviceProvider.GetRequiredService<IOptions<BCSettings>>().Value;
-            var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{settings.Username}:{settings.Password}"));
-
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
-        })
-        .AddTransientHttpErrorPolicy(policy => policy.WaitAndRetryAsync(3, _ => TimeSpan.FromSeconds(1)))
-        .AddTransientHttpErrorPolicy(policy => policy.CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)))
-        .AddHttpMessageHandler<BasicAuthHandler>();
 
     }
 

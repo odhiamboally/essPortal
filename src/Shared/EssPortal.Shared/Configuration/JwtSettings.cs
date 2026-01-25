@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace ESSPortal.Application.Configuration;
+namespace ESSPortal.Shared.Configuration;
 public class JwtSettings
 {
     public string? Secret { get; set; }

@@ -18,16 +18,24 @@ namespace ESSPortal.Persistence.SQLServer.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddLocalPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static void AddLocalPersistenceDI(this IServiceCollection services, IConfiguration configuration)
+    {
+        ConfigureLocalPersistence(services, configuration);
+        AddServices(services);
+    }
+
+    public static void AddPersistenceDI(this IServiceCollection services, IConfiguration configuration)
+    {
+        ConfigureUNSaccoPersistence(services, configuration);
+        AddServices(services);
+    }
+
+    private static void ConfigureLocalPersistence(IServiceCollection services, IConfiguration configuration)
     {
         try
         {
             var ConnString = configuration.GetConnectionString("LocalConn");
             services.AddDbContext<DBContext>(options => options.UseSqlServer(ConnString!));
-
-            AddServices(services);
-
-            return services;
 
         }
         catch (Exception)
@@ -36,16 +44,12 @@ public static class DependencyInjection
         }
     }
 
-    public static IServiceCollection AddUNSaccoPersistence(this IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureUNSaccoPersistence(IServiceCollection services, IConfiguration configuration)
     {
         try
         {
             var ConnString = configuration.GetConnectionString("EssPortal");
             services.AddDbContext<DBContext>(options => options.UseSqlServer(ConnString!));
-
-            AddServices(services);
-
-            return services;
 
         }
         catch (Exception)

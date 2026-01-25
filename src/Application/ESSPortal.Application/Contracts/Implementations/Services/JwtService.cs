@@ -2,6 +2,7 @@
 using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Application.Utilities;
 using ESSPortal.Domain.Entities;
+using ESSPortal.Shared.Configuration;
 using ESSPortal.Shared.Dtos.Common;
 
 using Microsoft.AspNetCore.Identity;
@@ -62,7 +63,7 @@ internal sealed class JwtService : IJwtService
             new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
             new Claim("EmployeeNumber", user.EmployeeNumber!),
             new("token_type", "access"),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
                     
 
@@ -151,7 +152,7 @@ internal sealed class JwtService : IJwtService
                 new(ClaimTypes.NameIdentifier, user.Id),
                 new("EmployeeNumber", user.EmployeeNumber ?? string.Empty),
                 new("token_type", "refresh"),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
                 new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
 
             };
@@ -398,7 +399,7 @@ internal sealed class JwtService : IJwtService
             new(ClaimTypes.Name, user.UserName!),
             new(ClaimTypes.Email, user.Email!),
             new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             new("employee_number", user.EmployeeNumber ?? ""),
             new("first_name", user.FirstName ?? ""),

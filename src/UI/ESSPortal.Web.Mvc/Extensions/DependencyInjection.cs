@@ -1,15 +1,27 @@
-﻿using EssPortal.Web.Mvc.Configurations;
+﻿
+using EssPortal.Shared.Configurations;
 
+using ESSPortal.Application.Extensions;
+using ESSPortal.Domain.Entities;
+using ESSPortal.Infrastructure.Extensions;
+using ESSPortal.Persistence.SQLServer.DataContext;
+using ESSPortal.Persistence.SQLServer.Extensions;
+using ESSPortal.Shared.Configuration;
+using ESSPortal.Shared.Contracts.Implementations.Common;
+using ESSPortal.Shared.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Configurations;
-using ESSPortal.Web.Mvc.Contracts.Implementations.Services;
 using ESSPortal.Web.Mvc.Contracts.Implementations.Common;
+using ESSPortal.Web.Mvc.Contracts.Implementations.Services;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
+
+using FluentValidation;
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -35,98 +47,92 @@ using System.Net.Sockets;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using EssPortal.Shared.Configurations;
-using ESSPortal.Shared.Contracts.Interfaces.Common;
-using ESSPortal.Shared.Contracts.Implementations.Common;
-using ESSPortal.Shared.Configuration;
-using ESSPortal.Shared.Contracts.Implementations.Services;
 
 namespace EssPortal.Web.Mvc.Utilities;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddClientDI(this IServiceCollection services, IConfiguration configuration)
+    {
+        ConfigureMvcClientServices(services);
+        ConfigureLogging(services, configuration);
+        ConfigureAuthentication(services, configuration);
+        ConfigureSettings(services, configuration);
+        ConfigureClientServices(services);
+
+        services.AddValidatorsFromAssemblyContaining<Program>();
+        services.AddHttpContextAccessor();
+
+        services.AddApplicationDI(configuration);
+        services.AddInfrastructureDI(configuration);
+        services.AddLocalPersistenceDI(configuration);
+        //services.AddPersistenceDI(configuration);
+        
+        
+
+        return services;
+
+    }
+
+    private static void ConfigureMvcClientServices(this IServiceCollection services)
     {
         try
         {
-            // Build temporary service provider to get environment
-            using var tempProvider = services.BuildServiceProvider();
-            var environment = tempProvider.GetService<IWebHostEnvironment>();
-            var isDevelopment = environment?.IsDevelopment() ?? false;
-
-            var apiSettings = configuration.GetSection("ApiSettings").Get<ApiSettings>() ?? throw new InvalidOperationException("ApiSettings section is missing or invalid.");
-
-            services.AddSingleton(apiSettings);
-
-            var baseUrl = apiSettings?.BaseUrl;
-            if (!string.IsNullOrWhiteSpace(baseUrl) && !baseUrl.EndsWith('/'))
+            services.AddMemoryCache(options =>
             {
-                baseUrl += "/";
-            }
+                options.SizeLimit = 1000; // Limit cache size
+                options.CompactionPercentage = 0.25; // Remove 25% when limit reached
+            });
 
-            if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out _))
+            // Response compression for better performance
+            services.AddResponseCompression(options =>
             {
-                throw new InvalidOperationException($"❌ Invalid BaseUrl format: {baseUrl}");
-            }
+                options.EnableForHttps = true;
+                options.Providers.Add<GzipCompressionProvider>();
+                options.Providers.Add<BrotliCompressionProvider>();
 
-            services.AddHttpClient<IApiService, ApiService>(client =>
+                // Compress these MIME types
+                options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat([
+                    "application/json",
+                    "text/json"
+                ]);
+            });
+
+            // Response caching for static content and pages
+            services.AddResponseCaching(options =>
             {
-                client.BaseAddress = new Uri(baseUrl);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.Timeout = isDevelopment ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(100);
-            })
-            .ConfigurePrimaryHttpMessageHandler(() =>
-            {
-                var handler = new HttpClientHandler()
+                options.MaximumBodySize = 1024 * 1024; // 1MB max
+                options.UseCaseSensitivePaths = false;
+            });
+
+            // Health checks for the MVC application itself (not external APIs)
+            services.AddHealthChecks()
+                .AddCheck("mvc-client", () =>
                 {
-                    MaxConnectionsPerServer = 10,
-                    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
-                    {
-                        var host = message.RequestUri?.Host?.ToLowerInvariant();
+                    // Check if critical services are available
+                    return HealthCheckResult.Healthy("MVC Client is running");
+                })
+                .AddCheck("memory", () =>
+                {
+                    // Simple memory check
+                    var allocated = GC.GetTotalMemory(false);
+                    var threshold = 1024 * 1024 * 500; // 500MB threshold
 
-                        // Allow your API server IP address
-                        return host == "localhost" ||
-                               host == "127.0.0.1" ||
-                               host == "10.100.80.187";
-                    }
-                };
+                    return allocated < threshold
+                        ? HealthCheckResult.Healthy($"Memory usage: {allocated / 1024 / 1024}MB")
+                        : HealthCheckResult.Degraded($"High memory usage: {allocated / 1024 / 1024}MB");
+                });
 
-                return handler;
-            })
-            .AddResilienceHandler("ApiResiliencePipeline", ConfigureResiliencePipeline);
-
-            services.AddHttpContextAccessor();
-
-            return services;
         }
         catch (Exception)
         {
+
             throw;
         }
 
     }
 
-    public static IServiceCollection ConfigureAndValidateApiSettings(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.Configure<ApiSettings>(configuration.GetSection("ApiSettings"));
-
-        services.PostConfigure<ApiSettings>(settings =>
-        {
-            if (string.IsNullOrWhiteSpace(settings.BaseUrl))
-                throw new InvalidOperationException("❌ ApiSettings.BaseUrl must be configured.");
-
-            if (!settings.BaseUrl.EndsWith("/"))
-                settings.BaseUrl += "/";
-
-            if (!Uri.TryCreate(settings.BaseUrl, UriKind.Absolute, out _))
-                throw new InvalidOperationException($"❌ Invalid ApiSettings.BaseUrl format: {settings.BaseUrl}");
-
-        });
-
-        return services;
-    }
-
-    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         try
         {
@@ -135,6 +141,62 @@ public static class DependencyInjection
             var jwtSettings = LoadJwtSettings(configuration);
 
             services.Configure<SecuritySettings>(configuration.GetSection("SecuritySettings"));
+
+            services.AddIdentity<AppUser, IdentityRole>(options =>
+            {
+                // Sign-in Requirements
+                options.SignIn.RequireConfirmedEmail = true;
+                options.SignIn.RequireConfirmedPhoneNumber = false;
+                options.SignIn.RequireConfirmedAccount = false;
+
+                // Password Requirements
+                options.Password.RequireDigit = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequiredUniqueChars = 1;
+
+                // Lockout Settings
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+
+                // User Settings
+                options.User.RequireUniqueEmail = true;
+                options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+
+                // Claims Identity
+                options.ClaimsIdentity.UserNameClaimType = "Username";
+            })
+            .AddEntityFrameworkStores<DBContext>()
+            .AddDefaultTokenProviders()
+            .AddTokenProvider<AuthenticatorTokenProvider<AppUser>>(TokenOptions.DefaultAuthenticatorProvider);
+
+            services.Configure<DataProtectionTokenProviderOptions>(options =>
+            {
+                options.TokenLifespan = TimeSpan.FromHours(24); // 24 hours for email tokens
+            });
+
+            services.AddSingleton(sp =>
+            {
+                var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey ?? throw new InvalidOperationException("JWT SecretKey is required"));
+
+                return new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwtSettings.Audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(jwtSettings.ClockSkew),
+                    RequireExpirationTime = true,
+                    RequireSignedTokens = true,
+                };
+            });
+
 
             // Build temporary service provider to get environment
             using var tempProvider = services.BuildServiceProvider();
@@ -173,7 +235,8 @@ public static class DependencyInjection
                     policy.RequireAuthenticatedUser();
                     policy.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme);
                 });
-            });
+
+            }).AddAuthorizationBuilder();
 
             services.AddSession(options =>
             {
@@ -181,16 +244,13 @@ public static class DependencyInjection
                 options.IdleTimeout = TimeSpan.FromMinutes(sessionManagementSettings.SessionTimeoutMinutes);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.SameAsRequest; //ToDo: When going to production, change to Always
+                options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always; 
+
                 options.Cookie.SameSite = SameSiteMode.Strict;
 
                 
             });
 
-            //ToDo: log
-            Console.WriteLine($"✓ Authentication configured (timeout: {sessionManagementSettings.SessionTimeoutMinutes} min)");
-
-            return services;
         }
         catch (Exception)
         {
@@ -199,18 +259,12 @@ public static class DependencyInjection
         }
     }
 
-    public static IServiceCollection AddApplicationConfiguration(this IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureSettings(IServiceCollection services, IConfiguration configuration)
     {
         try
         {
             var payloadEncryptionSettings = configuration.GetSection("PayloadEncryptionSettings");
             services.Configure<PayloadEncryptionSettings>(payloadEncryptionSettings);
-
-            var appSettingsSection = configuration.GetSection("AppSettings");
-            services.Configure<AppSettings>(appSettingsSection);
-
-            var apiSettingsSection = configuration.GetSection("ApiSettings");
-            services.Configure<ApiSettings>(apiSettingsSection);
 
             var fileSettingsSection = configuration.GetSection("FileSettings");
             services.Configure<FileSettings>(fileSettingsSection);
@@ -238,7 +292,6 @@ public static class DependencyInjection
             // Validate critical configuration
             ValidateConfiguration(configuration);
 
-            return services;
         }
         catch (Exception)
         {
@@ -247,89 +300,16 @@ public static class DependencyInjection
 
     }
 
-    public static IServiceCollection AddMvcClientServices(this IServiceCollection services, IConfiguration configuration)
-    {
-        try
-        {
-            services.AddMemoryCache(options =>
-            {
-                options.SizeLimit = 1000; // Limit cache size
-                options.CompactionPercentage = 0.25; // Remove 25% when limit reached
-            });
-
-            // Response compression for better performance
-            services.AddResponseCompression(options =>
-            {
-                options.EnableForHttps = true;
-                options.Providers.Add<GzipCompressionProvider>();
-                options.Providers.Add<BrotliCompressionProvider>();
-
-                // Compress these MIME types
-                options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat([
-                    "application/json",
-                    "text/json"
-                ]);
-            });
-
-            // Response caching for static content and pages
-            services.AddResponseCaching(options =>
-            {
-                options.MaximumBodySize = 1024 * 1024; // 1MB max
-                options.UseCaseSensitivePaths = false;
-            });
-
-            // Health checks for the MVC application itself (not external APIs)
-            services.AddHealthChecks()
-                .AddCheck("mvc-application", () =>
-                {
-                    // Check if critical services are available
-                    return HealthCheckResult.Healthy("MVC Application is running");
-                })
-                .AddCheck("memory", () =>
-                {
-                    // Simple memory check
-                    var allocated = GC.GetTotalMemory(false);
-                    var threshold = 1024 * 1024 * 500; // 500MB threshold
-
-                    return allocated < threshold
-                        ? HealthCheckResult.Healthy($"Memory usage: {allocated / 1024 / 1024}MB")
-                        : HealthCheckResult.Degraded($"High memory usage: {allocated / 1024 / 1024}MB");
-                });
-
-            return services;
-        }
-        catch (Exception)
-        {
-
-            throw;
-        }
-
-    }
-
-    public static IServiceCollection AddClientServices(this IServiceCollection services)
+    private static void ConfigureClientServices(IServiceCollection services)
     {
         try
         {
             services.AddScoped<IClientServiceManager, ClientServiceManager>();
-            services.AddScoped<IApiService, ApiService>();
-            services.AddScoped<IDashboardService, DashboardService>();
-            services.AddScoped<IAppUserService, AppUserService>();
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IEmployeeService, EmployeeService>();
-            services.AddScoped<ILeaveService, LeaveService>();
-            services.AddScoped<ILeaveApplicationCardService, LeaveApplicationCardService>();
-            services.AddScoped<ILeaveApplicationListService, LeaveApplicationListService>();
-            services.AddScoped<ILeaveRelieverService, LeaveRelieverService>();
-            services.AddScoped<ILeaveStatisticsFactboxService, LeaveStatisticsFactboxService>();
-            services.AddScoped<ILeaveTypeService, LeaveTypeService>();
-            services.AddScoped<IPayrollService, PayrollService>();
-            services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IFileService, FileService>();
-            services.AddScoped<ITwoFactorService, TwoFactorService>();
             services.AddScoped<IPayloadEncryptionService, PayloadEncryptionService>();
 
 
-            return services;
+            
         }
         catch (Exception)
         {
@@ -339,7 +319,7 @@ public static class DependencyInjection
 
     }
 
-    public static IServiceCollection AddLoggingServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection ConfigureLogging(this IServiceCollection services, IConfiguration configuration)
     {
         try
         {
@@ -347,11 +327,12 @@ public static class DependencyInjection
                 .ReadFrom.Configuration(configuration)
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
+                .MinimumLevel.Override("Serilog", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
                 .Enrich.With<CorrelationIdEnricher>()
-                .Enrich.With<IPAddressEnricher>()
                 .Enrich.WithProperty("MachineName", Environment.MachineName)
+                .Enrich.With<IPAddressEnricher>()
                 .WriteTo.Async(s => s.Console(new CompactJsonFormatter()))
                 .WriteTo.Async(s => s.File(
                     path: configuration["Serilog:WriteTo:1:Args:path"]!,
@@ -385,7 +366,7 @@ public static class DependencyInjection
 
         // Cookie security
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
 
         // Event handlers
@@ -503,7 +484,7 @@ public static class DependencyInjection
         var redirectUrl = $"{context.RedirectUri}&sessionExpired=true";
 
         // If returnUrl isn't already in RedirectUri, add it
-        if (!string.IsNullOrEmpty(returnUrl) && returnUrl != "/")
+        if (!string.IsNullOrWhiteSpace(returnUrl) && returnUrl != "/")
         {
             redirectUrl = $"/Auth/SignIn?returnUrl={Uri.EscapeDataString(returnUrl)}&sessionExpired=true";
                 
@@ -633,74 +614,6 @@ public static class DependencyInjection
         return false;
     }
 
-    private static void ConfigureResiliencePipeline(ResiliencePipelineBuilder<HttpResponseMessage> builder)
-    {
-        builder.AddTimeout(TimeSpan.FromMinutes(2));
-
-        // Retry strategy - handle both exceptions AND bad responses
-        builder.AddRetry(new RetryStrategyOptions<HttpResponseMessage>
-        {
-            MaxRetryAttempts = 3,
-            Delay = TimeSpan.FromSeconds(1), 
-            BackoffType = DelayBackoffType.Exponential,
-            MaxDelay = TimeSpan.FromSeconds(30),
-            UseJitter = true,
-            ShouldHandle = args =>
-            {
-                return args.Outcome switch
-                {
-                    // Handle exceptions (including HttpIOException)
-                    { Exception: HttpRequestException } => PredicateResult.True(),
-                    { Exception: TaskCanceledException } => PredicateResult.True(),
-                    { Exception: HttpIOException } => PredicateResult.True(), 
-                    { Exception: SocketException } => PredicateResult.True(),
-
-                    { Result: HttpResponseMessage response } when
-                        response.StatusCode == HttpStatusCode.TooManyRequests ||
-                        response.StatusCode == HttpStatusCode.RequestTimeout ||
-                        response.StatusCode == HttpStatusCode.InternalServerError ||
-                        response.StatusCode == HttpStatusCode.BadGateway ||
-                        response.StatusCode == HttpStatusCode.ServiceUnavailable ||
-                        response.StatusCode == HttpStatusCode.GatewayTimeout
-                        => PredicateResult.True(),
-
-                    _ => PredicateResult.False()
-                };
-            }
-        });
-
-        // Less aggressive Circuit breaker
-        builder.AddCircuitBreaker(new CircuitBreakerStrategyOptions<HttpResponseMessage>
-        {
-            FailureRatio = 0.7, // 70% failures
-            MinimumThroughput = 5, 
-            SamplingDuration = TimeSpan.FromSeconds(60),
-            BreakDuration = TimeSpan.FromSeconds(30),
-            ShouldHandle = args => args.Outcome switch
-            {
-                { Exception: not null } => PredicateResult.True(),
-                { Result.IsSuccessStatusCode: false } => PredicateResult.True(),
-                _ => PredicateResult.False()
-            }
-           
-        });
-    }
-
-    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
-    {
-        return HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .OrResult(msg => msg.StatusCode == HttpStatusCode.TooManyRequests)
-            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-    }
-
-    private static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
-    {
-        return HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
-    }
-
     private static void ValidateConfiguration(IConfiguration configuration)
     {
         string[] criticalSections = ["ApiSettings", "JwtSettings"];
@@ -714,40 +627,27 @@ public static class DependencyInjection
         }
     }
 
-    public class CorrelationIdEnricher : ILogEventEnricher
+    private class CorrelationIdEnricher(IHttpContextAccessor httpContextAccessor) : ILogEventEnricher
     {
         private const string CorrelationIdPropertyName = "CorrelationId";
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public CorrelationIdEnricher() : this(new HttpContextAccessor()) { }
-        public CorrelationIdEnricher(IHttpContextAccessor httpContextAccessor) => _httpContextAccessor = httpContextAccessor;
 
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {
-            var correlationId = _httpContextAccessor.HttpContext?.Request.Headers["CorrelationId"].FirstOrDefault() ?? Guid.NewGuid().ToString();
+            var correlationId = _httpContextAccessor.HttpContext?.Request.Headers["CorrelationId"].FirstOrDefault() ?? Guid.CreateVersion7().ToString();
+
             logEvent.AddOrUpdateProperty(new LogEventProperty(CorrelationIdPropertyName, new ScalarValue(correlationId)));
         }
 
-        private string GetCorrelationId()
-        {
-            var httpContext = _httpContextAccessor.HttpContext;
-            var correlationId = httpContext?.Request.Headers["CorrelationId"].FirstOrDefault();
-
-            if (string.IsNullOrWhiteSpace(correlationId))
-            {
-                correlationId = Guid.NewGuid().ToString();
-            }
-
-            return correlationId;
-        }
     }
 
-    public class IPAddressEnricher : ILogEventEnricher
+    private class IPAddressEnricher(IHttpContextAccessor httpContextAccessor) : ILogEventEnricher
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public IPAddressEnricher() : this(new HttpContextAccessor()) { }
-        public IPAddressEnricher(IHttpContextAccessor httpContextAccessor) => _httpContextAccessor = httpContextAccessor;
 
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {

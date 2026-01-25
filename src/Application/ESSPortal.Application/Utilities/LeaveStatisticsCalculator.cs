@@ -115,7 +115,7 @@ public static class LeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() != true) return 0m;
 
         var daysTaken = leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Status == "Released" &&
@@ -132,7 +132,7 @@ public static class LeaveStatisticsCalculator
 
         // Calculate previous year usage
         var previousYearTaken = leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == previousYear.ToString() &&
                           card.Status == "Released" &&
@@ -157,7 +157,7 @@ public static class LeaveStatisticsCalculator
         string[] pendingStatuses = ["Open", "Pending Approval", "Being Processed"];
 
         return leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           pendingStatuses.Contains(card.Leave_Status, StringComparer.OrdinalIgnoreCase))
@@ -169,7 +169,7 @@ public static class LeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() != true) return 0m;
 
         return leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Start_Date.Year == currentYear &&
@@ -185,7 +185,7 @@ public static class LeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() != true) return 0;
 
         return leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Start_Date.Year == currentYear &&

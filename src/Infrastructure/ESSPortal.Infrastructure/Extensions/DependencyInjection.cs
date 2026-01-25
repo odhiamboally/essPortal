@@ -17,16 +17,14 @@ using System.Net.Mail;
 namespace ESSPortal.Infrastructure.Extensions;
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+    public static void AddInfrastructureDI(this IServiceCollection services, IConfiguration configuration)
     {
         try
         {
-            services.AddEmailSettings(configuration);
-            services.AddFluentEmailWithSmtp(configuration);
-
+            ConfigureEmailSettings(services, configuration);
+            ConfigureFluentEmailWithSmtp(services, configuration);
             RegisterInfrastructureServices(services);
 
-            return services;
         }
         catch (Exception)
         {
@@ -35,7 +33,7 @@ public static class DependencyInjection
 
     }
 
-    public static IServiceCollection AddEmailSettings(this IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureEmailSettings(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
         services.AddScoped<IValidator<EmailSettings>, EmailSettingsValidator>();
@@ -45,10 +43,10 @@ public static class DependencyInjection
             .ValidateFluentValidation()
             .ValidateOnStart();
 
-        return services;
+        
     }
 
-    public static IServiceCollection AddFluentEmailWithSmtp(this IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureFluentEmailWithSmtp(IServiceCollection services, IConfiguration configuration)
     {
         var emailSettings = configuration.GetSection("EmailSettings").Get<EmailSettings>();
 
@@ -64,7 +62,7 @@ public static class DependencyInjection
                 Timeout = 30000
             });
 
-        return services;
+        
     }
 
     private static void RegisterInfrastructureServices(IServiceCollection services)

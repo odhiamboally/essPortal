@@ -3,6 +3,7 @@ using ESSPortal.Api.Middleware;
 using ESSPortal.Application.Configuration;
 using ESSPortal.Domain.Entities;
 using ESSPortal.Persistence.SQLServer.DataContext;
+using ESSPortal.Shared.Configuration;
 
 using FluentValidation;
 
@@ -28,7 +29,7 @@ public static class DependencyInjection
 {
 
 
-    public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiDI(this IServiceCollection services, IConfiguration configuration)
     {
         try
         {
@@ -55,6 +56,10 @@ public static class DependencyInjection
 
             services.AddValidatorsFromAssembly(assembly);
 
+            ConfigureAuthentication(services, configuration);
+            ConfigureCustomRateLimiting(services);
+
+
             return services;
         }
         catch (Exception)
@@ -63,7 +68,7 @@ public static class DependencyInjection
         }
     }
 
-    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         try
         {
@@ -151,7 +156,7 @@ public static class DependencyInjection
                 options.TokenLifespan = TimeSpan.FromHours(24); // 24 hours for email tokens
             });
 
-            return services;
+            
         }
         catch (Exception)
         {
@@ -159,7 +164,7 @@ public static class DependencyInjection
         }
     }
 
-    public static IServiceCollection AddLoggingServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection ConfigureLogging(this IServiceCollection services, IConfiguration configuration)
     {
         try
         {
@@ -185,7 +190,6 @@ public static class DependencyInjection
                 return new SerilogLoggerFactory(Log.Logger, true);
             });
 
-
             return services;
         }
         catch (Exception)
@@ -196,7 +200,7 @@ public static class DependencyInjection
 
     }
 
-    public static IServiceCollection AddCustomRateLimiting(this IServiceCollection services)
+    private static void ConfigureCustomRateLimiting(this IServiceCollection services)
     {
         try
         {
@@ -291,8 +295,6 @@ public static class DependencyInjection
             throw;
         }
         
-
-        return services;
     }
 
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
@@ -324,7 +326,7 @@ public static class DependencyInjection
 
     #region Serilog Enrichers
 
-    public class CorrelationIdEnricher : ILogEventEnricher
+    private class CorrelationIdEnricher : ILogEventEnricher
     {
         private const string CorrelationIdPropertyName = "CorrelationId";
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -350,14 +352,14 @@ public static class DependencyInjection
 
             if (string.IsNullOrWhiteSpace(correlationId))
             {
-                correlationId = Guid.NewGuid().ToString();
+                correlationId = Guid.CreateVersion7().ToString();
             }
 
             return correlationId;
         }
     }
 
-    public class IPAddressEnricher : ILogEventEnricher
+    private class IPAddressEnricher : ILogEventEnricher
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
 

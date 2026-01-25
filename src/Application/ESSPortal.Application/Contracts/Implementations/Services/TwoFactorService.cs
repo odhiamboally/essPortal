@@ -441,7 +441,7 @@ internal sealed class TwoFactorService(
 
         var tempSecret = new TempTotpSecret
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = Guid.CreateVersion7().ToString(),
             UserId = userId,
             EncryptedSecret = encryptedSecret,
             ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30),
@@ -459,7 +459,7 @@ internal sealed class TwoFactorService(
 
         var secretEntity = new UserTotpSecret
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = Guid.CreateVersion7().ToString(),
             UserId = userId,
             EncryptedSecret = secret,
             IsActive = true,
@@ -477,7 +477,7 @@ internal sealed class TwoFactorService(
 
         var backupCodeEntities = codes.Select(code => new UserBackupCode
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = Guid.CreateVersion7().ToString(),
             UserId = userId,
             HashedCode = encryptionService.HashCode(code),
             ExpiresAt = DateTimeOffset.UtcNow.AddYears(1), 

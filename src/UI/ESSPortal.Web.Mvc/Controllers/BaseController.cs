@@ -1,8 +1,8 @@
 ﻿using EssPortal.Shared.Dtos.Auth;
-using EssPortal.Web.Mvc.Configurations;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Shared.Contracts.Interfaces.Common;
+using ESSPortal.Shared.Dtos.Auth;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
 using ESSPortal.Web.Mvc.Utilities.Session;
 using ESSPortal.Web.Mvc.ViewModels.Auth;
@@ -10,6 +10,7 @@ using ESSPortal.Web.Mvc.ViewModels.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -23,16 +24,12 @@ namespace EssPortal.Web.Mvc.Controllers;
 
 [Authorize]
 public class BaseController(
-    IClientServiceManager clientServiceManager, 
     IServiceManager serviceManager,
     ICacheService cacheService,
-    IOptions<AppSettings> appSettings, 
     ILogger<BaseController> logger) : Controller
 {
-    protected readonly IClientServiceManager _clientServiceManager = clientServiceManager;
     protected readonly IServiceManager _serviceManager = serviceManager;
     protected readonly ICacheService _cache = cacheService;
-    protected readonly AppSettings _appSettings = appSettings.Value;
     protected readonly ILogger<BaseController> _logger = logger;
     protected CurrentUserResponse? _currentUser;
 
@@ -256,7 +253,7 @@ public class BaseController(
         return RedirectToAction(defaultAction, defaultController);
     }
 
-    private DateTimeOffset? GetTokenExpiry(string token)
+    private static DateTimeOffset? GetTokenExpiry(string token)
     {
         try
         {
@@ -306,7 +303,11 @@ public class BaseController(
             {
                 _logger.LogInformation("JWT token expiring soon, attempting refresh");
 
-                var refreshResult = await _clientServiceManager.AuthService.RefreshTokenAsync();
+                var accessToken = HttpContext.Request.Cookies["auth_token"] ?? User.FindFirstValue("Jwt");
+                var refreshToken = HttpContext.Request.Cookies["refresh_token"];
+
+                var refreshResult = await _serviceManager.AuthService.RefreshTokenAsync(new RefreshTokenRequest(accessToken!, refreshToken!));
+
                 if (refreshResult.Successful && refreshResult.Data != null)
                 {
                     // Update the token cookies
@@ -332,7 +333,7 @@ public class BaseController(
     {
         try
         {
-            var currentUserResponse = await _clientServiceManager.AuthService.GetCurrentUserAsync();
+            var currentUserResponse = await _serviceManager.AuthService.GetCurrentUserAsync();
             if (currentUserResponse.Successful && currentUserResponse.Data != null)
             {
                 _currentUser = currentUserResponse.Data;

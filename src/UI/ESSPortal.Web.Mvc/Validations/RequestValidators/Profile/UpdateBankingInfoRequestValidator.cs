@@ -68,6 +68,7 @@ public class UpdateBankingInfoRequestValidator : AbstractValidator<UpdateBanking
         if (string.IsNullOrWhiteSpace(accountType)) return true;
 
         string[] validAccountTypes = ["Savings", "Current", "Checking", "Fixed Deposit"];
+
         return validAccountTypes.Contains(accountType, StringComparer.OrdinalIgnoreCase);
     }
 }

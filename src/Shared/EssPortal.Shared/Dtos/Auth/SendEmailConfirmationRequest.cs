@@ -1,4 +1,4 @@
 ﻿namespace EssPortal.Shared.Dtos.Auth;
 
-public record SendEmailConfirmationRequest(string? Email);
+public record SendEmailConfirmationRequest(string Email);
 

@@ -108,7 +108,7 @@ internal sealed class EmailService : IEmailService
 
                 return AppResponse<SendEmailResponse>.Success("Email sent successfully",
                     new SendEmailResponse(
-                        Guid.NewGuid().ToString(), 
+                        Guid.CreateVersion7().ToString(), 
                         DateTimeOffset.UtcNow, 
                         sendEmailRequest.To, 
                         sendEmailRequest.Subject ?? string.Empty)

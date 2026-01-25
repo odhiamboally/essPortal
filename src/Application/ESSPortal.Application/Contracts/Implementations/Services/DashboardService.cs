@@ -158,12 +158,12 @@ internal sealed class DashboardService(ICacheService cacheService,
         if (!response.Successful)
         {
             _logger.LogError("Failed to fetch leave application lists for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
-            return new List<ApprovedLeaves>();
+            return [];
         }
         if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
         {
             _logger.LogInformation("No leave application lists found for employee {EmployeeNo}", employeeNo);
-            return new List<ApprovedLeaves>();
+            return [];
         }
         return response.Data.Items;
 
@@ -191,13 +191,13 @@ internal sealed class DashboardService(ICacheService cacheService,
         if (!response.Successful)
         {
             _logger.LogError("Failed to fetch leave types: {Message}", response.Message);
-            return new List<LeaveTypes>();
+            return [];
         }
 
         if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
         {
             _logger.LogInformation("No active leave types found");
-            return new List<LeaveTypes>();
+            return [];
         }
 
         var leaveTypeResponses = response.Data.Items;

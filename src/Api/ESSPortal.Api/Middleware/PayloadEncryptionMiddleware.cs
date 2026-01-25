@@ -8,30 +8,24 @@ using System.Text;
 
 namespace ESSPortal.Api.Middleware;
 
-public class PayloadEncryptionMiddleware
+public class PayloadEncryptionMiddleware(
+    RequestDelegate next,
+    IPayloadEncryptionService encryptionService,
+    ILogger<PayloadEncryptionMiddleware> logger,
+    IOptions<SecuritySettings> securityOptions
+
+)
 {
-    private readonly RequestDelegate _next;
-    private readonly IPayloadEncryptionService _encryptionService;
-    private readonly ILogger<PayloadEncryptionMiddleware> _logger;
-    private readonly SecuritySettings _securitySettings;
+    private readonly RequestDelegate _next = next;
+    private readonly IPayloadEncryptionService _encryptionService = encryptionService;
+    private readonly ILogger<PayloadEncryptionMiddleware> _logger = logger;
+    private readonly SecuritySettings _securitySettings = securityOptions.Value;
     private readonly string[] _excludedPaths =
     [
         "/health", 
         "/swagger", 
         "/api/auth/login"
     ];
-
-    public PayloadEncryptionMiddleware(
-        RequestDelegate next,
-        IPayloadEncryptionService encryptionService,
-        ILogger<PayloadEncryptionMiddleware> logger,
-        IOptions<SecuritySettings> securityOptions)
-    {
-        _next = next;
-        _encryptionService = encryptionService;
-        _logger = logger;
-        _securitySettings = securityOptions.Value;
-    }
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -83,8 +77,10 @@ public class PayloadEncryptionMiddleware
                         var decryptedBody = _encryptionService.Decrypt(requestBody);
                         var decryptedBytes = Encoding.UTF8.GetBytes(decryptedBody);
 
-                        var decryptedStream = new MemoryStream(decryptedBytes);
-                        decryptedStream.Position = 0;
+                        var decryptedStream = new MemoryStream(decryptedBytes)
+                        {
+                            Position = 0
+                        };
 
                         context.Request.Body = decryptedStream;
 

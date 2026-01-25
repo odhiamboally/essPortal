@@ -50,12 +50,12 @@ internal sealed class ClaimsService : IClaimsService
         {
             List<Claim> userClaims =
             [
-                new Claim("Id", Guid.NewGuid().ToString()),
+                new Claim("Id", Guid.CreateVersion7().ToString()),
                 new Claim(ClaimTypes.NameIdentifier, appUser.Id),
                 new Claim(ClaimTypes.Name, appUser.UserName!),
                 new Claim(ClaimTypes.Email, appUser.Email!),
                 new(JwtRegisteredClaimNames.Sub, appUser.Id),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
                     ClaimValueTypes.Integer64),
 

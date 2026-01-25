@@ -272,7 +272,7 @@ public static class NewLeaveStatisticsCalculator
         }
 
         var earnedToDate = leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Leave_Code == leaveCode)
@@ -300,7 +300,7 @@ public static class NewLeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() == true)
         {
             earnedToDate = leaveApplicationCards
-                .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+                .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                               card.Employee_No == employeeNo &&
                               card.Leave_Period == currentYear.ToString() &&
                               card.Leave_Code == leaveCode)
@@ -329,7 +329,7 @@ public static class NewLeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() != true) return 0m;
 
         return leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Status == "Released" &&
@@ -342,7 +342,7 @@ public static class NewLeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() != true) return 0m;
 
         var previousYearTaken = leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == previousYear.ToString() &&
                           card.Status == "Released" &&
@@ -358,7 +358,7 @@ public static class NewLeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() != true) return 0m;
 
         return leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Start_Date.Year == currentYear &&
@@ -375,7 +375,7 @@ public static class NewLeaveStatisticsCalculator
         string[] pendingStatuses = ["Open", "Pending Approval", "Being Processed"];
 
         return leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Leave_Code == leaveCode &&
@@ -388,7 +388,7 @@ public static class NewLeaveStatisticsCalculator
         if (leaveApplicationCards?.Any() != true) return 0;
 
         return leaveApplicationCards
-            .Where(card => !string.IsNullOrEmpty(card.Employee_No) &&
+            .Where(card => !string.IsNullOrWhiteSpace(card.Employee_No) &&
                           card.Employee_No == employeeNo &&
                           card.Leave_Period == currentYear.ToString() &&
                           card.Leave_Code == leaveCode &&

@@ -13,7 +13,6 @@ namespace ESSPortal.Infrastructure.Contracts.Implementations.Services;
 internal sealed class NavisionService : INavisionService
 {
     private readonly HttpClient _httpClient;
-    private readonly HttpClient _essHttpClient;
     private readonly ISoapService _soapService;
     private readonly INavisionUrlHelper _urlHelper;
     private readonly BCSettings _bCSettings;
@@ -28,13 +27,12 @@ internal sealed class NavisionService : INavisionService
         
 
         _httpClient = httpClientFactory.CreateClient("NavisionService");
-        _essHttpClient = httpClientFactory.CreateClient("NavisionService.Ess");
 
         //_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
 
         _soapService = soapService ?? throw new ArgumentNullException(nameof(soapService));
         _urlHelper = urlHelper ?? throw new ArgumentNullException(nameof(urlHelper));
-        _bCSettings = bCSettings.Value ?? throw new ArgumentNullException(nameof(_bCSettings));
+        _bCSettings = bCSettings.Value ?? throw new ArgumentNullException(nameof(bCSettings));
 
     }
 
@@ -68,7 +66,7 @@ internal sealed class NavisionService : INavisionService
         try
         {
             var url = GetServiceUrl(serviceName);
-            var response = await _essHttpClient.PostAsJsonAsync(url, entity);
+            var response = await _httpClient.PostAsJsonAsync(url, entity);
             if(!response.IsSuccessStatusCode) 
             {
                 var errorJson = await response.Content.ReadAsStringAsync();
@@ -96,7 +94,7 @@ internal sealed class NavisionService : INavisionService
         try
         {
             var url = GetServiceUrl(serviceName);
-            var response = await _essHttpClient.PostAsJsonAsync(url, entity);
+            var response = await _httpClient.PostAsJsonAsync(url, entity);
 
             response.EnsureSuccessStatusCode();
 
@@ -479,7 +477,6 @@ internal sealed class NavisionService : INavisionService
         if (_urlHelper.IsEssService(serviceKey))
         {
             // For ESS services, get the actual service name from EntitySets and build ESS URL
-            //var serviceName = _bCSettings.EntitySets[serviceKey];
             var serviceName = serviceKey;
             return _urlHelper.GetEssUrl(serviceName);
         }

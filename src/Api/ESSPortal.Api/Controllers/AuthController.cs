@@ -158,7 +158,7 @@ public class AuthController : ControllerBase
         // Check concurrent sessions and create new session
         if (response.Data?.UserId != null)
         {
-            var sessionId = Guid.NewGuid().ToString();
+            var sessionId = Guid.CreateVersion7().ToString();
             var createSessionResponse = await _serviceManager.SessionManagementService.CreateSessionAsync(
                 response.Data.UserId, 
                 sessionId, 
@@ -383,8 +383,14 @@ public class AuthController : ControllerBase
         // Create session after successful 2FA
         if (response.Data != null)
         {
-            var sessionId = Guid.NewGuid().ToString();
-            await _serviceManager.SessionManagementService.CreateSessionAsync(request.UserId, sessionId, ipAddress, userAgent, request.DeviceFingerprint ?? "unknown");
+            var sessionId = Guid.CreateVersion7().ToString();
+            await _serviceManager.SessionManagementService.CreateSessionAsync(
+                request.UserId, 
+                sessionId, 
+                ipAddress, 
+                userAgent, 
+                request.DeviceFingerprint ?? "unknown"
+            );
 
             Response.Headers["X-Session-Id"] = sessionId;
 

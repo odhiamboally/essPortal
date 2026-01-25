@@ -1,5 +1,4 @@
 ﻿using EssPortal.Shared.Dtos.Auth;
-using EssPortal.Web.Mvc.Configurations;
 
 using EssPortal.Web.Mvc.Utilities.Constants;
 using EssPortal.Web.Mvc.ViewModels.Auth;
@@ -10,6 +9,7 @@ using ESSPortal.Shared.Dtos.Auth;
 using ESSPortal.Shared.Dtos.Common;
 using ESSPortal.Web.Mvc.Configurations;
 using ESSPortal.Web.Mvc.Contracts.Interfaces.Common;
+using ESSPortal.Web.Mvc.Contracts.Interfaces.Services;
 using ESSPortal.Web.Mvc.Extensions;
 using ESSPortal.Web.Mvc.Mappings;
 using ESSPortal.Web.Mvc.Utilities.Session;
@@ -36,18 +36,21 @@ namespace EssPortal.Web.Mvc.Controllers;
 
 
 public class AuthController(
-    IClientServiceManager clientServiceManager,
     IServiceManager serviceManager,
     ICacheService cacheService,
-    IOptions<AppSettings> appSettings,
+    IFileService fileService,
     IOptions<SecuritySettings> securitySettings,
     ILogger<AuthController> logger,
-    IOptions<EmailValidationSettings> emailValidationSettings, IWebHostEnvironment environment) 
+    IOptions<EmailValidationSettings> emailValidationSettings, 
+    IWebHostEnvironment environment
 
-    : BaseController(clientServiceManager, serviceManager, cacheService, appSettings, logger)
+) : BaseController(serviceManager, cacheService, logger)
+
+
 {
     private readonly EmailValidationSettings _emailValidationSettings = emailValidationSettings.Value;
     private readonly SecuritySettings _securitySettings = securitySettings.Value;
+    private readonly IFileService _fileService = fileService;
 
     private readonly IWebHostEnvironment _environment = environment;
 
@@ -155,6 +158,16 @@ public class AuthController(
             }
 
             var userId = GetCurrentUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Not authenticated",
+                    shouldRedirect = true,
+                    redirectUrl = "/Auth/SignIn?sessionExpired=true"
+                });
+            }
 
             _logger.LogDebug("Keep-alive request from user: {UserId}", userId);
 
@@ -190,7 +203,11 @@ public class AuthController(
                     authResult.Principal,
                     properties);
 
-                var apiResult = await _clientServiceManager.AuthService.KeepAliveAsync();
+                var sessionId = CacheServiceExtensions.GetSessionId(_serviceManager.CacheService, userId);
+
+                var apiResult = 
+                    await _serviceManager.SessionManagementService.IsSessionValidAsync(userId, sessionId ?? string.Empty);
+
                 if (!apiResult.Successful)
                 {
                     // Database session was invalidated (admin ended it, concurrent limit, etc.)
@@ -291,7 +308,7 @@ public class AuthController(
     public IActionResult TriggerLock()
     {
         var returnUrl = Request.Headers.Referer.ToString();
-        if (string.IsNullOrEmpty(returnUrl))
+        if (string.IsNullOrWhiteSpace(returnUrl))
         {
             returnUrl = "/Home/Index";
         }
@@ -375,13 +392,13 @@ public class AuthController(
         var employeeNumber = GetEmployeeNumber();
         var email = GetUserEmail();
 
-        if (string.IsNullOrEmpty(email))
+        if (string.IsNullOrWhiteSpace(email))
         {
             ModelState.AddModelError("", "Unable to verify identity. Please sign in again.");
             return View("Lock", model);
         }
 
-        if(string.IsNullOrEmpty(employeeNumber))
+        if(string.IsNullOrWhiteSpace(employeeNumber))
         {
             ModelState.AddModelError("", "Unable to verify identity. Please sign in again.");
             return View("Lock", model);
@@ -395,13 +412,15 @@ public class AuthController(
             EmployeeNumber = employeeNumber
         };
 
+        var verifyPasswordResuest = new VerifyPasswordRequest(
+            userId ?? string.Empty,
+            email,
+            employeeNumber,
+            unlockRequest.Password
 
-        var unlockResult = await _clientServiceManager.AuthService.UnlockSessionAsync(unlockRequest);
-        
-        //ToDo: Call Application Services Directly (Just when possible, becuase client services alsi have important business logic
+            );
 
-        //var unlockResult = await _serviceManager.AuthService.VerifyPasswordAsync(unlockRequest);
-
+        var unlockResult = await _serviceManager.AuthService.VerifyPasswordAsync(verifyPasswordResuest);
         if (!unlockResult.Successful)
         {
             _logger.LogWarning("Failed unlock attempt for user {UserId} ({Email})", userId, email);
@@ -432,7 +451,7 @@ public class AuthController(
         HttpContext.Session.Remove(SessionKey_LockReturnUrl);
 
         // Validate return URL
-        if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
+        if (string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl))
         {
             returnUrl = "/Home/Index";
         }
@@ -473,8 +492,7 @@ public class AuthController(
                 
             };
             
-            var response = await _clientServiceManager.AuthService.RegisterEmployeeAsync(request);
-
+            var response = await _serviceManager.AuthService.RegisterEmployeeAsync(request);
             if (!response.Successful)
             {
                 _logger.LogWarning("Registration failed for employee: {EmployeeNumber}. Message: {Message}",
@@ -488,6 +506,7 @@ public class AuthController(
             }
 
             _logger.LogInformation("User registration successful for employee: {EmployeeNumber} from IP: {IpAddress}",
+
             request.EmployeeNumber, HttpContext.Connection.RemoteIpAddress);
 
             this.ToastActivitySuccess("user_registered", "Account created successfully! Please check your email to confirm your account.");
@@ -558,7 +577,7 @@ public class AuthController(
 
         try
         {
-            var response = await _clientServiceManager.AuthService.SignInAsync(request);
+            var response = await _serviceManager.AuthService.SignInAsync(request);
 
             if (!response.Successful || string.IsNullOrWhiteSpace(response.Data?.Token))
             {
@@ -575,6 +594,11 @@ public class AuthController(
             var loginData = response.Data!;
             var sessionId = response.SessionId ?? string.Empty;
 
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                CacheServiceExtensions.SetSessionId(_serviceManager.CacheService, request.EmployeeNumber, sessionId);
+            }
+
             if (loginData.Requires2FA)
             {
                 return await Handle2FARequirement(loginData, request.ReturnUrl);
@@ -582,6 +606,7 @@ public class AuthController(
 
             // Successful login
             await SetAuthenticationTokenAsync(
+                sessionId,
                 loginData.Token,
                 loginData.RefreshToken,
                 loginData.UserClaims?.ToClaimList());
@@ -593,7 +618,7 @@ public class AuthController(
                 HttpContext.Session.SetString(SessionKey_UserInfo, JsonSerializer.Serialize(loginData.UserInfo, JsonDefaults.Options));
                 await HttpContext.Session.CommitAsync();
 
-                CacheServiceExtensions.SetUserInfo(_clientServiceManager.CacheService, request.EmployeeNumber, loginData.UserInfo);
+                CacheServiceExtensions.SetUserInfo(_serviceManager.CacheService, request.EmployeeNumber, loginData.UserInfo);
 
             }
 
@@ -632,7 +657,7 @@ public class AuthController(
 
         try
         {
-            var providersResponse = await _clientServiceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(userId));
+            var providersResponse = await _serviceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(userId));
 
             if (!providersResponse.Successful || providersResponse.Data?.Providers == null || !providersResponse.Data.Providers.Any())
             {
@@ -718,8 +743,7 @@ public class AuthController(
 
         try
         {
-            var response = await _clientServiceManager.AuthService.Send2FACodeAsync(request);
-
+            var response = await _serviceManager.AuthService.Send2FACodeAsync(request);
             if (!response.Successful)
             {
                 _logger.LogWarning("Failed to send 2FA code for user: {UserId} via {Provider}. Reason: {Reason}",
@@ -844,7 +868,7 @@ public class AuthController(
                 return RedirectToAction(nameof(SignIn));
             }
 
-            var response = await _clientServiceManager.AuthService.Verify2FACodeAsync(request);
+            var response = await _serviceManager.AuthService.Verify2FACodeAsync(request);
 
             if (!response.Successful)
             {
@@ -864,9 +888,12 @@ public class AuthController(
                 return RedirectToAction("TwoFactorLogin", new { request.ReturnUrl });
             }
 
+            var sessionId = response.SessionId ?? string.Empty;
+
             Clear2FASessionData();
 
             await SetAuthenticationTokenAsync(
+                sessionId,
                 response.Data?.Token ?? string.Empty,
                 response.Data?.RefreshToken ?? string.Empty,
                 response.Data?.UserClaims.ToClaims());
@@ -911,7 +938,7 @@ public class AuthController(
         try
         {
             var request = new ConfirmUserEmailRequest(email, token);
-            var response = await _clientServiceManager.AuthService.ConfirmUserEmailAsync(request);
+            var response = await _serviceManager.AuthService.ConfirmUserEmailAsync(request);
 
             if (response.Successful)
             {
@@ -951,7 +978,7 @@ public class AuthController(
 
         try
         {
-            var response = await _clientServiceManager.AuthService.ResendEmailConfirmationAsync(request);
+            var response = await _serviceManager.AuthService.ResendEmailConfirmationAsync(request);
 
             _logger.LogInformation("Email confirmation resend requested for: {Email}", request.Email);
 
@@ -1012,12 +1039,11 @@ public class AuthController(
 
         try
         {
-            var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
+            var (logoBase64, _, _) = await _fileService.ReadLogoAsync();
 
             var requestWithLogo = request with { LogoBase64 = logoBase64 };
 
-            var response = await _clientServiceManager.AuthService.RequestPasswordResetAsync(requestWithLogo);
-
+            var response = await _serviceManager.AuthService.RequestPasswordResetAsync(requestWithLogo);
             if (!response.Successful)
             {
                 _logger.LogWarning("Password reset request failed for email: {Email}. Reason: {Reason}",
@@ -1066,8 +1092,7 @@ public class AuthController(
         try
         {
             var validationRequest = new ValidateResetTokenRequest(email, token);
-            var response = await _clientServiceManager.AuthService.ValidatePasswordResetTokenAsync(validationRequest);
-
+            var response = await _serviceManager.AuthService.ValidatePasswordResetTokenAsync(validationRequest);
             if (!response.Successful)
             {
                 _logger.LogWarning("Password reset token validation failed for email: {Email}. Reason: {Reason}", email, response.Message);
@@ -1077,7 +1102,7 @@ public class AuthController(
                 return RedirectToAction(nameof(ForgotPassword));
             }
 
-            var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
+            var (logoBase64, _, _) = await _fileService.ReadLogoAsync();
 
             var resetRequest = new ResetPasswordRequest
             {
@@ -1113,12 +1138,11 @@ public class AuthController(
         {
             if (string.IsNullOrWhiteSpace(request.LogoBase64))
             {
-                var (logoBase64, _, _) = await _clientServiceManager.FileService.ReadLogoAsync();
+                var (logoBase64, _, _) = await _fileService.ReadLogoAsync();
                 request = request with { LogoBase64 = logoBase64 };
             }
 
-            var response = await _clientServiceManager.AuthService.ResetPasswordAsync(request);
-
+            var response = await _serviceManager.AuthService.ResetPasswordAsync(request);
             if (!response.Successful)
             {
                 _logger.LogWarning("Password reset failed for email: {Email}. Reason: {Reason}",
@@ -1171,7 +1195,7 @@ public class AuthController(
             {
                 try
                 {
-                    var response = await _clientServiceManager.AuthService.SignOutAsync();
+                    var response = await _serviceManager.AuthService.SignOutAsync();
                     if (!response.Successful)
                     {
                         _logger.LogWarning("API sign out failed for user: {UserId}. Message: {Message}",
@@ -1259,7 +1283,7 @@ public class AuthController(
 
     #region Private Helper Methods
 
-    private string GetProviderDisplayName(string provider)
+    private static string GetProviderDisplayName(string provider)
     {
         return provider switch
         {
@@ -1273,14 +1297,12 @@ public class AuthController(
 
     private string GenerateDeviceFingerprint()
     {
-        var userAgent = Request.Headers["User-Agent"].ToString();
-        var acceptLanguage = Request.Headers["Accept-Language"].ToString();
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var acceptLanguage = Request.Headers.AcceptLanguage.ToString();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         var fingerprint = $"{userAgent}|{acceptLanguage}|{ipAddress}";
-
-        using var sha256 = SHA256.Create();
-        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(fingerprint));
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(fingerprint));
         return Convert.ToBase64String(hash)[..16]; // First 16 characters
     }
 
@@ -1296,7 +1318,7 @@ public class AuthController(
         return new string(headerValue.Where(c => !char.IsControl(c)).ToArray());
     }
 
-    private IActionResult? HandleLoginError(AppResponse<LoginResponse> response, LoginRequest request)
+    private RedirectToActionResult? HandleLoginError(AppResponse<LoginResponse> response, LoginRequest request)
     {
         var message = response.Message?.ToLowerInvariant() ?? string.Empty;
 
@@ -1338,7 +1360,12 @@ public class AuthController(
         return RedirectToAction(nameof(TwoFactorLogin), new { returnUrl });
     }
 
-    private async Task SetAuthenticationTokenAsync(string token, string refreshToken, List<Claim>? claims = null)
+    private async Task SetAuthenticationTokenAsync(
+        string sessionId,
+        string token, 
+        string refreshToken, 
+        List<Claim>? claims = null
+    )
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentException("Token cannot be null or empty", nameof(token));
@@ -1379,6 +1406,10 @@ public class AuthController(
         var employeeNumberClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "EmployeeNumber");
         if (employeeNumberClaim != null)
             cookieClaims.Add(new Claim("EmployeeNumber", employeeNumberClaim.Value));
+
+        cookieClaims.Add(new Claim("SessionId", sessionId));
+        cookieClaims.Add(new Claim("Jwt", token));
+        
 
         // Add any additional claims from parameter
         if (claims != null && claims.Any())
@@ -1448,7 +1479,7 @@ public class AuthController(
     {
         try
         {
-            var providersResponse = await _clientServiceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(UserId: request.UserId));
+            var providersResponse = await _serviceManager.AuthService.Get2FAProvidersAsync(new Get2FAProviderRequest(request.UserId));
 
             if (providersResponse.Successful && providersResponse.Data?.Providers != null)
             {

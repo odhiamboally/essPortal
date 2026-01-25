@@ -209,7 +209,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private bool BeValidLeaveType(string leaveType)
     {
-        return !string.IsNullOrEmpty(leaveType) && _leaveTypeConstraints.ContainsKey(leaveType.ToUpperInvariant());
+        return !string.IsNullOrWhiteSpace(leaveType) && _leaveTypeConstraints.ContainsKey(leaveType.ToUpperInvariant());
     }
 
     private bool HaveOnlyOneReliever(List<string> relievers)
@@ -219,7 +219,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private bool NotExceedLeaveTypeMaximum(CreateLeaveApplicationRequest request)
     {
-        if (string.IsNullOrEmpty(request.LeaveType) ||
+        if (string.IsNullOrWhiteSpace(request.LeaveType) ||
             !_leaveTypeConstraints.TryGetValue(request.LeaveType.ToUpperInvariant(), out var constraints))
             return true; // Let other validators handle invalid leave type
 
@@ -245,7 +245,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
     {
         try
         {
-            if (string.IsNullOrEmpty(request.LeaveType) ||
+            if (string.IsNullOrWhiteSpace(request.LeaveType) ||
                 !_leaveTypeConstraints.TryGetValue(request.LeaveType.ToUpperInvariant(), out var constraints))
                 return false;
 
@@ -309,7 +309,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private bool MeetGenderRequirements(CreateLeaveApplicationRequest request)
     {
-        if (string.IsNullOrEmpty(request.LeaveType) || string.IsNullOrEmpty(request.EmployeeNo))
+        if (string.IsNullOrWhiteSpace(request.LeaveType) || string.IsNullOrWhiteSpace(request.EmployeeNo))
             return false;
 
         var leaveType = request.LeaveType.ToUpperInvariant();
@@ -350,7 +350,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private async Task<bool> MeetGenderRequirementsAsync(CreateLeaveApplicationRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(request.LeaveType) || string.IsNullOrEmpty(request.EmployeeNo))
+        if (string.IsNullOrWhiteSpace(request.LeaveType) || string.IsNullOrWhiteSpace(request.EmployeeNo))
             return false;
 
         var leaveType = request.LeaveType.ToUpperInvariant();
@@ -399,7 +399,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private bool HaveReasonableDuration(CreateLeaveApplicationRequest request)
     {
-        if (string.IsNullOrEmpty(request.LeaveType) ||
+        if (string.IsNullOrWhiteSpace(request.LeaveType) ||
         !_leaveTypeConstraints.TryGetValue(request.LeaveType.ToUpperInvariant(), out _))
             return true;
 
@@ -453,7 +453,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private string GetLeaveTypeMaximumMessage(string leaveType)
     {
-        if (string.IsNullOrEmpty(leaveType) || !_leaveTypeConstraints.TryGetValue(leaveType.ToUpperInvariant(), out var constraints))
+        if (string.IsNullOrWhiteSpace(leaveType) || !_leaveTypeConstraints.TryGetValue(leaveType.ToUpperInvariant(), out var constraints))
             return "Invalid leave type selected";
         return constraints.MaxDays.HasValue
             ? $"You cannot apply for more than {constraints.MaxDays.Value} days of {leaveType} leave at a time."
@@ -462,7 +462,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private string GetInsufficientBalanceMessage(string leaveType)
     {
-        if (string.IsNullOrEmpty(leaveType) || !_leaveTypeConstraints.TryGetValue(leaveType.ToUpperInvariant(), out _))
+        if (string.IsNullOrWhiteSpace(leaveType) || !_leaveTypeConstraints.TryGetValue(leaveType.ToUpperInvariant(), out _))
             return "Invalid leave type selected";
         return leaveType.ToUpperInvariant() switch
         {
@@ -490,7 +490,7 @@ public class CreateLeaveApplicationRequestValidator : AbstractValidator<CreateLe
 
     private string GetReasonableDurationMessage(string leaveType)
     {
-        if (string.IsNullOrEmpty(leaveType) || !_leaveTypeConstraints.TryGetValue(leaveType.ToUpperInvariant(), out _))
+        if (string.IsNullOrWhiteSpace(leaveType) || !_leaveTypeConstraints.TryGetValue(leaveType.ToUpperInvariant(), out _))
             return "Invalid leave type selected";
 
         var (maxDays, dayType) = leaveType?.ToUpperInvariant() switch

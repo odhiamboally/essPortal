@@ -203,7 +203,7 @@
 <body>
     <div class="lock-card">
         <div class="avatar">
-            @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+            @if (!string.IsNullOrWhiteSpace(Model.ProfilePictureUrl))
             {
                 <img src="@Model.ProfilePictureUrl" alt="@Model.Initials" />
             }
@@ -222,7 +222,7 @@
             var errors = ViewData.ModelState.Values
             .SelectMany(v => v.Errors)
             .Select(e => e.ErrorMessage)
-            .Where(m => !string.IsNullOrEmpty(m));
+            .Where(m => !string.IsNullOrWhiteSpace(m));
 
             if (errors.Any())
             {

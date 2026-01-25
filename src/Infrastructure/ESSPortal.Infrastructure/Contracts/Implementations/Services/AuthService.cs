@@ -433,27 +433,6 @@ internal sealed class AuthService : IAuthService
                 []
             );
 
-            //var userInfo = new UserInfo(
-            //    user.Id,
-            //    string.Empty,
-            //    user.EmployeeNumber,
-            //    user.FirstName,
-            //    user.LastName,
-            //    user.Email,
-            //    user.PhoneNumber,
-            //    string.Empty,
-            //    string.Empty,
-            //    string.Empty,
-            //    string.Empty,
-            //    user.ProfilePictureUrl,
-            //    string.Empty,
-            //    emailConfirmed,
-            //    false, //phoneConfirmed,
-            //    twoFactorEnabled,
-            //    user.LastLoginAt,
-            //    []  // Will be populated below
-            //);
-
             if (signInResult.RequiresTwoFactor || twoFactorEnabled)
             {
                 // Don't generate full token yet, just a temporary one for 2FA flow
@@ -499,8 +478,7 @@ internal sealed class AuthService : IAuthService
                 return AppResponse<LoginResponse>.Failure("Invalid login attempt.");
             }
 
-            var sessionId = Guid.NewGuid().ToString();
-
+            var sessionId = Guid.CreateVersion7().ToString();
             var sessionCreationResult = await _sessionManagementService.CreateSessionAsync(
                 user.Id,
                 sessionId,
@@ -706,7 +684,7 @@ internal sealed class AuthService : IAuthService
             }
 
             var validProviders = await _userManager.GetValidTwoFactorProvidersAsync(user);
-            if (!validProviders.Contains(sendCodeRequest.SelectedProvider))
+            if (!validProviders.Contains(sendCodeRequest.SelectedProvider ?? string.Empty))
                 return AppResponse<Send2FACodeResponse>.Failure("Invalid provider. Choose 'Email' or 'Phone'.");
 
             var token = await _userManager.GenerateTwoFactorTokenAsync(user, sendCodeRequest.SelectedProvider);
@@ -843,7 +821,20 @@ internal sealed class AuthService : IAuthService
             var tokenExpiry = _jwtService.GetTokenExpiry(tokenResponse.Data);
             var refreshToken = _jwtService.GenerateRefreshToken(user);
 
-            // Continue with the rest of your existing code...
+            var sessionId = Guid.CreateVersion7().ToString();
+            var sessionCreationResult = await _sessionManagementService.CreateSessionAsync(
+                user.Id,
+                sessionId,
+                _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
+                _httpContextAccessor.HttpContext?.Request.Headers["User-Agent"].ToString() ?? "unknown",
+                verifyCodeRequest.DeviceFingerprint ?? "unknown" 
+            );
+
+            if (!sessionCreationResult.Successful)
+            {
+                _logger.LogError("Failed to create user session for user {UserId}", user.Id);
+                return AppResponse<Verify2FACodeResponse>.Failure("Could not establish a user session.");
+            }
 
             _logger.LogInformation("User {UserId} completed 2FA verification successfully via {Provider}",
                 verifyCodeRequest.UserId, verifyCodeRequest.Provider);
@@ -1768,7 +1759,7 @@ internal sealed class AuthService : IAuthService
             // Create permanent secret
             var permanentSecret = new UserTotpSecret
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.CreateVersion7().ToString(),
                 UserId = userId,
                 EncryptedSecret = tempSecret.EncryptedSecret, // Same encrypted secret
                 IsActive = true,

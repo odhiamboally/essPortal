@@ -41,7 +41,12 @@ public sealed class PayloadEncryptionService : IPayloadEncryptionService
             if (string.IsNullOrWhiteSpace(payload) || _key.Length == 0)
                 return payload;
 
-            var encryptedToken = JWE.Encrypt(payload, [new JweRecipient(JweAlgorithm.A256KW, _key)], JweEncryption.A256GCM);
+            var encryptedToken = JWE.Encrypt(
+                payload, 
+                [new JweRecipient(JweAlgorithm.A256KW, _key)], 
+                JweEncryption.A256GCM
+            );
+
             return Convert.ToBase64String(Encoding.UTF8.GetBytes(encryptedToken));
         }
         catch (Exception ex)

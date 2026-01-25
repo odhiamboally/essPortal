@@ -1,5 +1,4 @@
-﻿using EssPortal.Web.Mvc.Configurations;
-using EssPortal.Web.Mvc.Controllers;
+﻿using EssPortal.Web.Mvc.Controllers;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
 using ESSPortal.Shared.Contracts.Interfaces.Common;
@@ -21,13 +20,11 @@ namespace ESSPortal.Web.Mvc.Controllers;
 
 [Authorize]
 public class LeaveController(
-    IClientServiceManager clientServiceManager,
     IServiceManager serviceManager,
     ICacheService cacheService,
-    IOptions<AppSettings> appSettings,
     ILogger<LeaveController> logger) 
     
-    : BaseController(clientServiceManager, serviceManager, cacheService, appSettings, logger)
+    : BaseController(serviceManager, cacheService, logger)
 {
     
     private const string SessionKey_UserInfo = "UserInfo";
@@ -49,12 +46,12 @@ public class LeaveController(
             }
 
             // Get cached dashboard data (should already be available)
-            var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(employeeNo);
+            var cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
             if (cachedDashboardData == null)
             {
                 _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", employeeNo);
 
-                var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(employeeNo);
+                var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(employeeNo);
 
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
@@ -102,15 +99,15 @@ public class LeaveController(
     [HttpPost]
     public async Task<IActionResult> ApplyForLeave([FromForm] CreateLeaveApplicationRequest request)
     {
-        bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
-                         || Request.Headers["Accept"].ToString().Contains("application/json");
+        bool isAjaxRequest = Request.Headers.XRequestedWith == "XMLHttpRequest"
+                         || Request.Headers.Accept.ToString().Contains("application/json");
 
         try
         {
             var userInfo = GetUserInfoFromSession();
             if (userInfo == null) 
             {
-                userInfo = CacheServiceExtensions.GetUserInfo(_clientServiceManager.CacheService, _currentUser?.EmployeeNumber ?? string.Empty);
+                userInfo = CacheServiceExtensions.GetUserInfo(_serviceManager.CacheService, _currentUser?.EmployeeNumber ?? string.Empty);
 
                 if (userInfo == null)
                 {
@@ -140,12 +137,13 @@ public class LeaveController(
                 }
             }
 
-            var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(request.EmployeeNo);
+            var cachedDashboardData = _serviceManager.CacheService.GetDashboard(request.EmployeeNo);
             if (cachedDashboardData == null)
             {
                 _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", request.EmployeeNo);
 
-                var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
+                var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
+
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
                     if (isAjaxRequest)
@@ -204,7 +202,7 @@ public class LeaveController(
             }
 
             bool isEditing = false;
-            var validator = new CreateLeaveApplicationRequestValidator(_clientServiceManager, _currentUser?.Gender ?? string.Empty, isEditing);
+            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty, isEditing);
 
             var validationResult = await validator.ValidateAsync(request);
             if (!validationResult.IsValid)
@@ -229,11 +227,11 @@ public class LeaveController(
 
             }
 
-            var result = await _clientServiceManager.LeaveService.CreateLeaveApplicationAsync(request);
+            var result = await _serviceManager.LeaveService.CreateLeaveApplicationAsync(request);
 
             if (result.Successful)
             {
-                _clientServiceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
+                _serviceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
 
                 if (isAjaxRequest)
                 {
@@ -292,26 +290,6 @@ public class LeaveController(
     [HttpGet]
     public async Task<IActionResult> EditLeaveModal(string applicationNo)
     {
-        // PSEUDOCODE / PLAN:
-        // 1. Validate input: if applicationNo is null/empty -> return BadRequest.
-        // 2. Retrieve leave history by calling the existing LeaveHistory() action.
-        // 3. Ensure the returned IActionResult is a ViewResult and contains a List<LeaveHistoryResponse>.
-        // 4. Find the leaveDetails matching the provided applicationNo. If not found -> return NotFound.
-        // 5. Build a LeaveApplicationFormResponse for the modal by calling BuildLeaveApplicationFormResponse with a prefilled CreateLeaveApplicationRequest.
-        // 6. Compute the resumption date:
-        //    - Start with the day after the leave end date: endDate + 1 day.
-        //    - While the candidate resumption date falls on a weekend (Saturday or Sunday), advance by 1 day.
-        //    - (Note: holiday checking is intentionally omitted to avoid coupling to an unknown holiday source;
-        //       if holiday data becomes available in the dashboard or via a service, this loop can also check against that list.)
-        //    - Format the resumption date as "yyyy-MM-dd" to match existing ViewBag date strings.
-        // 7. Populate ViewBag with existing leave data (type, dates, days, half-day flag, reliever, allowance payable).
-        // 8. Return the partial view "_EditLeaveModal" with the built formResponse.
-        //
-        // Implementation details:
-        // - Use safe null checks for _currentUser.
-        // - Use the existing logging and error handling pattern in the controller where appropriate.
-        // - Keep the method asynchronous because BuildLeaveApplicationFormResponse is async.
-
         if (string.IsNullOrWhiteSpace(applicationNo))
         {
             return BadRequest("Application number is required");
@@ -411,12 +389,12 @@ public class LeaveController(
                 }
             }
 
-            var cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(request.EmployeeNo);
+            var cachedDashboardData = _serviceManager.CacheService.GetDashboard(request.EmployeeNo);
             if (cachedDashboardData == null)
             {
                 _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", request.EmployeeNo);
 
-                var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
+                var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
                     this.ToastWarning("Unable to load required data for leave application.", "Data Load Error");
@@ -460,7 +438,7 @@ public class LeaveController(
             }
 
             bool isEditing = true;
-            var validator = new CreateLeaveApplicationRequestValidator(_clientServiceManager, _currentUser?.Gender ?? string.Empty, isEditing);
+            var validator = new CreateLeaveApplicationRequestValidator(_serviceManager, _currentUser?.Gender ?? string.Empty, isEditing);
 
             var validationResult = await validator.ValidateAsync(request);
             if (!validationResult.IsValid)
@@ -474,11 +452,11 @@ public class LeaveController(
 
             }
 
-            var result = await _clientServiceManager.LeaveService.EditLeaveApplicationAsync(request);
+            var result = await _serviceManager.LeaveService.UpdateLeaveApplicationAsync(request);
 
             if (result.Successful)
             {
-                _clientServiceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
+                _serviceManager.CacheService.InvalidateAllUserCaches(_currentUser?.EmployeeNumber!);
                 return Json(new
                 {
                     success = true,
@@ -540,12 +518,12 @@ public class LeaveController(
             }
 
             // Get cached leave history data
-            var cachedHistoryData = _clientServiceManager.CacheService.GetLeaveHistory(employeeNo);
+            var cachedHistoryData = _serviceManager.CacheService.GetLeaveHistory(employeeNo);
             if (cachedHistoryData == null)
             {
                 _logger.LogInformation("No cached leave history found for employee {EmployeeNo}, fetching fresh data", employeeNo);
 
-                var historyResponse = await _clientServiceManager.LeaveService.GetLeaveHistoryAsync(employeeNo);
+                var historyResponse = await _serviceManager.LeaveService.GetLeaveHistoryAsync(employeeNo);
                 if (!historyResponse.Successful || historyResponse.Data == null)
                 {
                     this.ToastError("Unable to load leave history. Please try again later.");
@@ -615,11 +593,11 @@ public class LeaveController(
 
             if (cachedDashboardData == null)
             {
-                cachedDashboardData = _clientServiceManager.CacheService.GetDashboard(employeeNo);
+                cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
 
                 if (cachedDashboardData == null)
                 {
-                    var dashboardResponse = await _clientServiceManager.DashboardService.GetDashboardDataAsync(employeeNo);
+                    var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(employeeNo);
                     cachedDashboardData = dashboardResponse?.Data;
                 }
             }
@@ -634,19 +612,19 @@ public class LeaveController(
                 Employee = new LeaveApplicationEmployeeResponse
                 {
                     EmployeeNo = employeeNo,
-                    EmployeeName = !string.IsNullOrEmpty(request.EmployeeName)
+                    EmployeeName = !string.IsNullOrWhiteSpace(request.EmployeeName)
                         ? request.EmployeeName
                         : $"{_currentUser?.FirstName} {_currentUser?.LastName}".Trim(),
 
-                    EmailAddress = !string.IsNullOrEmpty(request.EmailAddress)
+                    EmailAddress = !string.IsNullOrWhiteSpace(request.EmailAddress)
                         ? request.EmailAddress
                         : _currentUser?.Email ?? string.Empty,
 
-                    MobileNo = !string.IsNullOrEmpty(request.MobileNo)
+                    MobileNo = !string.IsNullOrWhiteSpace(request.MobileNo)
                         ? request.MobileNo
                         : _currentUser?.PhoneNumber ?? string.Empty,
 
-                    ResponsibilityCenter = !string.IsNullOrEmpty(request.ResponsibilityCenter)
+                    ResponsibilityCenter = !string.IsNullOrWhiteSpace(request.ResponsibilityCenter)
                         ? request.ResponsibilityCenter
                         : userInfo?.ResponsibilityCenter ?? dashboardData?.LeaveApplicationCards?.FirstOrDefault()?.ResponsibilityCenter ?? string.Empty,
 

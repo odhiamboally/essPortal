@@ -17,7 +17,7 @@ public class RefreshToken : BaseEntity
     public string? RevokedByIp { get; set; }
     public string? RevokedReason { get; set; }
     public string? ReplacedByToken { get; set; }
-    public string? TokenFamily { get; set; } = Guid.NewGuid().ToString();
+    public string? TokenFamily { get; set; } = Guid.CreateVersion7().ToString();
 
 
 

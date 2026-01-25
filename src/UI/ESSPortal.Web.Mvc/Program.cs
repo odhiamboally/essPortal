@@ -1,7 +1,11 @@
 ﻿using EssPortal.Web.Mvc.Middleware;
 using EssPortal.Web.Mvc.Utilities;
+
 using ESSPortal.Web.Mvc.Extensions;
+using ESSPortal.Web.Mvc.Utilities.Common;
+
 using FluentValidation;
+
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
@@ -11,8 +15,10 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 
-var builder = WebApplication.CreateBuilder(args);
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
+var builder = WebApplication.CreateBuilder(args);
 
 var dataProtectionBuilder = builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"C:\inetpub\wwwroot\EssPortal\publish\client\Keys"))
@@ -24,22 +30,19 @@ if (OperatingSystem.IsWindows())
     dataProtectionBuilder.ProtectKeysWithDpapi();
 }
 
+builder.Services.ConfigureLogging(builder.Configuration);
+
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
 try
 {
-    builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-    builder.Services.AddApplicationConfiguration(builder.Configuration);
-    builder.Services.AddApiServices(builder.Configuration);
-    builder.Services.ConfigureAndValidateApiSettings(builder.Configuration);
-    builder.Services.AddAuthenticationServices(builder.Configuration);
-    builder.Services.AddClientServices();
-    builder.Services.AddLoggingServices(builder.Configuration);
-    builder.Services.AddMvcClientServices(builder.Configuration);
+    
+    builder.Services.AddClientDI(builder.Configuration);
+    
 }
-catch (Exception ex)
+catch (Exception)
 {
     
     throw;
@@ -51,7 +54,20 @@ builder.Services.AddControllersWithViews(options =>
 {
     //options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     options.Filters.Add<SelectiveAntiforgeryFilter>();
-});
+
+}).AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    options.JsonSerializerOptions.WriteIndented = builder.Environment.IsDevelopment();
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
+    // Add error handling for problematic types
+    options.JsonSerializerOptions.IgnoreReadOnlyProperties = false;
+    options.JsonSerializerOptions.IncludeFields = false;
+}); 
 
 // Configure antiforgery only for MVC pages (not API)
 builder.Services.AddAntiforgery(options =>
@@ -72,7 +88,7 @@ var app = builder.Build();
 app.Use(async (context, next) =>
 {
     // Generate a unique nonce for this request
-    var nonce = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+    var nonce = Convert.ToBase64String(Guid.CreateVersion7().ToByteArray());
     context.Items["ScriptNonce"] = nonce;
 
     // Security headers
@@ -254,11 +270,19 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseResponseCaching();
+
 app.UseRouting();
+
 app.UseSession();
+
 app.UseAuthentication();
+
+app.UsePostAuthMiddleware();
+
 app.UseAuthorization();
+
 app.UseCustomMiddleware();
+
 app.MapHealthChecks("/health");
 
 app.MapControllerRoute(
@@ -276,89 +300,7 @@ Console.WriteLine("Starting application...");
 app.Run();
 
 
-// ============================= SELECTIVE ANTIFORGERY FILTER =============================
-public class SelectiveAntiforgeryFilter : IAsyncActionFilter
-{
-    private static readonly HashSet<string> SafeMethods = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "GET", "HEAD", "OPTIONS", "TRACE", "CONNECT"
-    };
 
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
-    {
-        var request = context.HttpContext.Request;
-
-        var logger = context.HttpContext.RequestServices.GetService<ILogger<SelectiveAntiforgeryFilter>>();
-        logger?.LogDebug("SelectiveAntiforgeryFilter: {Method} {Path}", request.Method, request.Path);
-
-        if (SafeMethods.Contains(request.Method) || request.Path.StartsWithSegments("/api"))
-        {
-            await next();
-            return;
-        }
-
-        // Skip if [IgnoreAntiforgeryToken] is present
-        if (context.ActionDescriptor.EndpointMetadata.Any(em => em is IgnoreAntiforgeryTokenAttribute))
-        {
-            await next();
-            return;
-        }
-
-        // Skip for AJAX requests without form data
-        if (request.Headers.XRequestedWith == "XMLHttpRequest" )
-        {
-            logger?.LogDebug("Skipping antiforgery for JSON AJAX request");
-            await next();
-            return;
-        }
-
-        var antiforgery = context.HttpContext.RequestServices.GetRequiredService<IAntiforgery>();
-
-        try
-        {
-            await antiforgery.ValidateRequestAsync(context.HttpContext);
-            await next();
-        }
-        catch (AntiforgeryValidationException ex)
-        {
-            logger?.LogWarning("Antiforgery validation failed for {Method} {Path}: {Error}. " +
-                "ContentType: {ContentType}, UserAgent: {UserAgent}",
-                request.Method,
-                request.Path,
-                ex.Message,
-                request.ContentType,
-                request.Headers["User-Agent"].ToString()[..Math.Min(50, request.Headers["User-Agent"].ToString().Length)]);
-
-            // For regular form submissions, redirect back to the form with an error
-            if (request.HasFormContentType && request.Headers["X-Requested-With"] != "XMLHttpRequest")
-            {
-                // Set TempData error message and redirect back
-                var tempDataProvider = context.HttpContext.RequestServices.GetService<ITempDataProvider>();
-                var tempDataDict = tempDataProvider?.LoadTempData(context.HttpContext);
-                if (tempDataDict != null)
-                {
-                    tempDataDict["ErrorMessage"] = "Security token expired. Please try again.";
-                    tempDataProvider?.SaveTempData(context.HttpContext, tempDataDict);
-                }
-
-                // Redirect back to the referrer or login page
-                var returnUrl = request.Headers["Referer"].FirstOrDefault() ?? "/Auth/SignIn";
-                context.Result = new RedirectResult(returnUrl);
-                return;
-            }
-
-            // For AJAX requests, return JSON error
-            context.Result = new JsonResult(new
-            {
-                error = "Invalid antiforgery token",
-                message = "Security token expired. Please refresh the page and try again."
-            })
-            {
-                StatusCode = 400
-            };
-        }
-    }
-}
 
 
 

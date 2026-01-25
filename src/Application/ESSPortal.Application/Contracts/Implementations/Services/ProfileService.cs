@@ -272,7 +272,7 @@ internal sealed class ProfileService : IProfileService
             // Create clean username (remove special characters, spaces, etc.)
             var cleanUserName = CleanFileName(appUser.UserName ?? appUser.Email?.Split('@')[0] ?? "user");
 
-            var shortGuid = Guid.NewGuid().ToString("N")[..8]; // First 8 characters
+            var shortGuid = Guid.CreateVersion7().ToString("N")[..8]; // First 8 characters
             var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
             var fileName = $"{cleanUserName}_{timestamp}_{shortGuid}{fileExtension}";
 

@@ -27,20 +27,18 @@ internal sealed class EmployeeService : IEmployeeService
     private readonly ILogger<EmployeeService> _logger;
     private readonly BCSettings _bcSettings;
     private readonly PaginationSetting _paginationSettings;
-    private readonly IMapper _mapper;
 
     public EmployeeService(
         ILogger<EmployeeService> logger,
         IOptions<BCSettings> bcSettings,
         IOptions<PaginationSetting> paginationSettings,
-        INavisionService navisionService,
-        IMapper mapper)
+        INavisionService navisionService
+    )
     {
         _logger = logger;
         _bcSettings = bcSettings.Value;
         _paginationSettings = paginationSettings.Value;
         _navisionService = navisionService;
-        _mapper = mapper;
     }
 
     // Employees

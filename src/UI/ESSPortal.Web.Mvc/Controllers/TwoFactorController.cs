@@ -1,4 +1,4 @@
-﻿using EssPortal.Web.Mvc.Configurations;
+﻿
 using EssPortal.Web.Mvc.Controllers;
 
 using ESSPortal.Application.Contracts.Interfaces.Common;
@@ -19,13 +19,11 @@ public class TwoFactorController : BaseController
 {
 
     public TwoFactorController(
-        IClientServiceManager clientServiceManager,
         IServiceManager serviceManager,
         ICacheService cacheService,
-        IOptions<AppSettings> appSettings,
         ILogger<TwoFactorController> logger
 
-    ): base(clientServiceManager, serviceManager, cacheService, appSettings, logger) { }
+    ): base(serviceManager, cacheService, logger) { }
         
 
     [HttpGet]
@@ -33,7 +31,7 @@ public class TwoFactorController : BaseController
     {
         try
         {
-            var result = await _clientServiceManager.TwoFactorService.GetTwoFactorStatusAsync();
+            var result = await _serviceManager.TwoFactorService.GetTwoFactorStatusAsync();
             if (!result.Successful)
             {
                 this.ToastError(result.Message ?? "Failed to retrieve two-factor authentication status.");
@@ -86,7 +84,7 @@ public class TwoFactorController : BaseController
     {
         try
         {
-            var result = await _clientServiceManager.TwoFactorService.GetSetupInfoAsync();
+            var result = await _serviceManager.TwoFactorService.GetSetupInfoAsync();
 
             if (!result.Successful)
             {
@@ -126,7 +124,7 @@ public class TwoFactorController : BaseController
                 VerificationCode = model.VerificationCode
             };
 
-            var result = await _clientServiceManager.TwoFactorService.EnableTwoFactorAsync(request);
+            var result = await _serviceManager.TwoFactorService.EnableTwoFactorAsync(request);
 
             if (!result.Successful)
             {
@@ -151,7 +149,7 @@ public class TwoFactorController : BaseController
     {
         try
         {
-            var statusResult = await _clientServiceManager.TwoFactorService.GetTwoFactorStatusAsync();
+            var statusResult = await _serviceManager.TwoFactorService.GetTwoFactorStatusAsync();
 
             if (statusResult.Data?.IsEnabled == true)
             {
@@ -189,7 +187,7 @@ public class TwoFactorController : BaseController
     {
         try
         {
-            var result = await _clientServiceManager.TwoFactorService.DisableTwoFactorAsync();
+            var result = await _serviceManager.TwoFactorService.DisableTwoFactorAsync();
 
             return Json(new
             {
@@ -215,7 +213,7 @@ public class TwoFactorController : BaseController
     {
         try
         {
-            var result = await _clientServiceManager.TwoFactorService.GenerateBackupCodesAsync();
+            var result = await _serviceManager.TwoFactorService.GenerateBackupCodesAsync();
 
             if (!result.Successful)
             {

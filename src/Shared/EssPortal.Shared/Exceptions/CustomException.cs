@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace EssPortal.Web.Mvc.Exceptions;
+namespace EssPortal.Shared.Exceptions;
 
 public class CustomException : Exception
 {

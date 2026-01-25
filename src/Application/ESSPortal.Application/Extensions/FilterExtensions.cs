@@ -6,49 +6,6 @@ namespace ESSPortal.Application.Extensions;
 
 public static class FilterExtensions
 {
-    public static string BuildQueryStringFromOrderedParams(this string[] parameters, string serviceName)
-    {
-        // Define parameter mappings for different services
-        var serviceParamMappings = new Dictionary<string, string[]>
-        {
-            ["LeaveRelievers"] = ["ApplicationNo", "Staff_No"],
-            ["AttachedDocumentDetails"] = ["Table_ID", "No", "File_Type"],
-        };
-
-        // Extract service name from full path if needed
-        var serviceKey = serviceName.Split('/').Last().Split('?').First();
-
-        if (serviceParamMappings.TryGetValue(serviceKey, out var paramNames))
-        {
-            if (parameters.Length > paramNames.Length)
-            {
-                throw new ArgumentException($"Too many parameters for service {serviceKey}. Expected {paramNames.Length}, got {parameters.Length}");
-            }
-
-            var pairs = new List<string>();
-            for (int i = 0; i < Math.Min(parameters.Length, paramNames.Length); i++)
-            {
-                if (!string.IsNullOrEmpty(parameters[i]))
-                {
-                    pairs.Add($"{Uri.EscapeDataString(paramNames[i])}={Uri.EscapeDataString(parameters[i])}");
-                }
-            }
-
-            return string.Join("&", pairs);
-        }
-
-        // Fallback: use generic parameter names
-        var fallbackPairs = new List<string>();
-        for (int i = 0; i < parameters.Length; i++)
-        {
-            if (!string.IsNullOrEmpty(parameters[i]))
-            {
-                fallbackPairs.Add($"param{i + 1}={Uri.EscapeDataString(parameters[i])}");
-            }
-        }
-        return string.Join("&", fallbackPairs);
-    }
-
     public static string BuildODataFilter<TFilter>(this TFilter filter) where TFilter : BaseFilter
     {
         var pairs = filter.CustomQueryParameters();  // name → raw string

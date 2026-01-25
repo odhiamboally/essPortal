@@ -1,4 +1,6 @@
-﻿using EssPortal.Web.Mvc.Exceptions;
+﻿
+
+using ESSPortal.Domain.Exceptions;
 
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -10,15 +12,9 @@ using System.Net;
 
 namespace EssPortal.Web.Mvc.Middleware;
 
-public class ExceptionHandler : IExceptionHandler
+public class ExceptionHandler(ILogger<ExceptionHandler> logger) : IExceptionHandler
 {
-    private readonly ILogger<ExceptionHandler> _logger;
-
-    public ExceptionHandler(ILogger<ExceptionHandler> logger)
-    {
-        _logger = logger;
-
-    }
+    private readonly ILogger<ExceptionHandler> _logger = logger;
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
@@ -38,32 +34,56 @@ public class ExceptionHandler : IExceptionHandler
 
             switch (exception)
             {
-                case HttpRequestException httpRequestException:
+                case ServiceUnavailableException:
                     problemDetails.Status = (int)HttpStatusCode.ServiceUnavailable;
                     problemDetails.Title = "Service Unavailable";
-                    problemDetails.Detail = httpRequestException.Message;
+                    problemDetails.Detail = exception.Message;
                     break;
 
-                case CreatingDuplicateException:
-                    problemDetails.Status = (int)HttpStatusCode.Conflict;
-                    problemDetails.Title = "Duplicate Record";
-                    problemDetails.Detail = "The record already exists in the system.";
+                case ResourceNotFoundException:
+                    problemDetails.Status = (int)HttpStatusCode.NotFound;
+                    problemDetails.Title = "Resource Not Found";
+                    problemDetails.Detail = exception.Message;
                     break;
 
                 case ValidationException validationException:
                     problemDetails.Status = (int)HttpStatusCode.UnprocessableEntity;
                     problemDetails.Title = "Validation Error";
                     problemDetails.Detail = validationException.ValidationResult.ErrorMessage;
-                    problemDetails.Extensions["ValidationErrors"] = validationException.ValidationResult.MemberNames
-                        .ToDictionary(m => m, _ => new[] { validationException.ValidationResult.ErrorMessage });
+
+                    var errors = new Dictionary<string, string[]>();
+                    foreach (var memberName in validationException.ValidationResult.MemberNames)
+                    {
+                        errors.Add(memberName, [validationException.ValidationResult.ErrorMessage!]);
+                    }
+
+                    problemDetails.Extensions["errors"] = errors;
                     break;
 
-                case FluentValidation.ValidationException fluentValidationException:
-                    problemDetails.Status = (int)HttpStatusCode.UnprocessableEntity;
+                case FluentValidation.ValidationException fluentEx:
+                    problemDetails.Status = (int)HttpStatusCode.BadRequest;
                     problemDetails.Title = "Validation Error";
                     problemDetails.Detail = "One or more validation errors occurred.";
-                    problemDetails.Extensions["errors"] = fluentValidationException.Errors
-                        .ToDictionary(e => e.PropertyName, e => new[] { e.ErrorMessage });
+
+                    var validationErrors = fluentEx.Errors
+                        .GroupBy(e => e.PropertyName)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Select(e => e.ErrorMessage).ToArray());
+
+                    problemDetails.Extensions["errors"] = validationErrors;
+                    break;
+
+                case CreatingDuplicateException:
+                    problemDetails.Status = StatusCodes.Status409Conflict;
+                    problemDetails.Title = "Conflict";
+                    problemDetails.Detail = "A resource with the same identifier already exists.";
+                    break;
+
+                case HttpRequestException httpRequestException:
+                    problemDetails.Status = (int)HttpStatusCode.ServiceUnavailable;
+                    problemDetails.Title = "Service Unavailable";
+                    problemDetails.Detail = httpRequestException.Message;
                     break;
 
                 case RedisConnectionException redisConnectionException:

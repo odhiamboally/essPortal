@@ -5,18 +5,12 @@ using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using System.Text.Json;
 
-namespace ESSPortal.Api.Middleware;
+namespace ESSPortal.Web.Mvc.Middleware;
 
-public class SessionValidationMiddleware
+public class SessionValidationMiddleware(RequestDelegate next, ILogger<SessionValidationMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<SessionValidationMiddleware> _logger;
-
-    public SessionValidationMiddleware(RequestDelegate next, ILogger<SessionValidationMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
+    private readonly RequestDelegate _next = next;
+    private readonly ILogger<SessionValidationMiddleware> _logger = logger;
 
     public async Task InvokeAsync(HttpContext context, ISessionManagementService sessionService)
     {
@@ -111,7 +105,10 @@ public class SessionValidationMiddleware
     {
         // For APIs, only check headers and cookies (not session storage)
        
-        var sessionId = context.Request.Headers["X-Session-Id"].FirstOrDefault() ?? context.Request.Cookies["session_id"];
+        var sessionId = 
+            context.Request.Headers["X-Session-Id"].FirstOrDefault() ?? 
+            context.User.FindFirstValue("SessionId") ?? 
+            context.Request.Cookies["session_id"];
                        
 
         // Only check session storage for non-API requests

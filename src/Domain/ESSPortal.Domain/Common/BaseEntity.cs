@@ -1,7 +1,7 @@
 ﻿namespace ESSPortal.Domain.Common;
 public class BaseEntity
 {
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.CreateVersion7().ToString();
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? CreatedBy { get; set; }

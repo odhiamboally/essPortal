@@ -1,7 +1,7 @@
 ﻿@model TwoFactorLoginViewModel
 @{
     ViewData["Title"] = "Two-Factor Authentication";
-    Layout = "~/Views/Web.Mvc/_AuthLayout.cshtml";
+    Layout = "_AuthLayout";
 
     var nonce = Context.Items["ScriptNonce"]?.ToString();
 }

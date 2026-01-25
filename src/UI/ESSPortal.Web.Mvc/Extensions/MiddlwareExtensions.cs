@@ -15,4 +15,9 @@ public static class MiddlwareExtensions
             .UseMiddleware<ScreenLockMiddleware>()
             .UseMiddleware<TokenRefreshMiddleware>();
     }
+
+    public static IApplicationBuilder UsePostAuthMiddleware(this IApplicationBuilder builder)
+    {
+        return builder.UseMiddleware<SessionValidationMiddleware>();
+    }
 }

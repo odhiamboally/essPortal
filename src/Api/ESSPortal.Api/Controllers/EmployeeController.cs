@@ -71,17 +71,5 @@ public class EmployeeController : BaseController
     }
 
 
-    //private IActionResult HandleResponse<T>(ApiResponse<T> response)
-    //{
-    //    if (!response.Successful)
-    //    {
-    //        return Problem(
-    //            detail: response.Message,
-    //            statusCode: StatusCodes.Status500InternalServerError,
-    //            title: "Operation Failed",
-    //            instance: HttpContext.Request.Path
-    //        );
-    //    }
-    //    return Ok(response);
-    //}
+   
 }

@@ -38,14 +38,14 @@
 
   <ItemGroup>
     <Folder Include="Logs\" />
-    <Folder Include="Utilities\Api\" />
-    <Folder Include="Utilities\Common\" />
     <Folder Include="ViewModels\Common\" />
     <Folder Include="ViewModels\Leave\" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Application\ESSPortal.Application\ESSPortal.Application.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\ESSPortal.Infrastructure\ESSPortal.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Persistence\ESSPortal.Persistence.SQLServer\ESSPortal.Persistence.SQLServer.csproj" />
     <ProjectReference Include="..\..\Shared\EssPortal.Shared\EssPortal.Shared.csproj" />
   </ItemGroup>
 

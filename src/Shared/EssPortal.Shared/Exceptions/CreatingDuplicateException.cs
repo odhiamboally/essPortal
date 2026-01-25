@@ -1,4 +1,4 @@
-﻿namespace EssPortal.Web.Mvc.Exceptions;
+﻿namespace EssPortal.Shared.Exceptions;
 
 public class CreatingDuplicateException : CustomException
 {
