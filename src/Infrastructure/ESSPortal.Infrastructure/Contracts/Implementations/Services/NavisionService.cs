@@ -163,15 +163,15 @@ internal sealed class NavisionService : INavisionService
 
             return AppResponse<T>.Success("Entity fetched successfully.", result);
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
             throw;
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -205,11 +205,11 @@ internal sealed class NavisionService : INavisionService
 
             return AppResponse<T>.Success("Entity fetched successfully.", result);
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
             throw;
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             throw;
         }
@@ -221,7 +221,7 @@ internal sealed class NavisionService : INavisionService
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -243,23 +243,20 @@ internal sealed class NavisionService : INavisionService
                 var odataResponse = JsonSerializer.Deserialize<PagedResult<T>>(responseJson);
                 result = odataResponse?.Items ?? [];
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 throw;
             }
 
-            if (result.Count == 0)
-            {
-                return AppResponse<(List<T>, string)>.Failure("No data found.");
-            }
-
-            return AppResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
+            return result.Count == 0 
+                ? AppResponse<(List<T>, string)>.Failure("No data found.") 
+                : AppResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -296,14 +293,11 @@ internal sealed class NavisionService : INavisionService
                 return AppResponse<(List<T>, string)>.Failure($"Failed to deserialize response: {ex.Message}");
             }
 
-            if (result.Count == 0)
-            {
-                return AppResponse<(List<T>, string)>.Failure("No data found.");
-            }
-
-            return AppResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
+            return result.Count == 0 
+                ? AppResponse<(List<T>, string)>.Failure("No data found.") 
+                : AppResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             throw;
         }
@@ -311,7 +305,7 @@ internal sealed class NavisionService : INavisionService
         {
             throw;
         }
-        catch (TaskCanceledException ex)
+        catch (TaskCanceledException)
         {
             throw;
         }
@@ -319,7 +313,7 @@ internal sealed class NavisionService : INavisionService
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -345,15 +339,15 @@ internal sealed class NavisionService : INavisionService
 
             return AppResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
             throw;
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -385,11 +379,11 @@ internal sealed class NavisionService : INavisionService
 
             return AppResponse<(List<T>, string)>.Success("Data fetched successfully.", (result, responseJson));
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
             throw;
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
             throw;
         }
@@ -401,7 +395,7 @@ internal sealed class NavisionService : INavisionService
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }

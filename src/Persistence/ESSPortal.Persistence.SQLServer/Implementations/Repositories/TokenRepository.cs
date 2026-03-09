@@ -23,7 +23,6 @@ internal sealed class TokenRepository : BaseRepository<RefreshToken>, ITokenRepo
             _context.RefreshTokens.Add(refreshToken);
             await _context.SaveChangesAsync();
 
-            _logger.LogDebug("Added refresh token for user {UserId}", refreshToken.UserId);
         }
         catch (Exception ex)
         {
@@ -142,7 +141,6 @@ internal sealed class TokenRepository : BaseRepository<RefreshToken>, ITokenRepo
 
         if (!activeTokens.Any())
         {
-            _logger.LogDebug("No active tokens found for user {UserId}", userId);
             return;
         }
 
@@ -157,7 +155,9 @@ internal sealed class TokenRepository : BaseRepository<RefreshToken>, ITokenRepo
 
         _context.UpdateRange(activeTokens);
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Revoked {Count} tokens for user {UserId}: {Reason}", activeTokens.Count, userId, reason);
+
+        _logger.LogInformation("Revoked {Count} tokens for user " +
+            "{UserId}: {Reason}", activeTokens.Count, userId, reason);
 
     }
 
@@ -182,7 +182,6 @@ internal sealed class TokenRepository : BaseRepository<RefreshToken>, ITokenRepo
         _context.RefreshTokens.Update(refreshToken);
         await _context.SaveChangesAsync();
 
-        _logger.LogDebug("Marked token as used for user {UserId}", refreshToken.UserId);
     }
 
     public async Task CleanupExpiredTokensAsync(string? userId = null)
@@ -207,9 +206,7 @@ internal sealed class TokenRepository : BaseRepository<RefreshToken>, ITokenRepo
         {
             _context.RefreshTokens.RemoveRange(expiredTokens);
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Cleaned up {Count} expired tokens for user {UserId}",
-                expiredTokens.Count, userId);
+           
         }
     }
 

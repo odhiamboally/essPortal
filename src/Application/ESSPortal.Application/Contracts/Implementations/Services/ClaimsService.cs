@@ -27,13 +27,8 @@ internal sealed class ClaimsService : IClaimsService
             var result = await _userManager.AddClaimAsync(user, claim);
             if (result.Succeeded)
             {
-                _logger.LogInformation("Added claim - {ClaimType}:{ClaimValue} to user {UserId}", claim.Type, claim.Value, user.Id);
-                    
                 return AppResponse<bool>.Success($"Added claim: {claim.Type}:{claim.Value} to user {user.Id}", true);
             }
-
-            _logger.LogWarning("Failed to add claim {ClaimType}:{ClaimValue} to user {UserId}: {Errors}",
-                claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
 
             return AppResponse<bool>.Failure($"Failed to add claim - {claim.Type}:{claim.Value} to user {user.Id}", false);
         }
@@ -113,14 +108,8 @@ internal sealed class ClaimsService : IClaimsService
             var result = await _userManager.RemoveClaimAsync(user, claim);
             if (result.Succeeded)
             {
-                _logger.LogInformation("Removed claim {ClaimType}:{ClaimValue} from user {UserId}",
-                    claim.Type, claim.Value, user.Id);
-
                 return AppResponse<bool>.Success($"Removed claim: {claim.Type}:{claim.Value} from user {user.Id}", true);
             }
-
-            _logger.LogWarning("Failed to remove claim {ClaimType}:{ClaimValue} from user {UserId}: {Errors}",
-                claim.Type, claim.Value, user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
 
             return AppResponse<bool>.Failure($"Failed to remove claim - {claim.Type}:{claim.Value} from user {user.Id}");
         }
@@ -148,12 +137,9 @@ internal sealed class ClaimsService : IClaimsService
             {
                 // Try to rollback by adding the old claim back
                 await _userManager.AddClaimAsync(user, existingClaim);
-                _logger.LogWarning("Failed to add new claim for user {UserId}, rolled back", user.Id);
+
                 return AppResponse<bool>.Failure($"Failed to add new claim - {newClaim.Type}:{newClaim.Value} to user {user.Id} - rolled back");
             }
-
-            _logger.LogInformation("Updated claim for user {UserId}: {OldClaim} -> {NewClaim}",
-                user.Id, $"{existingClaim.Type}:{existingClaim.Value}", $"{newClaim.Type}:{newClaim.Value}");
 
             return AppResponse<bool>.Success($"Updated claim claim: {newClaim.Type}:{newClaim.Value} for user {user.Id}", true);
         }

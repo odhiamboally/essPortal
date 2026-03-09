@@ -84,7 +84,7 @@ public class EmailSettingsValidator : AbstractValidator<EmailSettings>
             var mailAddress = new System.Net.Mail.MailAddress(email);
             return mailAddress.Address == email;
         }
-        catch(Exception ex) 
+        catch(Exception) 
         {
             throw;
         }

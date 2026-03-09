@@ -49,14 +49,10 @@ public class LeaveController(
             var cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
             if (cachedDashboardData == null)
             {
-                _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", employeeNo);
-
                 var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(employeeNo);
 
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
-                    _logger.LogError("Failed to load dashboard data for employee {EmployeeNo}: {Message}", employeeNo, dashboardResponse.Message);
-
                   this.ToastError("Unable to load required data for leave application. Please try refreshing your dashboard first.");
 
                     return RedirectToAction("Index", "Home");
@@ -140,8 +136,6 @@ public class LeaveController(
             var cachedDashboardData = _serviceManager.CacheService.GetDashboard(request.EmployeeNo);
             if (cachedDashboardData == null)
             {
-                _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", request.EmployeeNo);
-
                 var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
 
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
@@ -392,8 +386,6 @@ public class LeaveController(
             var cachedDashboardData = _serviceManager.CacheService.GetDashboard(request.EmployeeNo);
             if (cachedDashboardData == null)
             {
-                _logger.LogInformation("No cached dashboard data found for employee {EmployeeNo}, fetching fresh data", request.EmployeeNo);
-
                 var dashboardResponse = await _serviceManager.DashboardService.GetDashboardDataAsync(request.EmployeeNo);
                 if (!dashboardResponse.Successful || dashboardResponse.Data == null)
                 {
@@ -521,8 +513,6 @@ public class LeaveController(
             var cachedHistoryData = _serviceManager.CacheService.GetLeaveHistory(employeeNo);
             if (cachedHistoryData == null)
             {
-                _logger.LogInformation("No cached leave history found for employee {EmployeeNo}, fetching fresh data", employeeNo);
-
                 var historyResponse = await _serviceManager.LeaveService.GetLeaveHistoryAsync(employeeNo);
                 if (!historyResponse.Successful || historyResponse.Data == null)
                 {

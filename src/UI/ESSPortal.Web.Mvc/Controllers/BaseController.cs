@@ -37,8 +37,6 @@ public class BaseController(
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            _logger.LogDebug("User authenticated: {UserId}", GetCurrentUserId());
-
             var fullName = User.FindFirst(ClaimTypes.Name)?.Value ??
                        User.Identity.Name ??
                        "User";

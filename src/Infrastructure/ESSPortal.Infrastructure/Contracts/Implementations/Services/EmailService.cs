@@ -104,8 +104,6 @@ internal sealed class EmailService : IEmailService
 
             if (result.Successful)
             {
-                _logger.LogInformation("Email sent successfully to {To}", sendEmailRequest.To);
-
                 return AppResponse<SendEmailResponse>.Success("Email sent successfully",
                     new SendEmailResponse(
                         Guid.CreateVersion7().ToString(), 
@@ -117,7 +115,7 @@ internal sealed class EmailService : IEmailService
             else
             {
                 var errorMessage = string.Join(", ", result.ErrorMessages);
-                _logger.LogError("Failed to send email to {To}: {Errors}", sendEmailRequest.To, errorMessage);
+                 _logger.LogError("Failed to send email to {To}: {Errors}", sendEmailRequest.To, errorMessage);
 
                 return AppResponse<SendEmailResponse>.Failure($"Failed to send email: {errorMessage}");
             }

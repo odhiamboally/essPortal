@@ -155,7 +155,9 @@ public static class BCEntityMappingExtensions
         List<Domain.Entities.LeaveApplicationCard>? leaveApplicationCards = null,
         List<LeaveTypes>? leaveTypes = null)
     {
-        // Use LeaveApplicationCard method if data is available
+
+        
+
         if (leaveApplicationCards?.Any() == true && leaveTypes?.Any() == true)
         {
             return LeaveStatisticsCalculator.CalculateAnnualLeaveStatistics(

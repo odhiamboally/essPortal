@@ -1,6 +1,7 @@
 ﻿using ESSPortal.Application.Configuration;
 using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Infrastructure.Configuration;
+using ESSPortal.Shared.Configuration;
 using ESSPortal.Shared.Dtos.Common;
 
 using Microsoft.Extensions.Logging;

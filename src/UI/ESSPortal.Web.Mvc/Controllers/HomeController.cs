@@ -13,29 +13,20 @@ using Microsoft.Extensions.Options;
 namespace ESSPortal.Web.Mvc.Controllers;
 
 [Authorize]
-public class HomeController : BaseController
+public class HomeController(
+    IServiceManager serviceManager,
+    ICacheService cacheService,
+    ILogger<AuthController> logger
+
+        ) : BaseController(serviceManager, cacheService, logger)
 {
-    
-
-    public HomeController(
-        IServiceManager serviceManager,
-        ICacheService cacheService,
-        ILogger<AuthController> logger
-        
-        )
-        : base(serviceManager, cacheService, logger)
-    {
-        
-        
-    }
-
     public async Task<IActionResult> Index(bool showPayslipModal = false, bool showP9Modal = false)
     {
         try
         {
             var employeeNo = _currentUser?.EmployeeNumber;
 
-            var dashboardViewModel = CreateEmptyDashboardModel(employeeNo ?? string.Empty);
+            DashboardViewModel dashboardViewModel;
 
             if (string.IsNullOrWhiteSpace(employeeNo))
             {
@@ -43,20 +34,21 @@ public class HomeController : BaseController
                 //return RedirectToAction("SignIn", "Auth");
             }
 
-            // Fix: Ensure employeeNo is not null before calling GetDashboard
-            if (!string.IsNullOrWhiteSpace(employeeNo))
+            if (string.IsNullOrWhiteSpace(employeeNo))
             {
-                var cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo);
-                if (cachedDashboardData != null)
-                {
-                    // If cached data exists, return it directly
-                    ViewBag.ShowPayslipModal = showPayslipModal;
-                    ViewBag.ShowP9Modal = showP9Modal;
+                this.ToastError("Employee Not Found", "Error");
+            }
 
-                    dashboardViewModel = DashboardMappingExtensions.ToDashboardViewModel(cachedDashboardData);
+            var cachedDashboardData = _serviceManager.CacheService.GetDashboard(employeeNo ?? string.Empty);
+            if (cachedDashboardData != null)
+            {
+                // If cached data exists, return it directly
+                ViewBag.ShowPayslipModal = showPayslipModal;
+                ViewBag.ShowP9Modal = showP9Modal;
 
-                    return View(dashboardViewModel);
-                }
+                dashboardViewModel = DashboardMappingExtensions.ToDashboardViewModel(cachedDashboardData);
+
+                return View(dashboardViewModel);
             }
 
             var response = await _serviceManager.DashboardService.GetDashboardDataAsync(employeeNo ?? string.Empty);

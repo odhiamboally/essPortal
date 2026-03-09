@@ -11,6 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
 using System.Reflection;
 
 namespace ESSPortal.Persistence.SQLServer.Extensions;
@@ -35,7 +37,7 @@ public static class DependencyInjection
         try
         {
             var ConnString = configuration.GetConnectionString("LocalConn");
-            services.AddDbContext<DBContext>(options => options.UseSqlServer(ConnString!));
+            services.AddDbContext<DBContext>(options => options.UseSqlServer(ConnString, PersistenceExtensions.ConfigureSqlOptions));
 
         }
         catch (Exception)
@@ -49,7 +51,7 @@ public static class DependencyInjection
         try
         {
             var ConnString = configuration.GetConnectionString("EssPortal");
-            services.AddDbContext<DBContext>(options => options.UseSqlServer(ConnString!));
+            services.AddDbContext<DBContext>(options => options.UseSqlServer(ConnString, PersistenceExtensions.ConfigureSqlOptions));
 
         }
         catch (Exception)
@@ -78,39 +80,6 @@ public static class DependencyInjection
 
         return services;
     }
-
-    public static IServiceCollection AddApplicationDBContext(this IServiceCollection services, IConfiguration configuration)
-    {
-        var connectionString = configuration.GetConnectionString("DefaultConnection") ??
-            throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
-        services.AddDbContext<DbContext>(options =>
-        {
-            options.UseSqlServer(connectionString, sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorNumbersToAdd: null);
-
-                sqlOptions.CommandTimeout(30);
-                sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
-            });
-
-            // Enable sensitive data logging in development
-            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-            {
-                options.EnableSensitiveDataLogging();
-                options.EnableDetailedErrors();
-            }
-
-            // Configure query tracking behavior
-            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        });
-
-        return services;
-    }
-
 
     public static async Task<IServiceProvider> SeedDataAsync(this IServiceProvider serviceProvider)
     {

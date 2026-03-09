@@ -167,7 +167,6 @@ internal sealed class LeaveService : ILeaveService
             var leaveHistoryResponses = items.ToLeaveHistoryResponses();
             if (leaveHistoryResponses == null || !leaveHistoryResponses.Any())
             {
-                _logger.LogWarning("No leave history found for employee {EmployeeNo}", employeeNo);
                 return AppResponse<PagedResult<LeaveHistoryResponse>>.Success("No leave history found", new PagedResult<LeaveHistoryResponse>());
             }
 
@@ -223,7 +222,6 @@ internal sealed class LeaveService : ILeaveService
 
             if (leaveSummary == null)
             {
-                _logger.LogWarning("No leave summary found for employee {EmployeeNo}", employeeNo);
                 return AppResponse<AnnualLeaveSummaryResponse>.Success("No leave summary found", new AnnualLeaveSummaryResponse());
             }
 
@@ -290,7 +288,6 @@ internal sealed class LeaveService : ILeaveService
 
             if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
             {
-                _logger.LogInformation("No leave application cards found for employee {EmployeeNo}", employeeNo);
                 return new();
             }
 
@@ -318,7 +315,6 @@ internal sealed class LeaveService : ILeaveService
 
             if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
             {
-                _logger.LogInformation("No leave application lists found for employee {EmployeeNo}", employeeNo);
                 return new ();
             }
 
@@ -339,7 +335,6 @@ internal sealed class LeaveService : ILeaveService
             var cachedLeaveTypes = _cache.GetLeaveTypes();
             if (cachedLeaveTypes != null)
             {
-                _logger.LogInformation("Returning cached leave types");
                 return cachedLeaveTypes.Select(lt => new LeaveTypes
                 {
                     Code = lt.Code,
@@ -361,15 +356,12 @@ internal sealed class LeaveService : ILeaveService
 
             if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
             {
-                _logger.LogInformation("No active leave types found");
                 return [];
             }
 
             var leaveTypeResponses = response.Data.Items;
 
             _cache.SetLeaveTypes(leaveTypeResponses);
-
-            _logger.LogInformation("Fetched and cached {Count} active leave types", response.Data.Items.Count);
 
             var leaveTypes = LeaveMappingExtensions.ToLeaveTypes(leaveTypeResponses);
 

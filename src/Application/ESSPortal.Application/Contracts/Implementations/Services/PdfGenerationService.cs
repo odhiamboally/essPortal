@@ -20,7 +20,6 @@ internal sealed class PdfGenerationService : IPdfGenerationService
     {
         try
         {
-            _logger.LogInformation("BC returned a ready-made payslip PDF, returning directly");
             return Task.FromResult(ConvertBase64ToPdfBytes(base64Data));
 
         }
@@ -35,7 +34,6 @@ internal sealed class PdfGenerationService : IPdfGenerationService
     {
         try
         {
-            _logger.LogInformation("BC returned a ready-made P9 PDF, returning directly");
             return Task.FromResult(ConvertBase64ToPdfBytes(base64Data));
 
         }
@@ -46,15 +44,11 @@ internal sealed class PdfGenerationService : IPdfGenerationService
         }
     }
 
-
-   
-
     private byte[] ConvertBase64ToPdfBytes(string base64Data)
     {
         try
         {
             var pdfBytes = Convert.FromBase64String(base64Data);
-            _logger.LogInformation("Successfully converted base64 to PDF bytes. Size: {Size} bytes", pdfBytes.Length);
             return pdfBytes;
         }
         catch (Exception ex)

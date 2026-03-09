@@ -88,8 +88,6 @@ internal sealed class PayrollService : IPayrollService
                 return AppResponse<byte[]>.Failure("Failed to generate payslip PDF.");
             }
 
-            _logger.LogInformation("Successfully generated payslip for employee {EmployeeNo}", request.EmployeeNo);
-
             return base64Response.Successful
                 ? AppResponse<byte[]>.Success("Payslip retrieved", pdfBytes)
                 : AppResponse<byte[]>.Failure(base64Response.Message ?? "Failed to retrieve payslip.");

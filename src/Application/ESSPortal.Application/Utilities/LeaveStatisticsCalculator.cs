@@ -34,20 +34,16 @@ public static class LeaveStatisticsCalculator
 
         // 2. Get actual Leave Earned to Date from system (not calculated)
         var leaveEarnedToDate = GetLeaveEarnedToDate(employeeNo, currentYear, leaveApplicationCards);
-        _logger?.LogInformation("Leave Earned to Date (from system): {Earned}", leaveEarnedToDate);
 
         // 3. Calculate total days taken this year
         var daysTakenCurrentYear = CalculateDaysTakenCurrentYear(employeeNo, currentYear, leaveApplicationCards);
-        _logger?.LogInformation("Days Taken Current Year: {Taken}", daysTakenCurrentYear);
 
         // 4. Calculate brought forward from previous year
         var broughtForward = CalculateBroughtForward(employeeNo, currentYear - 1, leaveApplicationCards, leaveTypes);
-        _logger?.LogInformation("Brought Forward: {BroughtForward}", broughtForward);
 
         // 5. Calculate current balance = entitlement + brought forward - taken
         var currentBalance = annualEntitlement + broughtForward - daysTakenCurrentYear;
-        _logger?.LogInformation("Current Balance: {Entitlement} + {BroughtForward} - {Taken} = {Balance}",
-            annualEntitlement, broughtForward, daysTakenCurrentYear, currentBalance);
+       
 
         // 6. Usage percentage based on total available
         var totalAvailable = annualEntitlement + broughtForward;

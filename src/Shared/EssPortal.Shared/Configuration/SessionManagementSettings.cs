@@ -1,4 +1,4 @@
-﻿namespace ESSPortal.Web.Mvc.Configurations;
+﻿namespace ESSPortal.Shared.Configuration;
 
 public class SessionManagementSettings
 {

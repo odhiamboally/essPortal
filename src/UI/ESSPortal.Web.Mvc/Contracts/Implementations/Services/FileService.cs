@@ -1,4 +1,5 @@
 ﻿
+using ESSPortal.Shared.Configuration;
 using ESSPortal.Shared.Dtos.Common;
 
 using ESSPortal.Shared.Dtos.Profile;
@@ -91,8 +92,6 @@ internal sealed class FileService : IFileService
 
             var publicUrl = $"{_baseUrl}/{fileName}".Replace("\\", "/");
 
-            _logger.LogInformation("Profile picture saved successfully for user {UserId}: {FileName}", userId, fileName);
-
             var response = new ProfilePictureResponse
             {
                 UserId = userId,
@@ -117,7 +116,6 @@ internal sealed class FileService : IFileService
         {
             if (string.IsNullOrWhiteSpace(fileName))
             {
-                _logger.LogWarning("Filename is required for reading profile picture");
                 return ([], string.Empty);
             }
 
@@ -181,7 +179,6 @@ internal sealed class FileService : IFileService
         try
         {
             File.Delete(filePath);
-            _logger.LogInformation("Profile picture deleted successfully: {FileName}", fileName);
             return true;
         }
         catch (Exception ex)
@@ -207,7 +204,6 @@ internal sealed class FileService : IFileService
                 try
                 {
                     File.Delete(file);
-                    _logger.LogInformation("Deleted old profile picture: {FilePath}", file);
                 }
                 catch (Exception ex)
                 {
@@ -248,7 +244,6 @@ internal sealed class FileService : IFileService
             if (!Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
-                _logger.LogInformation("Created profile pictures directory: {DirectoryPath}", directoryPath);
             }
         }
         catch (Exception ex)

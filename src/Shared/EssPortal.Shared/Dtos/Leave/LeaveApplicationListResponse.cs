@@ -24,7 +24,7 @@ public record LeaveApplicationListResponse
 
     // Computed properties for display
     public string DurationText => $"{StartDate:MMM dd} - {EndDate:MMM dd, yyyy}";
-    public string StatusDisplayText => Status.Replace("_", " ");
+    public string StatusDisplayText => Status!.Replace("_", " ");
     public string StatusCssClass => Status switch
     {
         "Released" => "status-approved", "Open" or "Pending Approval" => "status-pending",

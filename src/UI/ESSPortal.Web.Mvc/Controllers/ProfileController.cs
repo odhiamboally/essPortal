@@ -102,12 +102,10 @@ public class ProfileController(
             if (response.Successful)
             {
                 this.ToastSuccess("Your personal details have been updated successfully.", "Update Successful");
-                _logger.LogInformation("Personal details updated for user {UserId}", userId);
             }
             else
             {
                 this.ToastError(response.Message ?? "Failed to update personal details. Please try again.", "Update Failed");
-                _logger.LogWarning("Failed to update personal details for user {UserId}: {Error}", userId, response.Message);
             }
 
             return RedirectToAction("Index");
@@ -149,13 +147,11 @@ public class ProfileController(
             if (response.Successful)
             {
                 this.ToastSuccess("Your contact information has been updated successfully.", "Update Successful");
-                _logger.LogInformation("Contact information updated for user {UserId}", userId);
             }
             else
             {
                 this.ToastError(response.Message ?? "Failed to update contact information. Please try again.", "Update Failed");
 
-                _logger.LogWarning("Failed to update contact info for user {UserId}: {Error}", userId, response.Message);
             }
 
             return RedirectToAction("Index");
@@ -198,12 +194,10 @@ public class ProfileController(
             if (response.Successful)
             {
                 this.ToastSuccess("Your banking information has been updated successfully.", "Update Successful");
-                _logger.LogInformation("Banking information updated for user {UserId}", userId);
             }
             else
             {
                 this.ToastError(response.Message ?? "Failed to update banking information. Please try again.", "Update Failed");
-                _logger.LogWarning("Failed to update banking info for user {UserId}: {Error}", userId, response.Message);
             }
 
             return RedirectToAction("Index");
@@ -270,26 +264,22 @@ public class ProfileController(
                     if (saveResult.Successful)
                     {
                         this.ToastSuccess("Your profile picture has been updated successfully.", "Update Successful");
-                        _logger.LogInformation("Profile picture updated for user {UserId} with filename {FileName}",
-                        userId, fileName);
+                     
                     }
                     else
                     {
                         this.ToastError("Failed to save profile picture file. Please try again.", "File Save Error");
-                        _logger.LogError("Failed to save profile picture file for user {UserId}: {Error}",
-                            userId, saveResult.Message);
                     }
                 }
                 else
                 {
                     this.ToastSuccess("Your profile picture has been updated successfully.", "Update Successful");
-                    _logger.LogInformation("Profile picture updated for user {UserId}", userId);
                 }
             }
             else
             {
                 this.ToastError(response.Message ?? "Failed to update profile picture. Please try again.", "Update Failed");
-                _logger.LogWarning("Failed to update profile picture for user {UserId}: {Error}", userId, response.Message);
+                
             }
 
             return RedirectToAction("Index");

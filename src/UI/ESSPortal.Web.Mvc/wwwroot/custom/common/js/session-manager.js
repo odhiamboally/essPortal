@@ -190,14 +190,38 @@ const SessionManager = (function () {
 
             debugLog('Sending keep-alive...');
 
+            const currentPath = window.location.pathname.toLowerCase();
+            const authPaths = ['/auth/signin', '/auth/login', '/auth/register'];
+
+            if (authPaths.some(path => currentPath.includes(path))) {
+                debugLog('Skipping keep-alive - on auth page');
+                return;
+            }
+
             const response = await fetch('/Auth/KeepAlive', {
                 method: 'POST',
-                headers: getHeaders()
+                headers: getHeaders(),
+                credentials: 'include'
             });
 
             if (response.status === 401) {
-                debugLog('Session expired during lock');
+
+                // performance.now() returns ms elapsed since the page started loading
+                const msSinceNavigationStart = performance.now();
+                const secondsSinceLoad = msSinceNavigationStart / 1000;
+
+                // Optional: fallback to entries if you specifically need the load event finish time
+                // const navEntry = performance.getEntriesByType('navigation')[0];
+                // const loadEventEnd = navEntry?.loadEventEnd || 0;
+
+                if (secondsSinceLoad < 10) {
+                    debugLog(`Ignoring 401 - page just loaded (${secondsSinceLoad.toFixed(1)}s ago). Likely fresh login.`);
+                    return;
+                }
+
+                debugLog('Session expired - 401 received after ' + pageAge.toFixed(1) + 's');
                 handleRealSessionExpired();
+
                 return;
             }
 
@@ -205,12 +229,14 @@ const SessionManager = (function () {
                 const data = await response.json();
                 if (data.success) {
                     debugLog('Keep-alive successful - session extended');
-                    
-                }
-                else {
+                } else {
                     debugLog('Keep-alive failed: ' + data.message);
+                    if (data.requiresLogin) {
+                        handleRealSessionExpired();
+                    }
                 }
             }
+
         } catch (error) {
             debugLog('Keep-alive error: ' + error.message);
         }
@@ -410,7 +436,7 @@ const SessionManager = (function () {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 title: 'Session Expired',
-                text: 'Your session has expired. Please sign in again. SM',
+                text: 'Your session has expired. Please sign in again.',
                 icon: 'info',
                 confirmButtonText: 'Sign In',
                 allowOutsideClick: false
@@ -418,7 +444,7 @@ const SessionManager = (function () {
                 redirectToLogin();
             });
         } else {
-            alert('Your session has expired. Please sign in again. SM');
+            alert('Your session has expired. Please sign in again.');
             redirectToLogin();
         }
     }
@@ -532,7 +558,12 @@ const SessionManager = (function () {
         idleCheckInterval = setInterval(checkIdle, 10 * 1000);
 
         // Send keep-alive to keep session alive (even when locked!)
-        keepAliveInterval = setInterval(sendKeepAlive, config.keepAliveIntervalSeconds * 1000);
+        //keepAliveInterval = setInterval(sendKeepAlive, config.keepAliveIntervalSeconds * 1000);
+
+        setTimeout(() => {
+            sendKeepAlive();
+            keepAliveInterval = setInterval(sendKeepAlive, config.keepAliveIntervalSeconds * 1000);
+        }, 5000);
 
         // Initial activity
         trackActivity();

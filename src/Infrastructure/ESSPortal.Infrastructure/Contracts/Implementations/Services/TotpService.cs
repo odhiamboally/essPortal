@@ -61,8 +61,6 @@ internal sealed class TotpService : ITotpService
 
     public bool VerifyTotpCode(string decryptedSecret, string code, int windowSize = 2)
     {
-        _logger.LogInformation("Verifying TOTP: Secret={Secret}, Code={Code}", decryptedSecret, code);
-
         try
         {
             if (string.IsNullOrWhiteSpace(decryptedSecret) || string.IsNullOrWhiteSpace(code))
@@ -97,9 +95,6 @@ internal sealed class TotpService : ITotpService
             long timeStepMatched;
             var isValid = totp.VerifyTotp(code, out timeStepMatched, verificationWindow);
 
-            _logger.LogDebug("TOTP verification - DecryptedSecret: {Secret}, Code: {Code}, Valid: {IsValid}, TimeStep: {TimeStep}",
-            decryptedSecret, code, isValid, timeStepMatched);
-
             return isValid;
         }
         catch (Exception ex)
@@ -131,8 +126,6 @@ internal sealed class TotpService : ITotpService
                 timeCorrection: new TimeCorrection(DateTime.UtcNow));
 
             var currentCode = totp.ComputeTotp();
-            _logger.LogDebug("Current expected code: {ExpectedCode}, Provided code: {ProvidedCode}",
-                currentCode, code);
 
             var verificationWindow = new VerificationWindow(previous: windowSize, future: windowSize);
 

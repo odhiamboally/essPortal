@@ -26,7 +26,7 @@ public static class NavisionResponseHandler
                     ? AppResponse<PagedResult<T>>.Failure("Failed to deserialize response.")
                     : AppResponse<PagedResult<T>>.Success("Success", pagedResult));
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
             throw;
         }

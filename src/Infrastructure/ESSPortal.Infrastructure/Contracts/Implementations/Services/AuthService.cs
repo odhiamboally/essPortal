@@ -105,6 +105,7 @@ internal sealed class AuthService : IAuthService
             if (employeeData == null)
             {
                 _logger.LogWarning("Registration attempted with invalid employee number: {EmployeeNumber}", request.EmployeeNumber);
+
                 await _unitOfWork.RollbackTransactionAsync();
                 transactionCompleted = true;
                 return AppResponse<bool>.Failure("Invalid employee number. Please contact HR for assistance.");
@@ -179,26 +180,18 @@ internal sealed class AuthService : IAuthService
             var createUserProfileResult = await _unitOfWork.UserProfileRepository.CreateAsync(userProfile);
             if (createUserProfileResult == null)
             {
-                _logger.LogError("Failed to create user profile for employee {EmployeeNumber}", request.EmployeeNumber);
                 throw new InvalidOperationException("Failed to create user profile");
             }
-
-            _logger.LogInformation("Created UserProfile with ID: {ProfileId} for employee {EmployeeNumber}",
-                userProfile.Id, request.EmployeeNumber);
 
             var sendEmailResult = await SendRegistrationConfirmationEmailAsync(appUser);
             if (!sendEmailResult)
             {
-                _logger.LogError("Failed to send confirmation email for employee {EmployeeNumber}", request.EmployeeNumber);
                 throw new InvalidOperationException("Failed to send confirmation email");
             }
 
             await _unitOfWork.CompleteAsync(); 
             await _unitOfWork.CommitTransactionAsync();
             transactionCompleted = true;
-
-            _logger.LogInformation("Employee account created successfully: {EmployeeNumber} with UserProfile ID: {ProfileId}",
-                request.EmployeeNumber, userProfile.Id);
 
             return AppResponse<bool>.Success("Account created successfully! Please check your email to confirm your account.", true);
         }
@@ -217,6 +210,7 @@ internal sealed class AuthService : IAuthService
                 if (createdUser != null)
                 {
                     await _userManager.DeleteAsync(createdUser);
+
                     _logger.LogInformation("Successfully cleaned up Identity user for employee {EmployeeNumber}", request.EmployeeNumber);
                 }
 
@@ -242,14 +236,12 @@ internal sealed class AuthService : IAuthService
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
-                // Don't reveal if email exists for security
                 _logger.LogWarning("Email confirmation requested for non-existent email: {Email}", request.Email);
                 return AppResponse<bool>.Success("If the email exists, a confirmation link has been sent", true);
             }
 
             if (user.EmailConfirmed)
             {
-                _logger.LogInformation("Email confirmation requested for already confirmed email: {Email}", request.Email);
                 return AppResponse<bool>.Success("Email is already confirmed", true);
             }
 
@@ -273,7 +265,6 @@ internal sealed class AuthService : IAuthService
                 Body = emailBody
             });
 
-            _logger.LogInformation("Email confirmation sent to: {Email}", request.Email);
             return AppResponse<bool>.Success("Confirmation email sent", true);
         }
         catch (Exception ex)
@@ -297,7 +288,6 @@ internal sealed class AuthService : IAuthService
 
             if (user.EmailConfirmed)
             {
-                _logger.LogInformation("Confirmation resend requested for already confirmed email: {Email}", request.Email);
                 return AppResponse<bool>.Success("Email is already confirmed. You can sign in now.", true);
             }
 
@@ -324,7 +314,6 @@ internal sealed class AuthService : IAuthService
 
             if (user.EmailConfirmed)
             {
-                _logger.LogInformation("Email already confirmed for user: {UserId}", user.Id);
                 return AppResponse<bool>.Success("Email is already confirmed", true);
             }
 
@@ -336,7 +325,6 @@ internal sealed class AuthService : IAuthService
                 return AppResponse<bool>.Failure("Invalid or expired confirmation link");
             }
 
-            _logger.LogInformation("Email confirmed successfully for user: {UserId}", user.Id);
             return AppResponse<bool>.Success("Email confirmed successfully", true);
         }
         catch (Exception ex)
@@ -366,15 +354,12 @@ internal sealed class AuthService : IAuthService
                 return AppResponse<LoginResponse>.Failure("Please confirm your email before logging in.");
             }
 
-            bool passwordValid = await _userManager.CheckPasswordAsync(user, loginRequest.Password);
-            if (!passwordValid)
-            {
-                _logger.LogWarning("Invalid password attempt for user: {UserId}", user.Id);
-                return AppResponse<LoginResponse>.Failure("Invalid Employee Number or password.");
-            }
-
-            // Check if Account is Locked
-            var signInResult = await _signInManager.PasswordSignInAsync(user, loginRequest.Password, loginRequest.RememberMe, true);
+            var signInResult = await _signInManager.PasswordSignInAsync(
+                user.UserName,  
+                loginRequest.Password,
+                loginRequest.RememberMe,
+                lockoutOnFailure: true
+            );
 
             if (signInResult.IsLockedOut)
             {
@@ -489,28 +474,27 @@ internal sealed class AuthService : IAuthService
 
             if (!sessionCreationResult.Successful)
             {
-                _logger.LogError("Failed to create user session for user {UserId}", user.Id);
                 return AppResponse<LoginResponse>.Failure("Could not establish a user session.");
             }
+
+            if(sessionId != sessionCreationResult.Data)
+                sessionId = sessionCreationResult.Data;
 
             var userClaims = await _claimsService.GetUserClaimsAsync(user);
             if (!userClaims.Successful || userClaims.Data == null || userClaims.Data.Count == 0)
             {
-                _logger.LogError("Failed to get user claims for user: {UserId}", user.Id);
                 return AppResponse<LoginResponse>.Failure("Could not retrieve user claims");
             }
 
             var tokenResponse = await _jwtService.GenerateToken(user);
             if (!tokenResponse.Successful || string.IsNullOrWhiteSpace(tokenResponse.Data))
             {
-                _logger.LogError("Failed to generate token for user: {UserId}", user.Id);
                 return AppResponse<LoginResponse>.Failure("Could not generate authentication token");
             }
 
             var refreshToken = _jwtService.GenerateRefreshToken(user);
             if (!refreshToken.Successful || string.IsNullOrWhiteSpace(refreshToken.Data))
             {
-                _logger.LogError("Failed to generate refresh token for user: {UserId}", user.Id);
                 return AppResponse<LoginResponse>.Failure("Could not generate refresh token");
             }
 
@@ -521,7 +505,6 @@ internal sealed class AuthService : IAuthService
             var tokenValidationResponse = _jwtService.IsTokenValid(tokenResponse.Data);
             if (!tokenValidationResponse.Successful || !tokenValidationResponse.Data)
             {
-                _logger.LogError("Token validation failed for user: {UserId}", user.Id);
                 return AppResponse<LoginResponse>.Failure("Invalid authentication token");
             }
 
@@ -556,7 +539,10 @@ internal sealed class AuthService : IAuthService
                 tokenExpiry,
                 finalUserInfo,
                 userClaims.Data.ToDtoList())
-            );
+
+            ) with { SessionId = sessionId };
+            
+            
 
         }
         catch (Exception ex)
@@ -687,7 +673,7 @@ internal sealed class AuthService : IAuthService
             if (!validProviders.Contains(sendCodeRequest.SelectedProvider ?? string.Empty))
                 return AppResponse<Send2FACodeResponse>.Failure("Invalid provider. Choose 'Email' or 'Phone'.");
 
-            var token = await _userManager.GenerateTwoFactorTokenAsync(user, sendCodeRequest.SelectedProvider);
+            var token = await _userManager.GenerateTwoFactorTokenAsync(user, sendCodeRequest.SelectedProvider ?? string.Empty);
             if (string.IsNullOrWhiteSpace(token))
                 return AppResponse<Send2FACodeResponse>.Failure("Failed to generate authentication token.");
 
@@ -701,19 +687,17 @@ internal sealed class AuthService : IAuthService
                 });
             }
 
-            _logger.LogInformation("2FA code sent to user {UserId} via {Provider}", sendCodeRequest.UserId, sendCodeRequest.SelectedProvider);
-
             return AppResponse<Send2FACodeResponse>.Success("2FA code sent successfully.",
                 new Send2FACodeResponse
                 {
                     UserId = user.Id,
-                    Provider = sendCodeRequest.SelectedProvider,
+                    Provider = sendCodeRequest.SelectedProvider ?? string.Empty,
                     SelectedProvider = sendCodeRequest.SelectedProvider ?? validProviders.FirstOrDefault()!,
                     MaskedDestination = string.Empty,
                     Token = token, 
                     SentAt = DateTimeOffset.UtcNow,
                     ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5),
-                    CodeLength = default,
+                    CodeLength = 0,
                     CanResend = true, 
                     ResendCooldown = TimeSpan.FromSeconds(30),
                     ReturnUrl = string.Empty
@@ -748,9 +732,6 @@ internal sealed class AuthService : IAuthService
 
                 if (tempSecret != null)
                 {
-                    // This is during setup - use temp secret
-                    _logger.LogInformation("Using temp secret for 2FA verification during setup for user: {UserId}", user.Id);
-
                     decryptedSecret = _encryptionService.Decrypt(tempSecret.EncryptedSecret);
 
                     isValidCode = _totpService.VerifyTotpCode(decryptedSecret, verifyCodeRequest.Code);
@@ -761,7 +742,6 @@ internal sealed class AuthService : IAuthService
 
                         await _userManager.SetTwoFactorEnabledAsync(user, true);
 
-                        _logger.LogInformation("2FA enabled for user during setup: {UserId}", user.Id);
                     }
                 }
                 else
@@ -770,7 +750,6 @@ internal sealed class AuthService : IAuthService
 
                     if (totpSecret == null)
                     {
-                        _logger.LogWarning("No TOTP secret found for user: {UserId}", user.Id);
                         return AppResponse<Verify2FACodeResponse>.Failure("Authenticator app not configured. Please set it up first.");
                     }
 
@@ -781,8 +760,6 @@ internal sealed class AuthService : IAuthService
 
                 if (!isValidCode)
                 {
-                    _logger.LogWarning("Invalid TOTP code for user: {UserId}. Code: {Code}", verifyCodeRequest.UserId, verifyCodeRequest.Code);
-
                     return AppResponse<Verify2FACodeResponse>.Failure("Invalid verification code. Please try again.");
                 }
             }
@@ -797,8 +774,6 @@ internal sealed class AuthService : IAuthService
 
                 if (!isValidCode)
                 {
-                    _logger.LogWarning("Invalid 2FA code for user: {UserId} via {Provider}",
-                        verifyCodeRequest.UserId, verifyCodeRequest.Provider);
                     return AppResponse<Verify2FACodeResponse>.Failure("Invalid verification code");
                 }
             }
@@ -807,14 +782,12 @@ internal sealed class AuthService : IAuthService
             var userClaims = await _claimsService.GetUserClaimsAsync(user);
             if (!userClaims.Successful || userClaims.Data == null)
             {
-                _logger.LogError("Failed to get user claims for user: {UserId}", user.Id);
                 return AppResponse<Verify2FACodeResponse>.Failure("Could not retrieve user claims");
             }
 
             var tokenResponse = await _jwtService.GenerateToken(user);
             if (!tokenResponse.Successful || string.IsNullOrWhiteSpace(tokenResponse.Data))
             {
-                _logger.LogError("Failed to generate token for user: {UserId}", user.Id);
                 return AppResponse<Verify2FACodeResponse>.Failure("Could not generate authentication token");
             }
 
@@ -832,14 +805,9 @@ internal sealed class AuthService : IAuthService
 
             if (!sessionCreationResult.Successful)
             {
-                _logger.LogError("Failed to create user session for user {UserId}", user.Id);
                 return AppResponse<Verify2FACodeResponse>.Failure("Could not establish a user session.");
             }
 
-            _logger.LogInformation("User {UserId} completed 2FA verification successfully via {Provider}",
-                verifyCodeRequest.UserId, verifyCodeRequest.Provider);
-
-            // Update last login and sign in user
             user.LastLoginAt = DateTimeOffset.UtcNow;
             await _userManager.UpdateAsync(user);
 
@@ -904,7 +872,9 @@ internal sealed class AuthService : IAuthService
                     tokenExpiry.Data,
                     userInfo, // Build this as in your existing code
                     claimsResponse // Build this as in your existing code
-                ));
+
+                )) with { SessionId = sessionId };
+            
         }
         catch (Exception ex)
         {
@@ -991,7 +961,6 @@ internal sealed class AuthService : IAuthService
                 Body = emailBody
             });
 
-            _logger.LogInformation("Password reset email sent to: {Email}", user.Email);
             return AppResponse<bool>.Success("If the email exists, a reset link has been sent", true);
         }
         catch (Exception ex)
@@ -1021,7 +990,6 @@ internal sealed class AuthService : IAuthService
             
             if (!isValidToken)
             {
-                _logger.LogWarning("Invalid password reset token used for user: {UserId}", user.Id);
                 return AppResponse<bool>.Failure("Invalid or expired reset link");
             }
 
@@ -1073,7 +1041,6 @@ internal sealed class AuthService : IAuthService
 
             if (!isValidToken)
             {
-                _logger.LogWarning("Invalid password reset token used for user: {UserId}", user.Id);
                 await _unitOfWork.RollbackTransactionAsync();
                 transactionCompleted = true;
                 return AppResponse<bool>.Failure("Invalid or expired reset link");
@@ -1103,7 +1070,6 @@ internal sealed class AuthService : IAuthService
             if (!resetResult.Succeeded)
             {
                 var errors = string.Join(", ", resetResult.Errors.Select(e => e.Description));
-                _logger.LogWarning("Password reset failed for user {UserId}: {Errors}", user.Id, errors);
                 await _unitOfWork.RollbackTransactionAsync();
                 transactionCompleted = true;
                 return AppResponse<bool>.Failure("Password reset failed. Please ensure your password meets all requirements.");
@@ -1118,7 +1084,6 @@ internal sealed class AuthService : IAuthService
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
-                _logger.LogError("Failed to update user security info for user: {UserId}", user.Id);
                 throw new InvalidOperationException("Failed to update user security information");
             }
 
@@ -1128,6 +1093,7 @@ internal sealed class AuthService : IAuthService
             {
                 var revokedByIp = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
                 await _unitOfWork.TokenRepository.RevokeTokensAsync(refreshTokens, "Password reset", revokedByIp);
+
                 _logger.LogInformation("Revoked {Count} refresh tokens for user: {UserId}",
                     refreshTokens.Count(), user.Id);
             }
@@ -1136,7 +1102,6 @@ internal sealed class AuthService : IAuthService
             var sendEmailResponse = await SendPasswordResetConfirmationEmailAsync(user);
             if (!sendEmailResponse)
             {
-                _logger.LogError("Failed to send password reset confirmation email for user: {UserId}", user.Id);
                 throw new InvalidOperationException("Failed to send confirmation email");
             }
 
@@ -1148,7 +1113,6 @@ internal sealed class AuthService : IAuthService
             // Clear any cached data for this user (outside transaction)
             await ClearUserCacheAsync(user.Id);
 
-            _logger.LogInformation("Password reset successful for user: {UserId}", user.Id);
             return AppResponse<bool>.Success("Password reset successfully", true);
         }
         catch (Exception ex)
@@ -1254,7 +1218,6 @@ internal sealed class AuthService : IAuthService
             var principal = _jwtService.GetPrincipalFromExpiredToken(request.AccessToken);
             if (principal == null || principal.Data == null)
             {
-                _logger.LogWarning("Invalid access token format provided for refresh");
                 return AppResponse<RefreshTokenResponse>.Failure("Invalid access token format");
             }
 
@@ -1262,20 +1225,17 @@ internal sealed class AuthService : IAuthService
             var userId = principal.Data.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
             {
-                _logger.LogWarning("No user ID found in access token");
                 return AppResponse<RefreshTokenResponse>.Failure("Invalid token: No user ID found");
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                _logger.LogWarning("User not found for refresh token: {UserId}", userId);
                 return AppResponse<RefreshTokenResponse>.Failure("User not found");
             }
 
             if (!user.IsActive || user.IsDeleted)
             {
-                _logger.LogWarning("Refresh token attempt for inactive user: {UserId}", userId);
                 return AppResponse<RefreshTokenResponse>.Failure("User account is not active");
             }
 
@@ -1283,13 +1243,11 @@ internal sealed class AuthService : IAuthService
             var storedRefreshToken = await _unitOfWork.TokenRepository.GetRefreshTokenAsync(request.RefreshToken, userId);
             if (storedRefreshToken == null)
             {
-                _logger.LogWarning("Refresh token not found for user: {UserId}", userId);
                 return AppResponse<RefreshTokenResponse>.Failure("Invalid refresh token");
             }
 
             if (storedRefreshToken.ExpiresAt <= DateTimeOffset.UtcNow)
             {
-                _logger.LogWarning("Expired refresh token used for user: {UserId}", userId);
                 await _unitOfWork.TokenRepository.RevokeRefreshTokenAsync(storedRefreshToken, "Token expired");
                 return AppResponse<RefreshTokenResponse>.Failure("Refresh token has expired");
             }
@@ -1304,7 +1262,6 @@ internal sealed class AuthService : IAuthService
             if (storedRefreshToken.IsUsed)
             {
                 _logger.LogWarning("Already used refresh token attempted for user: {UserId}", userId);
-                // Revoke all tokens for this user for security
                 await _unitOfWork.TokenRepository.RevokeAllUserTokensAsync(userId, "Token reuse detected");
                 return AppResponse<RefreshTokenResponse>.Failure("Refresh token has already been used");
             }
@@ -1312,8 +1269,10 @@ internal sealed class AuthService : IAuthService
             // Validate that the refresh token belongs to the same user as the access token
             if (storedRefreshToken.UserId != userId)
             {
-                _logger.LogWarning("Refresh token user mismatch. Token UserId: {TokenUserId}, Request UserId: {RequestUserId}",
+                _logger.LogWarning("Refresh token user mismatch. " +
+                    "Token UserId: {TokenUserId}, Request UserId: {RequestUserId}",
                     storedRefreshToken.UserId, userId);
+
                 return AppResponse<RefreshTokenResponse>.Failure("Token mismatch");
             }
 
@@ -1321,28 +1280,24 @@ internal sealed class AuthService : IAuthService
             var userClaims = await _claimsService.GetUserClaimsAsync(user);
             if (!userClaims.Successful || userClaims.Data == null)
             {
-                _logger.LogError("Failed to get user claims during token refresh for user: {UserId}", userId);
                 return AppResponse<RefreshTokenResponse>.Failure("Could not retrieve user claims");
             }
 
             var newAccessTokenResponse = await _jwtService.GenerateToken(user);
             if (!newAccessTokenResponse.Successful || string.IsNullOrWhiteSpace(newAccessTokenResponse.Data))
             {
-                _logger.LogError("Failed to generate new access token for user: {UserId}", userId);
                 return AppResponse<RefreshTokenResponse>.Failure("Could not generate new access token");
             }
 
             var newRefreshTokenResponse = _jwtService.GenerateRefreshToken(user);
             if (!newRefreshTokenResponse.Successful || string.IsNullOrWhiteSpace(newRefreshTokenResponse.Data))
             {
-                _logger.LogError("Failed to generate new refresh token for user: {UserId}", userId);
                 return AppResponse<RefreshTokenResponse>.Failure("Could not generate new refresh token");
             }
 
             var tokenExpiry = _jwtService.GetTokenExpiry(newAccessTokenResponse.Data);
             if (!tokenExpiry.Successful)
             {
-                _logger.LogError("Failed to get token expiry for user: {UserId}", userId);
                 return AppResponse<RefreshTokenResponse>.Failure("Could not determine token expiry");
             }
 
@@ -1399,10 +1354,8 @@ internal sealed class AuthService : IAuthService
                 false, //phoneConfirmed,
                 twoFactorEnabled,
                 user.LastLoginAt,
-                roles.ToList()
+                [.. roles]
             );
-
-            _logger.LogInformation("Token refreshed successfully for user: {UserId}", userId);
 
             return AppResponse<RefreshTokenResponse>.Success("Token refreshed successfully", new RefreshTokenResponse(
                 newAccessTokenResponse.Data,
@@ -1482,7 +1435,6 @@ internal sealed class AuthService : IAuthService
             var employee = employeeDetails?.Data?.Items?.FirstOrDefault();
             if (employee == null)
             {
-                _logger.LogWarning("Could not retrieve employee details for: {EmployeeNumber}", employeeNumber);
                 return null;
             }
 
@@ -1538,8 +1490,6 @@ internal sealed class AuthService : IAuthService
                 _logger.LogError("Failed to send registration confirmation email to: {Email}", user.Email);
                 return false;
             }
-
-            _logger.LogInformation("Registration confirmation email sent to: {Email}", user.Email);
 
             return true;
         }
@@ -1634,7 +1584,6 @@ internal sealed class AuthService : IAuthService
                 return false;
             }
 
-            _logger.LogInformation("Password reset confirmation email sent successfully to: {Email}", user.Email);
             return true;
         }
         catch (Exception ex)
@@ -1678,7 +1627,6 @@ internal sealed class AuthService : IAuthService
                     .Where(u => u.Id == userId)
                     .ExecuteUpdateAsync(setters => setters.SetProperty(u => u.UpdatedAt, DateTimeOffset.UtcNow));
 
-                _logger.LogDebug("Updated last activity for user: {UserId}", userId);
             }
             catch (Exception updateEx)
             {
@@ -1704,8 +1652,6 @@ internal sealed class AuthService : IAuthService
                 var revokedByIp = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
                 await _unitOfWork.TokenRepository.RevokeTokensAsync(refreshTokens, reason, revokedByIp);
 
-                _logger.LogInformation("Marked {Count} refresh tokens for revocation for user: {UserId}", refreshTokens.Count(), userId);
-
                 return true;
             }
 
@@ -1730,7 +1676,6 @@ internal sealed class AuthService : IAuthService
             _cacheService.Remove(GetUserPermissionsCacheKey(userId));
             _cacheService.Remove(GetPasswordResetCacheKey(userId));
 
-            _logger.LogDebug("Cleared cache for user: {UserId}", userId);
         }
         catch (Exception ex)
         {
@@ -1776,7 +1721,6 @@ internal sealed class AuthService : IAuthService
 
             await _unitOfWork.CompleteAsync();
 
-            _logger.LogInformation("Moved temp TOTP secret to permanent for user: {UserId}", userId);
         }
         catch (Exception ex)
         {

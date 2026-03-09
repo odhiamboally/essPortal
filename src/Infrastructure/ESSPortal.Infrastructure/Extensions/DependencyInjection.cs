@@ -78,6 +78,8 @@ public static class DependencyInjection
         services.AddSingleton<INavisionUrlHelper, NavisionUrlHelper>();
 
         services.AddSingleton<ICacheService, InMemoryCacheService>();
+
+        services.AddDistributedMemoryCache();
     }
 
 

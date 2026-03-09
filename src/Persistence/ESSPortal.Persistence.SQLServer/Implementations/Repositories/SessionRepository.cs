@@ -15,8 +15,8 @@ internal sealed class SessionRepository : BaseRepository<UserSession>, ISessionR
     {
         return await _context.UserSessions
             .Where(s => s.UserId == userId &&
-                       s.IsActive &&
-                       s.ExpiresAt > DateTimeOffset.UtcNow)
+                       s.IsActive
+            ).AsNoTracking()
             .OrderByDescending(s => s.LastAccessedAt)
             .ToListAsync();
     }
@@ -32,13 +32,9 @@ internal sealed class SessionRepository : BaseRepository<UserSession>, ISessionR
     public async Task<List<UserSession>> GetExpiredSessionsAsync()
     {
         return await _context.UserSessions
-            .Where(s => s.IsActive && s.ExpiresAt <= DateTimeOffset.UtcNow)
+            .Where(s => !s.IsActive)
             .ToListAsync();
     }
 
-    // public async Task UpdateRangeAsync(List<UserSession> sessions)
-    // {
-    //     _context.UserSessions.UpdateRange(sessions);
-    //     await Task.CompletedTask;
-    // }
+    
 }

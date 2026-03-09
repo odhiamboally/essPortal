@@ -1,8 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using ESSPortal.Persistence.SQLServer.Extensions;
+
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using System.Reflection;
 
 namespace ESSPortal.Persistence.SQLServer.DataContext;
 public class DBContextFactory(ILogger<DBContext> logger, IHttpContextAccessor httpContextAccessor) : IDesignTimeDbContextFactory<DBContext>
@@ -18,9 +23,8 @@ public class DBContextFactory(ILogger<DBContext> logger, IHttpContextAccessor ht
 
         var optionsBuilder = new DbContextOptionsBuilder<DBContext>();
         var connectionString = configuration.GetConnectionString("EssPortal");
-        //var connectionString = configuration.GetConnectionString("EssPortal");
 
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseSqlServer(connectionString, PersistenceExtensions.ConfigureSqlOptions);
 
         return new DBContext(optionsBuilder.Options, httpContextAccessor, logger);
     }

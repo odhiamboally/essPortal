@@ -296,15 +296,15 @@ internal sealed class JwtService : IJwtService
 
             return AppResponse<bool>.Success("Valid", true);
         }
-        catch (SecurityTokenExpiredException ex)
+        catch (SecurityTokenExpiredException )
         {
             throw;
         }
-        catch (SecurityTokenValidationException ex)
+        catch (SecurityTokenValidationException )
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception )
         {
             throw;
         }
@@ -342,11 +342,11 @@ internal sealed class JwtService : IJwtService
         {
             throw;
         }
-        catch (SecurityTokenValidationException ex)
+        catch (SecurityTokenValidationException)
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }

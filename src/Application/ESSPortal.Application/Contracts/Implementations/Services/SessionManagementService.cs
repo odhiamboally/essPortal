@@ -1,12 +1,15 @@
-﻿using ESSPortal.Application.Configuration;
-using ESSPortal.Application.Contracts.Interfaces.Services;
+﻿using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Domain.Entities;
 using ESSPortal.Domain.Interfaces;
+using ESSPortal.Domain.IRepositories;
+using ESSPortal.Shared.Configuration;
 using ESSPortal.Shared.Dtos.Common;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
+using Polly;
 
 namespace ESSPortal.Application.Contracts.Implementations.Services;
 internal sealed class SessionManagementService : ISessionManagementService
@@ -67,7 +70,6 @@ internal sealed class SessionManagementService : ISessionManagementService
                     return AppResponse<bool>.Failure("Failed to end old sessions");
                 }
 
-                _logger.LogInformation("Ended old sessions for user {UserId} due to concurrent limit", userId);
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -86,7 +88,6 @@ internal sealed class SessionManagementService : ISessionManagementService
             await _unitOfWork.SessionRepository.CreateAsync(session);
             await _unitOfWork.CompleteAsync();
 
-            _logger.LogInformation("Session created for user {UserId}: {SessionId}", userId, sessionId);
             return AppResponse<bool>.Success("Session created successfully", true);
         }
         catch (Exception ex)
@@ -111,6 +112,7 @@ internal sealed class SessionManagementService : ISessionManagementService
             if (sessionsToEnd.Any())
             {
                 _logger.LogInformation("User {UserId} signing in from new device. Ending {Count} concurrent session(s).", userId, sessionsToEnd.Count);
+
                 foreach (var session in sessionsToEnd)
                 {
                     session.IsActive = false;
@@ -172,7 +174,7 @@ internal sealed class SessionManagementService : ISessionManagementService
         }
     }
 
-    public async Task<AppResponse<bool>> CreateSessionAsync(string userId, string sessionId, string ipAddress, string userAgent, string deviceFingerprint)
+    public async Task<AppResponse<string>> CreateSessionAsync(string userId, string sessionId, string ipAddress, string userAgent, string deviceFingerprint)
     {
         const int maxRetries = 3;
 
@@ -181,54 +183,56 @@ internal sealed class SessionManagementService : ISessionManagementService
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
-
-                // Query INSIDE transaction for consistency
-                var activeSessions = await _unitOfWork.SessionRepository.GetActiveSessionsByUserIdAsync(userId);
-
-                var activeSessionsList = activeSessions.ToList();
-
-                // Check if session for THIS device exists
-                var existingSessionForDevice = activeSessionsList.FirstOrDefault(s => s.DeviceFingerprint == deviceFingerprint);
-
-                // Get sessions to end (exclude current device session)
-                var sessionsToEnd = activeSessionsList.Where(s => s.DeviceFingerprint != deviceFingerprint).ToList();
-                    
-                // End other device sessions
-                if (sessionsToEnd.Any())
-                {
-                    _logger.LogInformation(
-                        "User {UserId} signing in from device {DeviceFingerprint}. Ending {Count} concurrent session(s).",
-                        userId, deviceFingerprint, sessionsToEnd.Count);
-
-                    foreach (var session in sessionsToEnd)
-                    {
-                        session.IsActive = false;
-                        session.EndedAt = DateTimeOffset.UtcNow;
-                        session.EndReason = "New login from another device.";
-                        session.UpdatedAt = DateTimeOffset.UtcNow;
-                    }
-
-                    await _unitOfWork.SessionRepository.UpdateRangeAsync(sessionsToEnd);
-                }
-
                 var now = DateTimeOffset.UtcNow;
 
-                // Update existing session OR create new one (not both)
-                if (existingSessionForDevice != null)
-                {
-                    _logger.LogInformation("Re-authenticating session {SessionId} for user {UserId} on existing device {DeviceFingerprint}",existingSessionForDevice.Id, userId, deviceFingerprint);
-                        
-                    existingSessionForDevice.LastAccessedAt = now;
-                    existingSessionForDevice.ExpiresAt = now.AddMinutes(_sessionSettings.SessionTimeoutMinutes);
-                    existingSessionForDevice.IpAddress = ipAddress;
-                    existingSessionForDevice.UserAgent = userAgent;
-                    existingSessionForDevice.UpdatedAt = now;
+                // 1. Get ALL potentially active sessions (ignore the strict expiry here to catch 'zombie' sessions)
+                var activeSessions = await _unitOfWork.SessionRepository.GetActiveSessionsByUserIdAsync(userId);
+                var activeSessionsList = activeSessions.ToList();
 
-                    await _unitOfWork.SessionRepository.UpdateAsync(existingSessionForDevice);
+                // 2. Separate sessions into three groups:
+                // Group A: The specific session we want to use/revive for THIS device
+                var currentSession = activeSessionsList.FirstOrDefault(s => s.DeviceFingerprint == deviceFingerprint);
+
+                // Group B: Duplicate sessions for THIS device that we should kill
+                var duplicatesOnThisDevice = activeSessionsList
+                    .Where(s => s.DeviceFingerprint == deviceFingerprint && (currentSession == null || s.Id != currentSession.Id))
+                    .ToList();
+
+                // Group C: Sessions on OTHER devices that we must kill (Concurrency policy)
+                var sessionsOnOtherDevices = activeSessionsList
+                    .Where(s => s.DeviceFingerprint != deviceFingerprint)
+                    .ToList();
+
+                // 3. Process Group B & C (The ones to deactivate)
+                var toDeactivate = duplicatesOnThisDevice.Concat(sessionsOnOtherDevices).ToList();
+                if (toDeactivate.Any())
+                {
+                    foreach (var s in toDeactivate)
+                    {
+                        s.IsActive = false;
+                        s.EndedAt = now;
+                        s.EndReason = s.DeviceFingerprint == deviceFingerprint ? "Duplicate session cleanup" : "New login from another device.";
+                        s.UpdatedAt = now;
+                    }
+                    await _unitOfWork.SessionRepository.UpdateRangeAsync(toDeactivate);
+                }
+
+                // 4. Process Group A (The one to keep/create)
+                string finalSessionId;
+                if (currentSession != null)
+                {
+                    currentSession.IsActive = true;
+                    currentSession.LastAccessedAt = now;
+                    currentSession.ExpiresAt = now.AddMinutes(_sessionSettings.SessionTimeoutMinutes);
+                    currentSession.IpAddress = ipAddress;
+                    currentSession.UserAgent = userAgent;
+                    currentSession.UpdatedAt = now;
+
+                    await _unitOfWork.SessionRepository.UpdateAsync(currentSession);
+                    finalSessionId = currentSession.Id;
                 }
                 else
                 {
-                    // Create new session for new device
                     var newSession = new UserSession
                     {
                         Id = sessionId,
@@ -241,17 +245,15 @@ internal sealed class SessionManagementService : ISessionManagementService
                         ExpiresAt = now.AddMinutes(_sessionSettings.SessionTimeoutMinutes),
                         IsActive = true
                     };
-
                     await _unitOfWork.SessionRepository.CreateAsync(newSession);
+                    finalSessionId = newSession.Id;
                 }
 
-                // Save all changes
                 await _unitOfWork.CompleteAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Session created/updated for user {UserId} on device {DeviceFingerprint}",userId, deviceFingerprint);
-                    
-                return AppResponse<bool>.Success("Session created successfully", true);
+                return AppResponse<string>.Success("Session managed successfully", finalSessionId);
+
             }
             catch (DbUpdateConcurrencyException ex) when (attempt < maxRetries)
             {
@@ -393,14 +395,46 @@ internal sealed class SessionManagementService : ISessionManagementService
 
     public async Task<AppResponse<bool>> IsSessionValidAsync(string sessionId, string userId)
     {
+        var session = await _unitOfWork.SessionRepository
+                .FindByCondition(s => s.Id == sessionId && s.UserId == userId).FirstOrDefaultAsync() ;
+
+        if (session is null)
+            return AppResponse<bool>.Failure("Session not found");
+
+        if (!session.IsActive)
+            return AppResponse<bool>.Failure("Session is not active");
+
+        session.LastAccessedAt = DateTimeOffset.UtcNow;
+        session.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
+
+        await _unitOfWork.CompleteAsync();
+
+        return AppResponse<bool>.Success("Session is valid", true);
+    }
+
+    public async Task<AppResponse<bool>> IsSessionValidAsync_(string sessionId, string userId)
+    {
         try
         {
-            var session = await _unitOfWork.SessionRepository.FindByCondition(s=> s.Id == sessionId).FirstOrDefaultAsync();
+            var session = await _unitOfWork.SessionRepository
+                .FindByCondition(s => s.Id == sessionId && s.UserId == userId)
+                .AsNoTracking() 
+                .FirstOrDefaultAsync();
 
             if (session == null || session.UserId != userId)
             {
-                return AppResponse<bool>.Failure("Session not found");
+                // If not tracked, then and only then, go to the database
+                if (session == null)
+                {
+                    session = await _unitOfWork.SessionRepository
+                        .FindByCondition(s => s.Id == sessionId && s.UserId == userId)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync();
+                }
             }
+
+            if (session == null || session.UserId != userId) 
+                return AppResponse<bool>.Failure("Session not found");
 
             if (!session.IsActive)
             {
@@ -413,6 +447,8 @@ internal sealed class SessionManagementService : ISessionManagementService
                 session.IsActive = false;
                 session.EndedAt = DateTimeOffset.UtcNow;
                 session.EndReason = "Session expired";
+
+
                 await _unitOfWork.SessionRepository.UpdateAsync(session);
                 await _unitOfWork.CompleteAsync();
 

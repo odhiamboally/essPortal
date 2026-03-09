@@ -48,13 +48,10 @@ internal sealed class DashboardService(ICacheService cacheService,
     {
         try
         {
-            _logger.LogInformation("Getting dashboard data for employee {EmployeeNo}", employeeNo);
-
             // Try cache first
             var cachedData = _cache.GetDashboard(employeeNo);
             if (cachedData != null)
             {
-                _logger.LogInformation("Returning cached dashboard data for employee {EmployeeNo}", employeeNo);
                 return AppResponse<DashboardResponse>.Success("Dashboard data retrieved from cache", cachedData);
             }
 
@@ -95,7 +92,9 @@ internal sealed class DashboardService(ICacheService cacheService,
         var annualLeaveSummary = BCEntityMappingExtensions.ToAnnualLeaveSummaryResponse(
                 employeeNo,
                 approvedLeavesEntities,
-                leaveApplicationCards);
+                leaveApplicationCards,
+                leaveTypesEntities
+        );
 
         var leaveSummary = BCEntityMappingExtensions.ToLeaveSummaryResponse(
                 employeeNo,
@@ -123,8 +122,6 @@ internal sealed class DashboardService(ICacheService cacheService,
             leaveRelievers
         );
 
-        _logger.LogInformation("Dashboard data successfully retrieved for employee {EmployeeNo}", employeeNo);
-
         _cache.SetDashboard(employeeNo, response);
 
         return AppResponse<DashboardResponse>.Success("Dashboard data retrieved successfully", response);
@@ -137,13 +134,11 @@ internal sealed class DashboardService(ICacheService cacheService,
         var response = await _leaveApplicationCardService.SearchLeaveApplicationCardsAsync(filter);
         if (!response.Successful)
         {
-            _logger.LogError("Failed to fetch leave application cards for employee {EmployeeNo}: {Message}", employeeNo, response.Message);
             return new();
         }
 
         if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
         {
-            _logger.LogInformation("No leave application cards found for employee {EmployeeNo}", employeeNo);
             return new();
         }
 
@@ -162,7 +157,6 @@ internal sealed class DashboardService(ICacheService cacheService,
         }
         if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
         {
-            _logger.LogInformation("No leave application lists found for employee {EmployeeNo}", employeeNo);
             return [];
         }
         return response.Data.Items;
@@ -174,8 +168,7 @@ internal sealed class DashboardService(ICacheService cacheService,
         var cachedLeaveTypes = _cache.GetLeaveTypes();
         if (cachedLeaveTypes != null)
         {
-            _logger.LogInformation("Returning cached leave types");
-            return cachedLeaveTypes.Select(lt => new LeaveTypes
+            return [.. cachedLeaveTypes.Select(lt => new LeaveTypes
             {
                 Code = lt.Code,
                 Description = lt.Description,
@@ -184,7 +177,7 @@ internal sealed class DashboardService(ICacheService cacheService,
                 Gender = lt.Gender,
                 Annual_Leave = lt.AnnualLeave
 
-            }).ToList();
+            })];
         }
 
         var response = await _leaveTypeService.GetLeaveTypesAsync();
@@ -196,15 +189,12 @@ internal sealed class DashboardService(ICacheService cacheService,
 
         if (response.Data == null || response.Data.Items == null || !response.Data.Items.Any())
         {
-            _logger.LogInformation("No active leave types found");
             return [];
         }
 
         var leaveTypeResponses = response.Data.Items;
 
         _cache.SetLeaveTypes(leaveTypeResponses);
-
-        _logger.LogInformation("Fetched and cached {Count} active leave types", response.Data.Items.Count);
 
         var activeLeaveaTypes = leaveTypeResponses.ToLeaveTypes();
 
@@ -232,14 +222,12 @@ internal sealed class DashboardService(ICacheService cacheService,
             var employeeCardResponse = searchResponse.Data.Items.FirstOrDefault();
             if (employeeCardResponse == null || string.IsNullOrWhiteSpace(employeeCardResponse.ResponsibilityCenter))
             {
-                _logger.LogWarning("Employee card for {EmployeeNo} does not have a valid responsibility center", employeeNo);
-                    
                 return [];
             }
 
             EmployeeCardFilter leaveRelieverFilter = new()
             {
-                ResponsibilityCenter = employeeCardResponse.ResponsibilityCenter
+                Responsibility_Center = employeeCardResponse.ResponsibilityCenter
             };
 
             var potentialRelieversResponse = await _employeeService.SearchEmployeeCardsAsync(leaveRelieverFilter);
@@ -251,12 +239,11 @@ internal sealed class DashboardService(ICacheService cacheService,
                 return [];
             }
 
-            var potentialRelievers = potentialRelieversResponse.Data.Items.Where(r => r.No != employeeNo).ToList() ?? [];
+            var potentialRelievers = 
+                potentialRelieversResponse.Data.Items.Where(r => r.No != employeeNo).ToList() ?? [];
 
             if (!potentialRelievers.Any())
             {
-                _logger.LogInformation("No potential relievers found in responsibility center {ResponsibilityCenter} for employee {EmployeeNo}", employeeCardResponse.ResponsibilityCenter, employeeNo);
-
                 return [];
             }
 

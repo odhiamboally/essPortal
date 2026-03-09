@@ -1,4 +1,6 @@
-﻿using EssPortal.Shared.Dtos.Auth;
+﻿using Azure.Core;
+
+using EssPortal.Shared.Dtos.Auth;
 
 using EssPortal.Web.Mvc.Utilities.Constants;
 using EssPortal.Web.Mvc.ViewModels.Auth;
@@ -22,6 +24,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Options;
+
+using Polly;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -157,6 +161,7 @@ public class AuthController(
                 });
             }
 
+            var employeeNo = _currentUser?.EmployeeNumber;
             var userId = GetCurrentUserId();
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -168,8 +173,6 @@ public class AuthController(
                     redirectUrl = "/Auth/SignIn?sessionExpired=true"
                 });
             }
-
-            _logger.LogDebug("Keep-alive request from user: {UserId}", userId);
 
             // Just touching the session keeps it alive
             var isLocked = HttpContext.Session.GetString(SessionKey_IsLocked) == "true";
@@ -203,36 +206,28 @@ public class AuthController(
                     authResult.Principal,
                     properties);
 
-                var sessionId = CacheServiceExtensions.GetSessionId(_serviceManager.CacheService, userId);
+                var sessionId = HttpContext.Session.GetString("SessionId");
+                var sessId = CacheServiceExtensions.GetSessionId(_serviceManager.CacheService, employeeNo ?? string.Empty);
 
                 var apiResult = 
-                    await _serviceManager.SessionManagementService.IsSessionValidAsync(userId, sessionId ?? string.Empty);
+                    await _serviceManager.SessionManagementService.IsSessionValidAsync(sessionId ?? string.Empty, userId);
 
-                if (!apiResult.Successful)
-                {
-                    // Database session was invalidated (admin ended it, concurrent limit, etc.)
-                    _logger.LogWarning("Keep-alive failed: {Message}", apiResult.Message);
-
-                    // Sign out the user
-                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
+                if (apiResult.Successful)
                     return Json(new
                     {
-                        success = false,
-                        message = apiResult.Message,
-                        requiresLogin = true
+                        success = true,
+                        message = "Session extended",
+                        timestamp = DateTimeOffset.UtcNow.ToString("O")
                     });
-                }
-
-                _logger.LogDebug("Keep-alive: session extended for user {UserId}", GetCurrentUserId());
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
                 return Json(new
                 {
-                    success = true,
-                    message = "Session extended",
-                    timestamp = DateTimeOffset.UtcNow.ToString("O")
-
+                    success = false,
+                    message = apiResult.Message,
+                    requiresLogin = true
                 });
+
             }
 
             return Json(new { success = false, message = "Could not refresh session" });
@@ -275,11 +270,6 @@ public class AuthController(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     authResult.Principal,
                     properties);
-
-                // Clear lock screen cookie
-                //ClearLockScreenCookie();
-
-                _logger.LogInformation("Session extended explicitly for user: {UserId}", userId);
 
                 return Json(new
                 {
@@ -330,9 +320,6 @@ public class AuthController(
         HttpContext.Session.SetString(SessionKey_IsLocked, "true");
         HttpContext.Session.SetString(SessionKey_LockedAt, DateTime.UtcNow.ToString("O"));
         HttpContext.Session.SetString(SessionKey_LockReturnUrl, returnUrl);
-
-        _logger.LogInformation("Screen locked for user {UserId}, return URL: {ReturnUrl}",
-            GetCurrentUserId(), returnUrl);
 
         return Json(new { success = true, redirectUrl = "/Auth/Lock" });
     }
@@ -456,8 +443,6 @@ public class AuthController(
             returnUrl = "/Home/Index";
         }
 
-        _logger.LogInformation("Screen unlocked for user {UserId}, returning to {ReturnUrl}", userId, returnUrl);
-
         return LocalRedirect(returnUrl);
     }
 
@@ -504,10 +489,6 @@ public class AuthController(
 
                 return View(request);
             }
-
-            _logger.LogInformation("User registration successful for employee: {EmployeeNumber} from IP: {IpAddress}",
-
-            request.EmployeeNumber, HttpContext.Connection.RemoteIpAddress);
 
             this.ToastActivitySuccess("user_registered", "Account created successfully! Please check your email to confirm your account.");
 
@@ -594,24 +575,25 @@ public class AuthController(
             var loginData = response.Data!;
             var sessionId = response.SessionId ?? string.Empty;
 
-            if (!string.IsNullOrWhiteSpace(sessionId))
-            {
-                CacheServiceExtensions.SetSessionId(_serviceManager.CacheService, request.EmployeeNumber, sessionId);
-            }
-
             if (loginData.Requires2FA)
             {
                 return await Handle2FARequirement(loginData, request.ReturnUrl);
             }
 
-            // Successful login
             await SetAuthenticationTokenAsync(
                 sessionId,
                 loginData.Token,
                 loginData.RefreshToken,
                 loginData.UserClaims?.ToClaimList());
 
-            HttpContext.Session.SetString("LastActivity", DateTimeOffset.UtcNow.ToString());
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                CacheServiceExtensions.SetSessionId(_serviceManager.CacheService, request.EmployeeNumber, sessionId);
+
+                HttpContext.Session.SetString("SessionId", sessionId);
+
+                await HttpContext.Session.CommitAsync();
+            }
 
             if (loginData.UserInfo != null)
             {
@@ -620,10 +602,13 @@ public class AuthController(
 
                 CacheServiceExtensions.SetUserInfo(_serviceManager.CacheService, request.EmployeeNumber, loginData.UserInfo);
 
+                await HttpContext.Session.CommitAsync();
+
             }
 
-            _logger.LogInformation("Login successful for employee: {EmployeeNumber} from IP: {IpAddress}",
-                request.EmployeeNumber, HttpContext.Connection.RemoteIpAddress);
+            HttpContext.Session.SetString("LastActivity", DateTimeOffset.UtcNow.ToString());
+
+            await HttpContext.Session.CommitAsync();
 
             this.ToastAuthSuccess("Welcome back! You have successfully signed in.");
 
@@ -661,7 +646,6 @@ public class AuthController(
 
             if (!providersResponse.Successful || providersResponse.Data?.Providers == null || !providersResponse.Data.Providers.Any())
             {
-                _logger.LogWarning("No 2FA providers available for user: {UserId}", userId);
                 this.ToastError("No two-factor authentication methods available.");
                 return RedirectToAction(nameof(SignIn));
             }
@@ -669,7 +653,6 @@ public class AuthController(
             var providers = providersResponse.Data.Providers.Where(p => p.IsEnabled).ToList();
             if (!providers.Any())
             {
-                _logger.LogWarning("No enabled 2FA providers for user: {UserId}", userId);
                 this.ToastError("No two-factor authentication methods configured. Please contact IT support.");
                 return RedirectToAction(nameof(SignIn));
             }
@@ -681,7 +664,6 @@ public class AuthController(
 
             if (defaultProvider == null)
             {
-                _logger.LogWarning("No suitable default provider found for user: {UserId}", userId);
                 this.ToastError("Two-factor authentication configuration error. Please contact IT support.");
                 return RedirectToAction(nameof(SignIn));
             }
@@ -761,9 +743,6 @@ public class AuthController(
             HttpContext.Session.SetString(SessionKey_2FA_ExpiresAt, response.Data.ExpiresAt.ToString());
 
             await HttpContext.Session.CommitAsync();
-
-            _logger.LogInformation("2FA code sent successfully for user: {UserId} via {Provider} to {Destination}",
-                response.Data.UserId, request.SelectedProvider, response.Data.MaskedDestination);
 
             this.ToastAuthSuccess("2fa_code_sent", $"A verification code has been sent to your selected method. Please check your {GetProviderDisplayName(request.SelectedProvider ?? string.Empty)}.");
 
@@ -847,9 +826,6 @@ public class AuthController(
 
             if (userId != request.UserId)
             {
-                _logger.LogWarning("2FA session mismatch for user: {RequestUserId}, session user: {SessionUserId}",
-                    request.UserId, userId);
-
                 this.ToastError("Invalid verification session. Please sign in again.");
                 return RedirectToAction(nameof(SignIn));
             }
@@ -857,7 +833,6 @@ public class AuthController(
             // For TOTP providers, we don't need to check session provider since no code was "sent"
             if (RequiresCodeSending(request.Provider) && sessionProvider != request.Provider)
             {
-                _logger.LogWarning("2FA provider mismatch for user: {UserId}", request.UserId);
                 this.ToastError("Invalid verification session. Please sign in again.");
                 return RedirectToAction(nameof(SignIn));
             }
@@ -872,9 +847,6 @@ public class AuthController(
 
             if (!response.Successful)
             {
-                _logger.LogWarning("2FA verification failed for user: {UserId}. Reason: {Reason}", 
-                    request.UserId, response.Message);
-                    
                 ModelState.AddModelError(string.Empty, response.Message ?? "Verification failed. Please try again.");
 
                 if (response.Message?.Contains("expired", StringComparison.OrdinalIgnoreCase) == true)
@@ -897,9 +869,6 @@ public class AuthController(
                 response.Data?.Token ?? string.Empty,
                 response.Data?.RefreshToken ?? string.Empty,
                 response.Data?.UserClaims.ToClaims());
-
-            _logger.LogInformation("2FA verification successful for user: {UserId} from IP: {IpAddress}",
-               request.UserId, HttpContext.Connection.RemoteIpAddress);
 
             this.ToastAuthSuccess("Two-factor authentication completed successfully!");
 
@@ -942,12 +911,12 @@ public class AuthController(
 
             if (response.Successful)
             {
-                _logger.LogInformation("Email confirmed successfully for: {Email}", email);
                 this.ToastAuthSuccess("Your email has been confirmed successfully! You can now sign in.");
             }
             else
             {
                 _logger.LogWarning("Email confirmation failed for: {Email}. Reason: {Reason}", email, response.Message);
+
                 this.ToastError(response.Message ?? "Email confirmation failed. Please try again.");
             }
 
@@ -979,8 +948,6 @@ public class AuthController(
         try
         {
             var response = await _serviceManager.AuthService.ResendEmailConfirmationAsync(request);
-
-            _logger.LogInformation("Email confirmation resend requested for: {Email}", request.Email);
 
             this.ToastActivitySuccess("email_confirmation_sent", "A new confirmation email has been sent. Please check your inbox.");
 
@@ -1201,10 +1168,6 @@ public class AuthController(
                         _logger.LogWarning("API sign out failed for user: {UserId}. Message: {Message}",
                             userId, response.Message);
                     }
-                    else
-                    {
-                        _logger.LogInformation("API sign out successful for user: {UserId}", userId);
-                    }
                 }
                 catch (Exception apiEx)
                 {
@@ -1272,8 +1235,6 @@ public class AuthController(
         Response.Cookies.Delete("auth_token", cookieOptions);
         Response.Cookies.Delete("refresh_token", cookieOptions);
 
-        _logger.LogInformation("Session expired redirect for user");
-
         return RedirectToAction("SignIn", new
         {
             returnUrl,
@@ -1326,7 +1287,6 @@ public class AuthController(
         if (message.Contains("email") && message.Contains("confirm"))
         {
 
-            _logger.LogInformation("Email confirmation required for user: {EmployeeNumber}", request.EmployeeNumber);
             this.ToastError("Please confirm your email address before signing in.");
             return RedirectToAction(nameof(ResendEmailConfirmation));
             
@@ -1335,7 +1295,6 @@ public class AuthController(
         // Account locked
         if (message.Contains("locked"))
         {
-            _logger.LogWarning("Account locked for user: {EmployeeNumber}", request.EmployeeNumber);
             this.ToastError("Your account has been locked. Please contact support.");
             
             return null;
@@ -1348,9 +1307,6 @@ public class AuthController(
     {
         HttpContext.Session.SetString(SessionKey_2FA_UserId, loginData.UserId);
         await HttpContext.Session.CommitAsync();
-
-        _logger.LogInformation("2FA required for user: {UserId} from IP: {IpAddress}",
-            loginData.UserId, HttpContext.Connection.RemoteIpAddress);
 
         TempData["UserId"] = loginData.UserId;
         TempData["ReturnUrl"] = returnUrl;
@@ -1409,7 +1365,8 @@ public class AuthController(
 
         cookieClaims.Add(new Claim("SessionId", sessionId));
         cookieClaims.Add(new Claim("Jwt", token));
-        
+        cookieClaims.Add(new Claim("auth_time", DateTime.UtcNow.ToString("O")));
+
 
         // Add any additional claims from parameter
         if (claims != null && claims.Any())
@@ -1463,7 +1420,6 @@ public class AuthController(
                 Response.Cookies.Append("refresh_token", refreshToken, refreshTokenCookieOptions);
             }
 
-            _logger.LogInformation("✅ SignInAsync completed - auth cookie will be sent to browser");
         }
         catch (Exception ex)
         {

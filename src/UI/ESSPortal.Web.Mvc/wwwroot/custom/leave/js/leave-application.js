@@ -642,7 +642,7 @@ function setupDateCalculations() {
 
     }
 
-    function updateLeaveBalanceDisplay(selectedLeaveType) {
+    function updateLeaveBalanceDisplay_(selectedLeaveType) {
 
         const leaveBalanceInfo = document.getElementById('leaveBalanceInfo');
         if (!leaveBalanceInfo) return;
@@ -709,6 +709,113 @@ function setupDateCalculations() {
             <strong>${balance} days available</strong>
         `;
         } else {
+            leaveBalanceInfo.innerHTML = `
+            <strong>${leaveInfo.name}:</strong> 
+            <strong>${balance} days available</strong>
+        `;
+        }
+    }
+
+    function updateLeaveBalanceDisplay(selectedLeaveType) {
+        const leaveBalanceInfo = document.getElementById('leaveBalanceInfo');
+        const leaveEarnedInput = document.querySelector('input[name="LeaveEarnedToDate"]');
+        const leaveEarnedLabel = document.getElementById('leaveEarnedLabel');
+
+        if (!leaveBalanceInfo) return;
+
+        const alertElement = document.querySelector('.alert.alert-info');
+        if (!alertElement) return;
+
+        if (!selectedLeaveType) {
+            leaveBalanceInfo.innerHTML = 'Select a leave type to view your available balance';
+            return;
+        }
+
+        const leaveTypeMap = {
+            'ANNUAL': {
+                name: 'Annual Leave',
+                balanceKey: 'annualBalance',
+                earnedKey: 'annualEarned',
+                showEarned: true // ✅ Annual shows "earned to date"
+            },
+            'ADOPTION': {
+                name: 'Adoption Leave',
+                balanceKey: 'adoptionBalance',
+                showEarned: false // ✅ Others show "available"
+            },
+            'COMPASSIONATE': {
+                name: 'Compassion Leave',
+                balanceKey: 'compassionBalance',
+                showEarned: false
+            },
+            'MATERNITY': {
+                name: 'Maternity Leave',
+                balanceKey: 'maternityBalance',
+                showEarned: false
+            },
+            'PATERNITY': {
+                name: 'Paternity Leave',
+                balanceKey: 'paternityBalance',
+                showEarned: false
+            },
+            'SICK': {
+                name: 'Sick Leave',
+                balanceKey: 'sickBalance',
+                showEarned: false
+            },
+            'STUDY': {
+                name: 'Study Leave',
+                balanceKey: 'studyBalance',
+                showEarned: false
+            },
+            'UNPAID': {
+                name: 'Unpaid Leave',
+                balanceKey: 'unpaidBalance',
+                showEarned: false
+            }
+        };
+
+        const leaveInfo = leaveTypeMap[selectedLeaveType];
+        if (!leaveInfo) {
+            leaveBalanceInfo.innerHTML = 'Leave type information not available';
+            return;
+        }
+
+        const balance = alertElement.dataset[leaveInfo.balanceKey] || '0';
+
+        // ✅ Update the "Leave Earned to Date" field and label
+        if (selectedLeaveType === 'ANNUAL') {
+            const earned = alertElement.dataset[leaveInfo.earnedKey] || '0';
+
+            // Update label
+            if (leaveEarnedLabel) {
+                leaveEarnedLabel.textContent = 'Leave Earned to Date';
+            }
+
+            // Update input
+            if (leaveEarnedInput) {
+                leaveEarnedInput.value = earned;
+            }
+
+            // Display in balance info
+            leaveBalanceInfo.innerHTML = `
+            <strong>${leaveInfo.name}:</strong> ${earned} days earned, 
+            <strong>${balance} days available</strong>
+        `;
+        } else {
+            // For other leave types, show entitlement
+
+            // Update label
+            if (leaveEarnedLabel) {
+                leaveEarnedLabel.textContent = 'Leave Entitlement';
+            }
+
+            // Update input to show full entitlement
+            if (leaveEarnedInput) {
+                leaveEarnedInput.value = balance;
+            }
+
+            // Display in balance info
             leaveBalanceInfo.innerHTML = `
             <strong>${leaveInfo.name}:</strong> 
             <strong>${balance} days available</strong>

@@ -46,7 +46,7 @@ public class UpdateProfilePictureRequestValidator : AbstractValidator<UpdateProf
         return allowedExtensions.Contains(extension);
     }
 
-    private async Task<bool> HaveValidImageSignatureAsync(IFormFile? file, CancellationToken cancellationToken)
+    private static async Task<bool> HaveValidImageSignatureAsync(IFormFile? file, CancellationToken cancellationToken)
     {
         if (file == null) return false;
 
@@ -58,7 +58,7 @@ public class UpdateProfilePictureRequestValidator : AbstractValidator<UpdateProf
 
             return IsValidImageFile(bytes);
         }
-        catch(Exception ex) 
+        catch(Exception) 
         {
             throw;
         }
@@ -73,8 +73,8 @@ public class UpdateProfilePictureRequestValidator : AbstractValidator<UpdateProf
         {
             { [0xFF, 0xD8, 0xFF], "JPEG" },
             { [0x89, 0x50, 0x4E, 0x47], "PNG" },
-            { [0x47, 0x49, 0x46, 0x38], "GIF" },
-            { [0x52, 0x49, 0x46, 0x46], "WEBP" }
+            { "GIF8"u8.ToArray(), "GIF" },
+            { "RIFF"u8.ToArray(), "WEBP" }
         };
 
         return signatures.Any(signature =>

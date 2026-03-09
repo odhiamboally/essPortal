@@ -79,9 +79,6 @@ public class PayrollController(
         {
             var (logoBase64, _, _) = await fileService.ReadLogoAsync();
 
-            _logger.LogInformation("Generating payslip for Employee: {EmployeeNo}, Month: {Month}, Year: {Year}",
-                employeeNumber, model.Month, model.Year);
-
             var result = await _serviceManager.PayrollService.GeneratePayslipAsync(request);
 
             if (!result.Successful)
@@ -122,7 +119,6 @@ public class PayrollController(
             var employeeNumber = _currentUser?.EmployeeNumber;
             if (string.IsNullOrWhiteSpace(employeeNumber))
             {
-                _logger.LogWarning("Employee number is missing for recent payslip download");
                 return Json(new
                 {
                     success = false,
@@ -155,14 +151,10 @@ public class PayrollController(
                     LogoBase64 = logoBase64
                 };
 
-                _logger.LogInformation("Generating recent payslip for Employee: {EmployeeNo}, Month: {Month}, Year: {Year}",
-                    employeeNumber, targetMonth, targetYear);
-
                 var result = await _serviceManager.PayrollService.GeneratePayslipAsync(request);
 
                 if (result == null)
                 {
-                    _logger.LogError("PayrollService returned null result for recent payslip - employee {EmployeeNo}", employeeNumber);
                     return Json(new
                     {
                         success = false,
@@ -172,9 +164,6 @@ public class PayrollController(
 
                 if (!result.Successful)
                 {
-                    _logger.LogWarning("Recent payslip generation failed for employee {EmployeeNo}: {Message}",
-                        employeeNumber, result.Message);
-
                     var userMessage = GetUserFriendlyErrorMessage(result.Message, "recent payslip");
                     return Json(new
                     {
@@ -184,9 +173,6 @@ public class PayrollController(
                 }
 
                 var fileBytes = result.Data!;
-                _logger.LogInformation("Successfully generated recent payslip for employee {EmployeeNo}. Size: {Size} bytes",
-                    employeeNumber, fileBytes.Length);
-
                 var monthName = new DateTime(targetYear, targetMonth, 1).ToString("MMMM");
                 var fileName = $"Payslip_{employeeNumber}_{targetYear}_{targetMonth:D2}_{monthName}.pdf";
 
@@ -228,7 +214,6 @@ public class PayrollController(
             var employeeNumber = _currentUser?.EmployeeNumber;
             if (string.IsNullOrWhiteSpace(employeeNumber))
             {
-                _logger.LogWarning("Employee number is missing for current payslip download");
                 return Json(new
                 {
                     success = false,
@@ -254,14 +239,10 @@ public class PayrollController(
                     LogoBase64 = logoBase64
                 };
 
-                _logger.LogInformation("Generating current payslip for Employee: {EmployeeNo}, Month: {Month}, Year: {Year}",
-                    employeeNumber, targetMonth, targetYear);
-
                 var result = await _serviceManager.PayrollService.GeneratePayslipAsync(request);
 
                 if (result == null)
                 {
-                    _logger.LogError("PayrollService returned null result for current payslip - employee {EmployeeNo}", employeeNumber);
                     return Json(new
                     {
                         success = false,
@@ -271,9 +252,6 @@ public class PayrollController(
 
                 if (!result.Successful)
                 {
-                    _logger.LogWarning("Current payslip generation failed for employee {EmployeeNo}: {Message}",
-                        employeeNumber, result.Message);
-
                     var userMessage = GetUserFriendlyErrorMessage(result.Message, "current payslip");
                     return Json(new
                     {
@@ -283,9 +261,6 @@ public class PayrollController(
                 }
 
                 var fileBytes = result.Data!;
-                _logger.LogInformation("Successfully generated current payslip for employee {EmployeeNo}. Size: {Size} bytes",
-                    employeeNumber, fileBytes.Length);
-
                 var monthName = new DateTime(targetYear, targetMonth, 1).ToString("MMMM");
                 var fileName = $"Payslip_{employeeNumber}_{targetYear}_{targetMonth:D2}_{monthName}.pdf";
 
@@ -372,8 +347,6 @@ public class PayrollController(
 
             var (logoBase64, _, _) = await fileService.ReadLogoAsync();
 
-            _logger.LogInformation("Generating P9 for Employee: {EmployeeNo}, Year: {Year}", employeeNumber, model.Year);
-
             var result = await _serviceManager.PayrollService.GenerateP9Async(request);
 
             if (!result.Successful)
@@ -414,7 +387,6 @@ public class PayrollController(
             var employeeNumber = _currentUser?.EmployeeNumber;
             if (string.IsNullOrWhiteSpace(employeeNumber))
             {
-                _logger.LogWarning("Employee number is missing for recent P9 download");
                 return Json(new
                 {
                     success = false,
@@ -436,14 +408,10 @@ public class PayrollController(
                     LogoBase64 = logoBase64
                 };
 
-                _logger.LogInformation("Generating recent P9 for Employee: {EmployeeNo}, Year: {Year}",
-                    employeeNumber, targetYear);
-
                 var result = await _serviceManager.PayrollService.GenerateP9Async(request);
 
                 if (result == null)
                 {
-                    _logger.LogError("PayrollService returned null result for recent P9 - employee {EmployeeNo}", employeeNumber);
                     return Json(new
                     {
                         success = false,
@@ -453,9 +421,6 @@ public class PayrollController(
 
                 if (!result.Successful)
                 {
-                    _logger.LogWarning("Recent P9 generation failed for employee {EmployeeNo}: {Message}",
-                        employeeNumber, result.Message);
-
                     var userMessage = GetUserFriendlyErrorMessage(result.Message, "recent P9 certificate");
                     return Json(new
                     {
@@ -465,15 +430,12 @@ public class PayrollController(
                 }
 
                 var fileBytes = result.Data!;
-                _logger.LogInformation("Successfully generated recent P9 for employee {EmployeeNo}. Size: {Size} bytes",
-                    employeeNumber, fileBytes.Length);
-
                 var fileName = $"P9_{employeeNumber}_{targetYear}.pdf";
 
                 return Json(new
                 {
                     success = true,
-                    fileName = fileName,
+                    fileName,
                     fileData = Convert.ToBase64String(fileBytes)
                 });
             }
@@ -507,7 +469,6 @@ public class PayrollController(
             var employeeNumber = _currentUser?.EmployeeNumber;
             if (string.IsNullOrWhiteSpace(employeeNumber))
             {
-                _logger.LogWarning("Employee number is missing for current P9 download");
                 return Json(new
                 {
                     success = false,
@@ -530,14 +491,10 @@ public class PayrollController(
                     LogoBase64 = logoBase64
                 };
 
-                _logger.LogInformation("Generating current P9 for Employee: {EmployeeNo}, Year: {Year}",
-                    employeeNumber, currentYear);
-
                 var result = await _serviceManager.PayrollService.GenerateP9Async(request);
 
                 if (result == null)
                 {
-                    _logger.LogError("PayrollService returned null result for current P9 - employee {EmployeeNo}", employeeNumber);
                     return Json(new
                     {
                         success = false,
@@ -547,9 +504,6 @@ public class PayrollController(
 
                 if (!result.Successful)
                 {
-                    _logger.LogWarning("Current P9 generation failed for employee {EmployeeNo}: {Message}",
-                        employeeNumber, result.Message);
-
                     var userMessage = GetUserFriendlyErrorMessage(result.Message, "current P9 certificate");
                     return Json(new
                     {
@@ -559,9 +513,6 @@ public class PayrollController(
                 }
 
                 var fileBytes = result.Data!;
-                _logger.LogInformation("Successfully generated current P9 for employee {EmployeeNo}. Size: {Size} bytes",
-                    employeeNumber, fileBytes.Length);
-
                 var fileName = $"P9_{employeeNumber}_{currentYear}.pdf";
 
                 return Json(new

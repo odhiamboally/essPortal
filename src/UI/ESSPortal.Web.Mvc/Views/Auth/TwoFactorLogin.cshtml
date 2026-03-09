@@ -3,7 +3,7 @@
     ViewData["Title"] = "Two-Factor Authentication";
     Layout = "_AuthLayout";
 
-    var nonce = Context.Items["ScriptNonce"]?.ToString();
+    //var nonce = Context.Items["ScriptNonce"]?.ToString();
 }
 
 @section Styles {
@@ -106,7 +106,7 @@
 
 
     @* Fallback script for when FontAwesome fails *@
-    <script nonce="@nonce">
+    <script>
 
         console.log('This inline script is now allowed by CSP.');
 

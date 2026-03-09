@@ -39,11 +39,9 @@ internal sealed class SoapService : ISoapService
 
             if (string.IsNullOrWhiteSpace(response.p9Base64Txt))
             {
-                _logger.LogWarning("P9 generation returned empty result for employee {EmployeeNo}", employeeNo);
                 return AppResponse<string>.Failure("P9 generation failed - no data returned");
             }
 
-            _logger.LogInformation("Successfully generated P9 for employee {EmployeeNo}", employeeNo);
             return AppResponse<string>.Success("P9 generated successfully", response.p9Base64Txt);
         }
         catch (Exception ex)
@@ -71,11 +69,9 @@ internal sealed class SoapService : ISoapService
 
             if (string.IsNullOrWhiteSpace(response.payslipTxt))
             {
-                _logger.LogWarning("PaySlip generation returned empty result for employee {EmployeeNo}", employeeNo);
                 return AppResponse<string>.Failure("PaySlip generation failed - no data returned");
             }
 
-            _logger.LogInformation("Successfully generated PaySlip for employee {EmployeeNo}", employeeNo);
             return AppResponse<string>.Success("PaySlip generated successfully", response.payslipTxt);
         }
         catch (Exception ex)

@@ -7,20 +7,4 @@ public record LeaveRelieverFilter : BaseFilter
     public string? LeaveCode { get; init; }
 
 
-    public Dictionary<string, string?> CustomQueryParameters()
-    {
-       var parameters = new Dictionary<string, string?>();
-
-       void AddIf(string key, string? value)
-       {
-          if (!string.IsNullOrWhiteSpace(value))
-             parameters[key] = value;
-       }
-
-       AddIf(nameof(StaffNo), StaffNo);
-       AddIf(nameof(StaffName), StaffName);
-       AddIf(nameof(LeaveCode), LeaveCode);
-
-       return parameters;
-    }
 }

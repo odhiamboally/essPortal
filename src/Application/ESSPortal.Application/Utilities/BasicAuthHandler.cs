@@ -9,14 +9,9 @@ using System.Text;
 
 namespace ESSPortal.Application.Utilities;
 
-public class BasicAuthHandler : DelegatingHandler
+public class BasicAuthHandler(IOptions<BCSettings> settings) : DelegatingHandler
 {
-    private readonly IOptions<BCSettings> _settings;
-    public BasicAuthHandler(IOptions<BCSettings> settings)
-    {
-        _settings = settings;
-
-    }
+    private readonly IOptions<BCSettings> _settings = settings;
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {

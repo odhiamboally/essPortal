@@ -84,7 +84,6 @@ internal sealed class ProfileService : IProfileService
                 BankAccountNo: userProfile?.BankAccountNo
             );
 
-            _logger.LogInformation("Profile retrieved successfully for user: {UserId}", userId);
             return AppResponse<UserProfileResponse>.Success("Profile retrieved successfully", response);
         }
         catch (Exception ex)
@@ -128,7 +127,6 @@ internal sealed class ProfileService : IProfileService
 
             await _unitOfWork.UserProfileRepository.CreateOrUpdateAsync(request.UserId, profileToUpdate);
 
-            _logger.LogInformation("Banking information updated successfully for user: {UserId}", request.UserId);
             return AppResponse<bool>.Success("Banking information updated successfully", true);
         }
         catch (Exception ex)
@@ -150,7 +148,6 @@ internal sealed class ProfileService : IProfileService
             var appUser = await _userManager.FindByIdAsync(request.UserId);
             if (appUser == null)
             {
-                _logger.LogWarning("User not found for contact info update: {UserId}", request.UserId);
                 return AppResponse<bool>.Failure("User not found");
             }
 
@@ -189,8 +186,7 @@ internal sealed class ProfileService : IProfileService
             };
 
             await _unitOfWork.UserProfileRepository.CreateOrUpdateAsync(request.UserId, profileToUpdate);
-            
-            _logger.LogInformation("Contact information updated successfully for user: {UserId}", request.UserId);
+         
             return AppResponse<bool>.Success("Contact information updated successfully", true);
         }
         catch (Exception ex)
@@ -212,7 +208,6 @@ internal sealed class ProfileService : IProfileService
             var appUser = await _userManager.FindByIdAsync(request.UserId);
             if (appUser == null)
             {
-                _logger.LogWarning("User not found for personal details update: {UserId}", request.UserId);
                 return AppResponse<bool>.Failure("User not found");
             }
 
@@ -231,7 +226,6 @@ internal sealed class ProfileService : IProfileService
                 return AppResponse<bool>.Failure("Failed to update personal details");
             }
 
-            _logger.LogInformation("Personal details updated successfully for user: {UserId}", request.UserId);
             return AppResponse<bool>.Success("Personal details updated successfully", true);
         }
         catch (Exception ex)
@@ -253,7 +247,6 @@ internal sealed class ProfileService : IProfileService
             var appUser = await _userManager.FindByIdAsync(request.UserId);
             if (appUser == null)
             {
-                _logger.LogWarning("User not found for profile picture update: {UserId}", request.UserId);
                 return AppResponse<string>.Failure("User not found");
             }
 
@@ -289,8 +282,6 @@ internal sealed class ProfileService : IProfileService
                     string.Join(", ", result.Errors.Select(e => e.Description)));
                 return AppResponse<string>.Failure("Failed to update profile picture");
             }
-
-            _logger.LogInformation("Profile picture updated successfully for user: {UserId}", request.UserId);
 
             // Return both URL and filename so frontend can save the file with matching name
             return AppResponse<string>.Success("Profile picture updated successfully", $"{profilePictureUrl}|{fileName}"); // Frontend can split this
@@ -398,9 +389,6 @@ internal sealed class ProfileService : IProfileService
             if (!string.IsNullOrWhiteSpace(profile.PostalAddress)) completedFields++;
 
             var percentage = (int)Math.Round((double)completedFields / totalFields * 100);
-
-            _logger.LogDebug("Profile completion calculated for user {UserId}: {Percentage}% ({CompletedFields}/{TotalFields})",
-                userId, percentage, completedFields, totalFields);
 
             return AppResponse<int>.Success("Profile completion calculated", percentage);
         }

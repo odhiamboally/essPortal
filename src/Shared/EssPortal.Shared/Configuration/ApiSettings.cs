@@ -1,5 +1,5 @@
 ﻿
-namespace EssPortal.Shared.Configurations;
+namespace EssPortal.Shared.Configuration;
 
 public class ApiSettings
 {

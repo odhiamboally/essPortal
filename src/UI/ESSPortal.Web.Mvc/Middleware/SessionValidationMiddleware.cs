@@ -34,6 +34,25 @@ public class SessionValidationMiddleware(RequestDelegate next, ILogger<SessionVa
             return;
         }
 
+        // Check if authentication just happened (within last 10 seconds)
+        var authTimeClaim = context.User.FindFirstValue("auth_time");
+        if (!string.IsNullOrEmpty(authTimeClaim))
+        {
+            if (DateTime.TryParse(authTimeClaim, out var authTime))
+            {
+                var secondsSinceAuth = (DateTime.UtcNow - authTime).TotalSeconds;
+                if (secondsSinceAuth < 10)
+                {
+                    _logger.LogInformation("Skipping session validation - authenticated {Seconds}s ago (SessionId: {SessionId})",
+                        Math.Round(secondsSinceAuth, 2), sessionId);
+
+                    await _next(context);
+                    return;
+                }
+            }
+        }
+
+
         // Now, we have an authenticated user with a session ID. Let's validate the session.
         var sessionValidation = await sessionService.IsSessionValidAsync(sessionId, userId);
         if (!sessionValidation.Successful)
@@ -101,27 +120,29 @@ public class SessionValidationMiddleware(RequestDelegate next, ILogger<SessionVa
             path.StartsWithSegments(skipPath, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static string? GetSessionId(HttpContext context)
+    private string? GetSessionId(HttpContext context)
     {
-        // For APIs, only check headers and cookies (not session storage)
-       
-        var sessionId = 
-            context.Request.Headers["X-Session-Id"].FirstOrDefault() ?? 
-            context.User.FindFirstValue("SessionId") ?? 
-            context.Request.Cookies["session_id"];
-                       
+        var sessionId = context.User.FindFirstValue("SessionId");
+        _logger.LogDebug("SessionId from Claim: {SessionId}", sessionId ?? "NULL");
 
-        // Only check session storage for non-API requests
-        if (sessionId == null && !IsApiRequest(context.Request))
+        // Check header
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            sessionId = context.Request.Headers["X-Session-Id"].FirstOrDefault();
+            _logger.LogDebug("SessionId from Header: {SessionId}", sessionId ?? "NULL");
+        }
+
+        // Check session storage (for non-API requests)
+        if (string.IsNullOrWhiteSpace(sessionId) && !IsApiRequest(context.Request))
         {
             try
             {
                 sessionId = context.Session.GetString("SessionId");
+                _logger.LogDebug("SessionId from Session: {SessionId}", sessionId ?? "NULL");
             }
             catch (InvalidOperationException)
             {
-                // Session not configured - ignore for API requests
-                // This is expected for API-only applications
+                // Session not configured - ignore
             }
         }
 

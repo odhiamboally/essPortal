@@ -324,7 +324,7 @@ public static class LeaveMappingExtensions
         return new LeaveTypeResponse
         {
             Code = leaveType.Code,
-            Description = leaveType.Description,
+            Description = leaveType.Description ?? string.Empty,
             Days = leaveType.Days,
             AccrueDays = leaveType.Accrue_Days,
             ConversionRatePerDay = leaveType.Conversion_Rate_Per_Day,

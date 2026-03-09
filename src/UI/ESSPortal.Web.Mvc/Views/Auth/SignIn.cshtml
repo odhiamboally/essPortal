@@ -16,12 +16,11 @@
         <div class="brand-logo">
             <img src="~/custom/auth/images/unlogo.png" alt="United Nations" class="logo-image" />
         </div>
-        <h2 class="brand-title">ESS Portal</h2>
         <p class="brand-subtitle">Empowering Members Financially</p>
     </div>
 
     <div class="signin-header">
-        <h3 class="signin-title">Welcome Back! 👋</h3>
+        <h5 class="signin-title">Welcome Back! 👋</h5>
     </div>
 
 
@@ -57,16 +56,6 @@
                 </button>
             </div>
             <span asp-validation-for="Password" class="field-validation-error"></span>
-        </div>
-
-        <div class="form-options">
-            <div class="remember-me">
-                <input asp-for="RememberMe"
-                       type="checkbox"
-                       id="RememberMe"
-                       class="form-check-input" />
-                <label for="RememberMe" class="form-check-label">Remember Me</label>
-            </div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-signin">

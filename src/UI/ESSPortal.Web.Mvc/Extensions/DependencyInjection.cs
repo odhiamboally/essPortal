@@ -1,6 +1,6 @@
 ﻿
-using EssPortal.Shared.Configurations;
 
+using ESSPortal.Application.Contracts.Interfaces.Services;
 using ESSPortal.Application.Extensions;
 using ESSPortal.Domain.Entities;
 using ESSPortal.Infrastructure.Extensions;
@@ -48,12 +48,23 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
-namespace EssPortal.Web.Mvc.Utilities;
+namespace EssPortal.Web.Mvc.Extensions;
 
 public static class DependencyInjection
 {
     public static IServiceCollection AddClientDI(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+
+            // Only needed if your IIS/Proxy is on a different machine (e.g. Load Balancer)
+            // options.KnownNetworks.Clear(); 
+            // options.KnownProxies.Clear();
+        });
+
         ConfigureMvcClientServices(services);
         ConfigureLogging(services, configuration);
         ConfigureAuthentication(services, configuration);
@@ -65,8 +76,8 @@ public static class DependencyInjection
 
         services.AddApplicationDI(configuration);
         services.AddInfrastructureDI(configuration);
-        services.AddLocalPersistenceDI(configuration);
-        //services.AddPersistenceDI(configuration);
+        //services.AddLocalPersistenceDI(configuration);
+        services.AddPersistenceDI(configuration);
         
         
 
@@ -244,7 +255,9 @@ public static class DependencyInjection
                 options.IdleTimeout = TimeSpan.FromMinutes(sessionManagementSettings.SessionTimeoutMinutes);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always; 
+
+                //ToDo: In a https prod, change to always
+                options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.SameAsRequest; 
 
                 options.Cookie.SameSite = SameSiteMode.Strict;
 
@@ -305,7 +318,7 @@ public static class DependencyInjection
         try
         {
             services.AddScoped<IClientServiceManager, ClientServiceManager>();
-            services.AddScoped<IFileService, FileService>();
+            services.AddScoped<ESSPortal.Web.Mvc.Contracts.Interfaces.Services.IFileService, FileService>();
             services.AddScoped<IPayloadEncryptionService, PayloadEncryptionService>();
 
 
@@ -366,7 +379,11 @@ public static class DependencyInjection
 
         // Cookie security
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+
+        //ToDo: In a https prod, change to always
+        options.Cookie.SecurePolicy = 
+            isDevelopment ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.SameAsRequest;
+
         options.Cookie.SameSite = SameSiteMode.Lax;
 
         // Event handlers
@@ -430,36 +447,32 @@ public static class DependencyInjection
         };
     }
 
-    private static Task HandleValidatePrincipal(CookieValidatePrincipalContext context, SessionManagementSettings settings)
+    private static async Task HandleValidatePrincipal(CookieValidatePrincipalContext context, SessionManagementSettings settings)
     {
         var logger = context.HttpContext.RequestServices.GetService<ILogger<CookieAuthenticationEvents>>();
+        var sessionService = context.HttpContext.RequestServices.GetRequiredService<ISessionManagementService>();
         var expiresUtc = context.Properties.ExpiresUtc;
+        var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var sessionId = context.Principal?.FindFirst("SessionId")?.Value;
 
-        if (expiresUtc.HasValue)
+        if (userId == null || sessionId == null)
         {
-            var remaining = expiresUtc.Value - DateTimeOffset.UtcNow;
-            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            logger?.LogDebug("Session for {UserId}: {Remaining:mm\\:ss} remaining", userId, remaining);
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync();
+            return;
         }
 
-        //ToDo: Can sync with database sessions:
-        // var sessionService = context.HttpContext.RequestServices.GetService<ISessionManagementService>();
-        // var sessionId = context.Principal?.FindFirst("session_id")?.Value;
-        // if (sessionId != null)
-        // {
-        //     var isValid = await sessionService.IsSessionValidAsync(sessionId, userId);
-        //     if (!isValid.Successful)
-        //     {
-        //         context.RejectPrincipal();
-        //         await context.HttpContext.SignOutAsync();
-        //         return;
-        //     }
-        // }
+        var result = await sessionService.IsSessionValidAsync(sessionId, userId);
 
-        // Force cookie renewal on each request (sliding expiration)
+        if (!result.Successful)
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync();
+            return;
+        }
+
         context.ShouldRenew = true;
 
-        return Task.CompletedTask;
     }
 
     private static Task HandleRedirectToLogin(RedirectContext<CookieAuthenticationOptions> context)

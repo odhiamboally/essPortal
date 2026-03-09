@@ -12,26 +12,4 @@ public record LeaveApplicationListFilter : BaseFilter
     public string? Status { get; init; }
     public string? LeavePeriod { get; init; }
 
-    public Dictionary<string, string?> CustomQueryParameters()
-    {
-        var parameters = new Dictionary<string, string?>();
-
-        void AddIf(string key, string? value)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-                parameters[key] = value;
-        }
-
-        AddIf(nameof(ApplicationNo), ApplicationNo);
-        AddIf(nameof(ApplicationDate), ApplicationDate?.ToString("yyyy-MM-dd"));
-        AddIf(nameof(EmployeeNo), EmployeeNo);
-        AddIf(nameof(EmployeeName), EmployeeName);
-        AddIf(nameof(DaysApplied), DaysApplied?.ToString());
-        AddIf(nameof(StartDate), StartDate?.ToString("yyyy-MM-dd"));
-        AddIf(nameof(EndDate), EndDate?.ToString("yyyy-MM-dd"));
-        AddIf(nameof(Status), Status?.ToString());
-        AddIf(nameof(LeavePeriod), LeavePeriod);
-
-        return parameters;
-    }
 }
