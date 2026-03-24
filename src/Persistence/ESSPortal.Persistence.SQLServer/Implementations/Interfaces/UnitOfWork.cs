@@ -2,6 +2,7 @@
 using ESSPortal.Domain.Interfaces;
 using ESSPortal.Domain.IRepositories;
 using ESSPortal.Persistence.SQLServer.DataContext;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ESSPortal.Persistence.SQLServer.Implementations.Intefaces;
@@ -112,6 +113,89 @@ public class UnitOfWork : IUnitOfWork
     public void ClearChangeTracker()
     {
         _context.ChangeTracker.Clear();
+    }
+
+    public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<Task<TResult>> operation)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var result = await operation();
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return result;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+
+    public async Task<TResult> ExecuteInTransactionWithRetryAsync<TResult>(Func<Task<TResult>> operation, int maxRetries, int baseDelayMs)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    var result = await operation();
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return result;
+                }
+                catch (DbUpdateConcurrencyException ex) when (attempt < maxRetries)
+                {
+                    await transaction.RollbackAsync();
+
+                    _context.ChangeTracker.Clear();
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(baseDelayMs * attempt));
+
+                    continue;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+
+            throw new InvalidOperationException("Max retry attempts exceeded due to concurrency conflicts.");
+        });
+    }
+
+    public async Task ExecuteWithStrategyAsync(Func<Task> operation)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await operation();
+        });
+    }
+
+    public async Task<TResult> ExecuteWithStrategyAsync<TResult>(Func<Task<TResult>> operation)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            return await operation();
+        });
     }
 
     

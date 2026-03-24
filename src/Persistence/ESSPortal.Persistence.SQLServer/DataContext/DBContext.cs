@@ -9,15 +9,16 @@ using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace ESSPortal.Persistence.SQLServer.DataContext;
 public class DBContext(
     DbContextOptions<DBContext> options,
-    IHttpContextAccessor? httpContextAccessor,
-    ILogger<DBContext> logger) : IdentityDbContext<AppUser>(options)
+    IHttpContextAccessor? httpContextAccessor = null,
+    ILogger<DBContext>? logger = null) : IdentityDbContext<AppUser>(options)
 {
     private readonly IHttpContextAccessor? _httpContextAccessor = httpContextAccessor;
-    private readonly ILogger<DBContext> _logger = logger;
+    private readonly ILogger<DBContext>? _logger = logger;
 
     #region Sets
 
@@ -102,9 +103,9 @@ public class DBContext(
             foreach (var entry in ex.Entries)
             {
                 var entryName = entry.Entity.GetType().Name;
-                _logger.LogError($"Concurrency conflict on: {entryName}");
-                _logger.LogError($"Entity State: {entry.State}");
-                _logger.LogError($"Entity: {System.Text.Json.JsonSerializer.Serialize(entry.Entity)}");
+                _logger.LogError("Concurrency conflict on: {EntryName}", entryName);
+                _logger.LogError("Entity State: {EntityState}", entry.State);
+                _logger.LogError("Entity: {Entity}", System.Text.Json.JsonSerializer.Serialize(entry.Entity));
 
                 // Get current database values
                 var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
@@ -114,7 +115,7 @@ public class DBContext(
                 }
                 else
                 {
-                    _logger.LogInformation($"Database values: {System.Text.Json.JsonSerializer.Serialize(databaseValues.ToObject())}");
+                    _logger.LogInformation("Database values: {DatabaseValues}", JsonSerializer.Serialize(databaseValues.ToObject()));
                 }
             }
             throw;

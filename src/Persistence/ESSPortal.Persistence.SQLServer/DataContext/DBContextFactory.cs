@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 using System.Reflection;
 
 namespace ESSPortal.Persistence.SQLServer.DataContext;
-public class DBContextFactory(ILogger<DBContext> logger, IHttpContextAccessor httpContextAccessor) : IDesignTimeDbContextFactory<DBContext>
+public class DBContextFactory() : IDesignTimeDbContextFactory<DBContext>
 {
     public DBContext CreateDbContext(string[] args)
     {
@@ -26,6 +26,6 @@ public class DBContextFactory(ILogger<DBContext> logger, IHttpContextAccessor ht
 
         optionsBuilder.UseSqlServer(connectionString, PersistenceExtensions.ConfigureSqlOptions);
 
-        return new DBContext(optionsBuilder.Options, httpContextAccessor, logger);
+        return new DBContext(optionsBuilder.Options);
     }
 }

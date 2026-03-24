@@ -31,198 +31,128 @@ using System.Security.Claims;
 using UserProfile = ESSPortal.Domain.Entities.UserProfile;
 
 namespace ESSPortal.Infrastructure.Contracts.Implementations.Services;
-internal sealed class AuthService : IAuthService
+internal sealed class AuthService(
+    UserManager<AppUser> userManager,
+    SignInManager<AppUser> signInManager,
+    IHttpContextAccessor contextAccessor,
+    INavisionService navisionService,
+    IJwtService jwtService,
+    ILogger<AuthService> logger,
+    IClaimsService claimsService,
+    IEmailService emailService,
+    IFileService fileService,
+    IEmployeeService employeeService,
+    IOptions<EmailSettings> emailSettings,
+    IUnitOfWork unitOfWork,
+    ITotpService totpService,
+    IEncryptionService encryptionService,
+    ISessionManagementService sessionManagementService,
+    ICacheService cacheService
+
+        ) : IAuthService
 {
-    private readonly UserManager<AppUser> _userManager;
-    private readonly SignInManager<AppUser> _signInManager;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IJwtService _jwtService;
-    private readonly IClaimsService _claimsService;
-    private readonly ILogger<AuthService> _logger;
-    private readonly INavisionService _navisionService;
-    private readonly IEmailService _emailService;
-    private readonly IFileService _fileService;
-    private readonly IEmployeeService _employeeService;
-    private readonly EmailSettings _emailSettings;
-    private readonly IUnitOfWork _unitOfWork; 
-    private readonly ITotpService _totpService; 
-    private readonly IEncryptionService _encryptionService;
-    private readonly ISessionManagementService _sessionManagementService;
-    private readonly ICacheService _cacheService;
-
-
-    public AuthService(
-        UserManager<AppUser> userManager,
-        SignInManager<AppUser> signInManager,
-        IHttpContextAccessor contextAccessor,
-        INavisionService navisionService,
-        IJwtService jwtService,
-        ILogger<AuthService> logger,
-        IClaimsService claimsService,
-        IEmailService emailService,
-        IFileService fileService,
-        IEmployeeService employeeService,
-        IOptions<EmailSettings> emailSettings,
-        IUnitOfWork unitOfWork,
-        ITotpService totpService,
-        IEncryptionService encryptionService,
-        ISessionManagementService sessionManagementService,
-        ICacheService cacheService
-
-        )
-    {
-        _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
-        _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
-        _httpContextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
-        _navisionService = navisionService ?? throw new ArgumentNullException(nameof(navisionService));
-        _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _claimsService = claimsService ?? throw new ArgumentNullException(nameof(claimsService));
-        _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
-        _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
-        _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
-        _emailSettings = emailSettings.Value ?? throw new ArgumentNullException(nameof(emailSettings));
-        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-        _totpService = totpService ?? throw new ArgumentNullException(nameof(totpService));
-        _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
-        _sessionManagementService = sessionManagementService ?? throw new ArgumentNullException(nameof(sessionManagementService));
-        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
-
-
-
-    }
-
+    private readonly UserManager<AppUser> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+    private readonly SignInManager<AppUser> _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
+    private readonly IHttpContextAccessor _httpContextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
+    private readonly IJwtService _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
+    private readonly IClaimsService _claimsService = claimsService ?? throw new ArgumentNullException(nameof(claimsService));
+    private readonly ILogger<AuthService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly INavisionService _navisionService = navisionService ?? throw new ArgumentNullException(nameof(navisionService));
+    private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+    private readonly IFileService _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
+    private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
+    private readonly EmailSettings _emailSettings = emailSettings.Value ?? throw new ArgumentNullException(nameof(emailSettings));
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork)); 
+    private readonly ITotpService _totpService = totpService ?? throw new ArgumentNullException(nameof(totpService)); 
+    private readonly IEncryptionService _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
+    private readonly ISessionManagementService _sessionManagementService = sessionManagementService ?? throw new ArgumentNullException(nameof(sessionManagementService));
+    private readonly ICacheService _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
 
     public async Task<AppResponse<bool>> RegisterEmployeeAsync(RegisterEmployeeRequest request)
     {
-        await _unitOfWork.BeginTransactionAsync();
         AppUser? createdUser = null;
-        bool transactionCompleted = false;
 
         try
         {
-            var employeeData = await ValidateEmployeeInBusinessCentralAsync(request.EmployeeNumber ?? string.Empty);
-            if (employeeData == null)
+            var result = await _unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
-                _logger.LogWarning("Registration attempted with invalid employee number: {EmployeeNumber}", request.EmployeeNumber);
+                var employeeData = await ValidateEmployeeInBusinessCentralAsync(request.EmployeeNumber ?? string.Empty);
+                if (employeeData == null)
+                {
+                    return AppResponse<bool>.Failure("Invalid employee number. Please contact HR.");
+                }
 
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("Invalid employee number. Please contact HR for assistance.");
+                var existingUser = await _userManager.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.EmployeeNumber == request.EmployeeNumber);
+
+                if (existingUser != null)
+                {
+                    return AppResponse<bool>.Failure("You are already registered. Please log in.");
+                }
+
+                var enrichedRequest = new RegisterEmployeeRequest
+                {
+                    EmployeeNumber = employeeData.EmployeeNumber,
+                    FirstName = employeeData.FirstName,
+                    MiddleName = employeeData.MiddleName,
+                    LastName = employeeData.LastName,
+                    Email = employeeData.Email,
+                    PhoneNumber = employeeData.PhoneNumber,
+                    Gender = employeeData.Gender,
+                    Password = employeeData.Password,
+                    ConfirmPassword = employeeData.ConfirmPassword,
+                    IsActive = true,
+                    IsDeleted = false,
+                    ReturnUrl = request.ReturnUrl,
+                    ExternalLogins = request.ExternalLogins,
+                };
+
+                var appUser = enrichedRequest.ToAppUser();
+
+                var createResult = await _userManager.CreateAsync(appUser, request.Password ?? string.Empty);
+                if (!createResult.Succeeded)
+                {
+                    return AppResponse<bool>.Failure("Account creation failed.");
+                }
+
+                createdUser = appUser;
+
+                var profile = new UserProfile
+                {
+                    UserId = appUser.Id,
+                    CreatedBy = appUser.Id,
+                    UpdatedBy = appUser.Id,
+                    TelephoneNo = appUser.PhoneNumber,
+                    MobileNo = employeeData.PhoneNumber,
+                    ContactEMailAddress = employeeData.Email
+                };
+
+                await _unitOfWork.UserProfileRepository.CreateAsync(profile);
+
+                return AppResponse<bool>.Success("Account created successfully", true);
+            });
+
+            // 🔥 OUTSIDE transaction (important)
+            if (result.Successful && createdUser != null)
+            {
+                var emailSent = await SendRegistrationConfirmationEmailAsync(createdUser!);
+                if (!emailSent)
+                {
+                    _logger.LogWarning("User created but email failed for {UserId}", createdUser?.Id);
+                }
             }
 
-            var existingUser = await _userManager.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.EmployeeNumber == request.EmployeeNumber);
-
-            if (existingUser != null)
-            {
-                _logger.LogWarning("Duplicate registration attempt for employee: {EmployeeNumber}", request.EmployeeNumber);
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("You are already registered. Please log in.");
-            }
-
-            var enrichedRequest = new RegisterEmployeeRequest
-            {
-                EmployeeNumber = employeeData.EmployeeNumber,
-                FirstName = employeeData.FirstName,
-                MiddleName = employeeData.MiddleName,
-                LastName = employeeData.LastName,
-                Email = employeeData.Email,
-                PhoneNumber = employeeData.PhoneNumber,
-                Gender = employeeData.Gender,
-                Password = employeeData.Password,
-                ConfirmPassword = employeeData.ConfirmPassword,
-                IsActive = true,
-                IsDeleted = false,
-                ReturnUrl = request.ReturnUrl,
-                ExternalLogins = request.ExternalLogins,
-            };
-
-            var appUser = enrichedRequest.ToAppUser();
-
-            var userCreationResult = await _userManager.CreateAsync(appUser, request.Password ?? string.Empty);
-            if (!userCreationResult.Succeeded)
-            {
-                var errors = string.Join(", ", userCreationResult.Errors.Select(e => e.Description));
-                _logger.LogError("User creation failed for employee {EmployeeNumber}: {Errors}", request.EmployeeNumber, errors);
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("Account creation failed. Please check your password requirements.");
-            }
-
-            createdUser = appUser; // Track for potential cleanup
-
-            var userProfile = new UserProfile
-            {
-                CreatedBy = appUser.Id,
-                UpdatedBy = appUser.Id,
-                UserId = appUser.Id,
-
-                // Contact Information - Pre-populate from BC where available
-                CountryRegionCode = null,
-                PhysicalAddress = null,
-                TelephoneNo = appUser.PhoneNumber,
-                MobileNo = employeeData.PhoneNumber,
-                PostalAddress = null,
-                PostCode = null,
-                City = null,
-                ContactEMailAddress = employeeData.Email,
-
-                // Banking Information - Empty initially
-                BankAccountType = null,
-                KBABankCode = null,
-                KBABranchCode = null,
-                BankAccountNo = null
-            };
-
-            var createUserProfileResult = await _unitOfWork.UserProfileRepository.CreateAsync(userProfile);
-            if (createUserProfileResult == null)
-            {
-                throw new InvalidOperationException("Failed to create user profile");
-            }
-
-            var sendEmailResult = await SendRegistrationConfirmationEmailAsync(appUser);
-            if (!sendEmailResult)
-            {
-                throw new InvalidOperationException("Failed to send confirmation email");
-            }
-
-            await _unitOfWork.CompleteAsync(); 
-            await _unitOfWork.CommitTransactionAsync();
-            transactionCompleted = true;
-
-            return AppResponse<bool>.Success("Account created successfully! Please check your email to confirm your account.", true);
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Registration failed for employee {EmployeeNumber}. Rolling back changes.", request.EmployeeNumber);
+            _logger.LogError(ex, "Registration failed for {EmployeeNumber}", request.EmployeeNumber);
 
-            try
+            // Cleanup Identity if needed
+            if (createdUser != null)
             {
-                if (!transactionCompleted)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    _logger.LogInformation("Database transaction rolled back for employee {EmployeeNumber}", request.EmployeeNumber);
-                }
-
-                if (createdUser != null)
-                {
-                    await _userManager.DeleteAsync(createdUser);
-
-                    _logger.LogInformation("Successfully cleaned up Identity user for employee {EmployeeNumber}", request.EmployeeNumber);
-                }
-
-            }
-            catch (Exception cleanupEx)
-            {
-                _logger.LogError(cleanupEx, "Failed to properly rollback changes for employee {EmployeeNumber}", request.EmployeeNumber);
-
-                _logger.LogCritical("Manual cleanup may be required for employee {EmployeeNumber}. " +
-                    "Identity User ID: {UserId}", request.EmployeeNumber, createdUser?.Id);
-
-                throw;
+                await _userManager.DeleteAsync(createdUser);
             }
 
             throw;
@@ -464,7 +394,7 @@ internal sealed class AuthService : IAuthService
             }
 
             var sessionId = Guid.CreateVersion7().ToString();
-            var sessionCreationResult = await _sessionManagementService.CreateSessionAsync(
+            var sessionCreationResult = await _sessionManagementService.CreateOrUpdateSessionAsync(
                 user.Id,
                 sessionId,
                 _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
@@ -795,7 +725,7 @@ internal sealed class AuthService : IAuthService
             var refreshToken = _jwtService.GenerateRefreshToken(user);
 
             var sessionId = Guid.CreateVersion7().ToString();
-            var sessionCreationResult = await _sessionManagementService.CreateSessionAsync(
+            var sessionCreationResult = await _sessionManagementService.CreateOrUpdateSessionAsync(
                 user.Id,
                 sessionId,
                 _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "unknown",
@@ -1005,157 +935,76 @@ internal sealed class AuthService : IAuthService
 
     public async Task<AppResponse<bool>> ResetPasswordAsync(ResetPasswordRequest request)
     {
-        await _unitOfWork.BeginTransactionAsync();
-        AppUser? originalUser = null;
-        bool transactionCompleted = false;
+        AppUser? user = null;
 
         try
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null)
+            var result = await _unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
-                _logger.LogWarning("Password reset attempted for non-existent email: {Email}", request.Email);
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("Invalid reset request");
+                user = await _userManager.FindByEmailAsync(request.Email);
+                if (user == null)
+                {
+                    return AppResponse<bool>.Failure("Invalid reset request");
+                }
+
+                var isValidToken = await _userManager.VerifyUserTokenAsync(
+                    user,
+                    _userManager.Options.Tokens.PasswordResetTokenProvider,
+                    "ResetPassword",
+                    request.Token);
+
+                if (!isValidToken)
+                {
+                    return AppResponse<bool>.Failure("Invalid or expired reset link");
+                }
+
+                var password = request.Password ?? request.NewPassword ?? string.Empty;
+
+                if (!IsPasswordStrong(password))
+                {
+                    return AppResponse<bool>.Failure("Password does not meet requirements");
+                }
+
+                if (await _userManager.CheckPasswordAsync(user, password))
+                {
+                    return AppResponse<bool>.Failure("New password must be different");
+                }
+
+                var resetResult = await _userManager.ResetPasswordAsync(user, request.Token, password);
+                if (!resetResult.Succeeded)
+                {
+                    return AppResponse<bool>.Failure("Password reset failed");
+                }
+
+                user.ResetFailedLoginAttempts();
+                user.PasswordLastChanged = DateTimeOffset.UtcNow;
+                user.RequirePasswordChange = false;
+                user.UpdatedAt = DateTimeOffset.UtcNow;
+
+                await _userManager.UpdateAsync(user);
+
+                var tokens = await _unitOfWork.TokenRepository.GetActiveTokensByUserIdAsync(user.Id);
+                if (tokens.Any())
+                {
+                    var ip = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+                    await _unitOfWork.TokenRepository.RevokeTokensAsync(tokens, "Password reset", ip);
+                }
+
+                return AppResponse<bool>.Success("Password reset successful", true);
+            });
+
+            // 🔥 OUTSIDE transaction
+            if (result.Successful && user != null)
+            {
+                await SendPasswordResetConfirmationEmailAsync(user);
+                await ClearUserCacheAsync(user.Id);
             }
 
-            // Store original user state for potential rollback
-            originalUser = new AppUser
-            {
-                Id = user.Id,
-                PasswordHash = user.PasswordHash,
-                SecurityStamp = user.SecurityStamp,
-                FailedLoginAttempts = user.FailedLoginAttempts,
-                PasswordLastChanged = user.PasswordLastChanged,
-                RequirePasswordChange = user.RequirePasswordChange,
-                UpdatedAt = user.UpdatedAt
-            };
-
-            var isValidToken = await _userManager.VerifyUserTokenAsync(
-                user,
-                _userManager.Options.Tokens.PasswordResetTokenProvider,
-                "ResetPassword",
-                request.Token
-            );
-
-            if (!isValidToken)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("Invalid or expired reset link");
-            }
-
-            var password = request.Password ?? request.NewPassword ?? string.Empty;
-
-            // Additional password validation (beyond data annotations)
-            if (!IsPasswordStrong(password))
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("Password does not meet security requirements");
-            }
-
-            // Check if new password is different from current password
-            var isSamePassword = await _userManager.CheckPasswordAsync(user, password);
-            if (isSamePassword)
-            {
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("New password must be different from your current password");
-            }
-
-            // Reset password using Identity (this is outside EF transaction)
-            var resetResult = await _userManager.ResetPasswordAsync(user, request.Token, password);
-            if (!resetResult.Succeeded)
-            {
-                var errors = string.Join(", ", resetResult.Errors.Select(e => e.Description));
-                await _unitOfWork.RollbackTransactionAsync();
-                transactionCompleted = true;
-                return AppResponse<bool>.Failure("Password reset failed. Please ensure your password meets all requirements.");
-            }
-
-            // Update user security info
-            user.ResetFailedLoginAttempts();
-            user.PasswordLastChanged = DateTimeOffset.UtcNow;
-            user.RequirePasswordChange = false;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
-
-            var updateResult = await _userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-            {
-                throw new InvalidOperationException("Failed to update user security information");
-            }
-
-            // Revoke all existing refresh tokens (within transaction)
-            var refreshTokens = await _unitOfWork.TokenRepository.GetActiveTokensByUserIdAsync(user.Id);
-            if (refreshTokens.Any())
-            {
-                var revokedByIp = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString();
-                await _unitOfWork.TokenRepository.RevokeTokensAsync(refreshTokens, "Password reset", revokedByIp);
-
-                _logger.LogInformation("Revoked {Count} refresh tokens for user: {UserId}",
-                    refreshTokens.Count(), user.Id);
-            }
-
-            // Send confirmation email BEFORE committing transaction
-            var sendEmailResponse = await SendPasswordResetConfirmationEmailAsync(user);
-            if (!sendEmailResponse)
-            {
-                throw new InvalidOperationException("Failed to send confirmation email");
-            }
-
-            // Save all EF changes and commit transaction
-            await _unitOfWork.CompleteAsync();
-            await _unitOfWork.CommitTransactionAsync();
-            transactionCompleted = true;
-
-            // Clear any cached data for this user (outside transaction)
-            await ClearUserCacheAsync(user.Id);
-
-            return AppResponse<bool>.Success("Password reset successfully", true);
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Password reset failed for email: {Email}. Rolling back changes.", request.Email);
-
-            try
-            {
-                // Rollback database transaction
-                if (!transactionCompleted)
-                {
-                    await _unitOfWork.RollbackTransactionAsync();
-                    _logger.LogInformation("Database transaction rolled back for password reset: {Email}", request.Email);
-                }
-
-                // Rollback Identity changes if user was modified
-                if (originalUser != null)
-                {
-                    var currentUser = await _userManager.FindByIdAsync(originalUser.Id);
-                    if (currentUser != null)
-                    {
-                        // Restore original password and security info
-                        currentUser.PasswordHash = originalUser.PasswordHash;
-                        currentUser.SecurityStamp = originalUser.SecurityStamp;
-                        currentUser.FailedLoginAttempts = originalUser.FailedLoginAttempts;
-                        currentUser.PasswordLastChanged = originalUser.PasswordLastChanged;
-                        currentUser.RequirePasswordChange = originalUser.RequirePasswordChange;
-                        currentUser.UpdatedAt = originalUser.UpdatedAt;
-
-                        await _userManager.UpdateAsync(currentUser);
-                        _logger.LogInformation("Successfully rolled back Identity user changes for: {UserId}", originalUser.Id);
-                    }
-                }
-            }
-            catch (Exception cleanupEx)
-            {
-                _logger.LogError(cleanupEx, "Failed to properly rollback password reset changes for email: {Email}", request.Email);
-
-                _logger.LogCritical("Manual intervention may be required for user password reset rollback: {Email}", request.Email);
-
-                throw;
-            }
-
+            _logger.LogError(ex, "Password reset failed for {Email}", request.Email);
             throw;
         }
     }

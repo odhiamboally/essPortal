@@ -86,43 +86,47 @@ internal sealed class TwoFactorService(
                 return AppResponse<bool>.Failure("User not found.");
             }
 
-            var tempSecret = await unitOfWork.TempTotpSecretRepository.GetValidTempSecretByUserIdAsync(userId);
+            var tempSecret = await unitOfWork
+                .TempTotpSecretRepository
+                .GetValidTempSecretByUserIdAsync(userId);
+
             if (tempSecret == null)
             {
-                return AppResponse<bool>.Failure("Setup session expired. Please start the setup process again.");
+                return AppResponse<bool>.Failure("Setup session expired. Please start again.");
             }
 
-            var decrtyptedSecret = encryptionService.Decrypt(tempSecret.EncryptedSecret);
+            var decryptedSecret = encryptionService.Decrypt(tempSecret.EncryptedSecret);
 
-            var isValidCode = totpService.VerifyTotpCode(decrtyptedSecret, request.VerificationCode);
+            var isValidCode = totpService.VerifyTotpCode(decryptedSecret, request.VerificationCode);
 
             if (!isValidCode)
             {
-                logger.LogWarning("Invalid TOTP code provided for user {UserId}", userId);
-                return AppResponse<bool>.Failure("Invalid verification code. Please try again.");
+                logger.LogWarning("Invalid TOTP code for user {UserId}", userId);
+                return AppResponse<bool>.Failure("Invalid verification code.");
             }
 
-            await unitOfWork.BeginTransactionAsync();
-            try
+            var result = await unitOfWork.ExecuteInTransactionWithRetryAsync(async () =>
             {
                 await StorePermanentSecretAsync(userId, tempSecret.EncryptedSecret);
-                await unitOfWork.TempTotpSecretRepository.DeleteUserTempSecretsAsync(userId);
-                await userManager.SetTwoFactorEnabledAsync(user, true);
+
+                await unitOfWork.TempTotpSecretRepository
+                    .DeleteUserTempSecretsAsync(userId);
+
                 await GenerateInitialBackupCodesAsync(userId);
-                await unitOfWork.CompleteAsync();
 
-                await unitOfWork.CommitTransactionAsync();
+                // Identity operation (still okay here)
+                var identityResult = await userManager.SetTwoFactorEnabledAsync(user, true);
+                if (!identityResult.Succeeded)
+                {
+                    throw new InvalidOperationException("Failed to enable two-factor authentication.");
+                }
 
-                await unitOfWork.CompleteAsync();
-            }
-            catch
-            {
-                await unitOfWork.CommitTransactionAsync();
-                throw;
-            }
+                return AppResponse<bool>.Success("2FA enabled successfully", true);
+            });
 
             logger.LogInformation("Two-factor authentication enabled for user {UserId}", userId);
-            return AppResponse<bool>.Success("Two-factor authentication enabled successfully.", true);
+
+            return result;
         }
         catch (Exception ex)
         {

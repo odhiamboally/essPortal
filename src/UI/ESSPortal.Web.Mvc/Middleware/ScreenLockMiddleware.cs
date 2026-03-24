@@ -2,10 +2,10 @@
 
 namespace ESSPortal.Web.Mvc.Middleware;
 
-public class ScreenLockMiddleware
+public class ScreenLockMiddleware(RequestDelegate next, ILogger<ScreenLockMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ScreenLockMiddleware> _logger;
+    private readonly RequestDelegate _next = next;
+    private readonly ILogger<ScreenLockMiddleware> _logger = logger;
 
     private static readonly HashSet<string> ExcludedPaths = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -18,12 +18,6 @@ public class ScreenLockMiddleware
         "/Auth/SessionConfig",
         "/health"
     };
-
-    public ScreenLockMiddleware(RequestDelegate next, ILogger<ScreenLockMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
 
     public async Task InvokeAsync(HttpContext context)
     {
