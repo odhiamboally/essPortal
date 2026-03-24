@@ -3,7 +3,7 @@
     ViewData["Title"] = "Two-Factor Authentication";
     Layout = "_AuthLayout";
 
-    //var nonce = Context.Items["ScriptNonce"]?.ToString();
+    var nonce = Context.GetNonce();
 }
 
 @section Styles {
@@ -97,7 +97,7 @@
     <script src="~/custom/auth/js/2fa-login.js" asp-append-version="true"></script>
     <script src="~/custom/common/js/device-fingerprint.js" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@nonce">
         document.addEventListener('DOMContentLoaded', function () {
             // Automatically generate and set the fingerprint when the page loads
             DeviceFingerprint.setOnForm('twoFactorForm', 'DeviceFingerprint');
@@ -106,7 +106,7 @@
 
 
     @* Fallback script for when FontAwesome fails *@
-    <script>
+    <script nonce="@nonce">
 
         console.log('This inline script is now allowed by CSP.');
 

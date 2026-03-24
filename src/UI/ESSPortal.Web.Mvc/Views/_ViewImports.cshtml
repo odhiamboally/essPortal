@@ -22,12 +22,16 @@
 @using ESSPortal.Web.Mvc.Extensions
 @using ESSPortal.Web.Mvc.Utilities
 @using ESSPortal.Shared.Utilities.Common
+@using ESSPortal.Web.Mvc.ViewModels.Auth
 
 @using System.Web
 @using System.IO
 @using Microsoft.Extensions.Options
 
+@using NetEscapades.AspNetCore.SecurityHeaders
+
 @inject IOptions<PayloadEncryptionSettings> PayloadEncryption
 
 
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, NetEscapades.AspNetCore.SecurityHeaders.TagHelpers

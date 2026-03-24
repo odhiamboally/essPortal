@@ -1,6 +1,7 @@
 ﻿@model TwoFactorSetupViewModel
 @{
     ViewData["Title"] = "Set Up Two-Factor Authentication";
+    var nonce = Context.GetNonce();
 }
 
 <div class="container mt-4">
@@ -100,7 +101,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="@nonce">
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(function() {
             showToast('Manual entry key copied to clipboard!', 'success');

@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Leave History";
+    var nonce = Context.GetNonce();
 }
 
 @section Styles {
@@ -209,7 +210,7 @@
     <script src="~/custom/leave/js/leave-history.js" asp-append-version="true"></script>
     <script src="~/custom/leave/js/edit-leave-modal.js" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@nonce">
 
         // Global function for leave detail modal
         window.loadLeaveDetailModal = function(applicationNo) { 
@@ -223,7 +224,7 @@
         };
     </script>
 
-    <script>
+    <script nonce="@nonce">
 
         // Global function for leave detail modal
         window.loadEditLeaveModal = function(applicationNo) {

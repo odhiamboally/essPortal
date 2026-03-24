@@ -1,9 +1,15 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var nonce = Context.GetNonce();
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - ESS Portal</title>
+
+    
 
     <!-- Toast messages as meta tags (alternative method) -->
     @if (TempData["__ToastSuccess"] != null)
@@ -221,7 +227,7 @@
     <!-- Container for dynamically loaded modals -->
     <div id="dynamicModalContainer"></div>
 
-    <script>
+    <script nonce="@nonce">
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize encryption with server-side key
             //initializeEncryption('@PayloadEncryption.Value.Key');

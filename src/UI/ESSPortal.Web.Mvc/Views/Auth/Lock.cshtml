@@ -1,8 +1,9 @@
-﻿@using ESSPortal.Web.Mvc.ViewModels.Auth
+﻿
 
 @model LockScreenViewModel
 @{
     Layout = null;
+    var nonce = Context.GetNonce();
 }
 
 <!DOCTYPE html>
@@ -261,7 +262,7 @@
 
     </div>
 
-    <script>
+    <script nonce="@nonce">
         // Add loading state on submit
         document.getElementById('unlockForm').addEventListener('submit', function() {
             document.body.classList.add('loading');

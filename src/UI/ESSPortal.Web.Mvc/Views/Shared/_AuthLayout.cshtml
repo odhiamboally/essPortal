@@ -1,4 +1,8 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var nonce = Context.GetNonce();
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -20,9 +24,7 @@
     {
         <meta name="toast-success" content="@TempData["__ToastSuccess"]" />
     }
-
     
-
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,10 +59,8 @@
 
     @await RenderSectionAsync("Scripts", required: false)
 
-    
 
-
-    <script>
+    <script nonce="@nonce">
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize encryption with server-side key
             //initializeEncryption('@PayloadEncryption.Value.Key');

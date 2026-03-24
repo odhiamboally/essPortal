@@ -1,6 +1,7 @@
 ﻿@model ESSPortal.Web.Mvc.ViewModels.TwoFactor.BackupCodesViewModel
 @{
     ViewData["Title"] = "Two-Factor Authentication Backup Codes";
+    var nonce = Context.GetNonce();
 }
 
 <div class="container mt-4">
@@ -74,7 +75,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="@nonce">
     function downloadBackupCodes() {
         const codes = @Html.Raw(Json.Serialize(Model.BackupCodes));
         const content = 'UN SACCO ESS Portal - Two-Factor Authentication Backup Codes\n' +

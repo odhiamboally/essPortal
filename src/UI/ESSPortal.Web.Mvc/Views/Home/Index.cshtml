@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "UN Sacco - Empowering Members Financially";
+    var nonce = Context.GetNonce();
 }
 
 @section Styles {
@@ -258,7 +259,7 @@
 
     <script src="~/custom/dashboard/js/dashboard-modals.js" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@nonce">
         // Set current date
         document.addEventListener('DOMContentLoaded', function() {
             const dateElement = document.getElementById('currentDate');

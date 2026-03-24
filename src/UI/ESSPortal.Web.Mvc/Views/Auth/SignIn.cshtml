@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Sign In";
     Layout = "_AuthLayout";
+    var nonce = Context.GetNonce();
 }
 
 @section Styles {
@@ -83,7 +84,7 @@
 
     <script src="~/custom/common/js/device-fingerprint.js" asp-append-version="true"></script>
 
-    <script>
+    <script nonce="@nonce">
         document.addEventListener('DOMContentLoaded', function () {
             // Automatically generate and set the fingerprint when the page loads
             DeviceFingerprint.setOnForm('loginForm', 'DeviceFingerprint');

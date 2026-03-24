@@ -21,6 +21,14 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var isDevelopment = builder.Environment.IsDevelopment();
+
+var headerPolicies = builder.Environment.IsDevelopment()
+    ? SecurityHeaderPolicies.BuildDevelopment()
+    : SecurityHeaderPolicies.BuildProduction(
+        builder.Configuration["ApiSettings:BaseUrl"]?.TrimEnd('/')
+        ?? throw new InvalidOperationException("ApiSettings:BaseUrl is required in production."));
+
 var dataProtectionBuilder = builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(@"C:\inetpub\wwwroot\EssPortal\publish\client\Keys"))
     .SetApplicationName("ESSPortal")
@@ -84,74 +92,9 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
-app.Use(async (context, next) =>
-{
-    // Security headers (applied to all environments)
-    context.Response.Headers.XContentTypeOptions = "nosniff";
-    context.Response.Headers.XFrameOptions = "DENY";
-    context.Response.Headers.XXSSProtection = "1; mode=block";
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+app.UseCustomSecurityHeaders();
 
-    // Build dynamic origin for CSP
-    var scheme = context.Request.Scheme;
-    var domain = context.Request.Host.Host;
-    var port = context.Request.Host.Port;
-    var hostWithPort = port.HasValue ? $"{domain}:{port}" : domain;
-    var selfOrigin = $"{scheme}://{hostWithPort}";
-
-    if (app.Environment.IsDevelopment())
-    {
-        if (!context.Response.Headers.ContainsKey("Content-Security-Policy"))
-        {
-            context.Response.Headers.ContentSecurityPolicy =
-
-            "default-src 'self'; " +
-            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://ka-f.fontawesome.com; " +
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://ka-f.fontawesome.com; " +
-            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-            "style-src-attr 'self' 'unsafe-inline'; " +
-            $"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://kit.fontawesome.com {selfOrigin} {scheme}://localhost:*; " +
-            $"script-src-elem 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {selfOrigin}; " +
-            "img-src 'self' data: blob: https: http:; " +
-            $"connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* https://ka-f.fontawesome.com;" +
-            "media-src 'self'; " +
-            "object-src 'none'; " +
-            "base-uri 'self'; " +
-            "form-action 'self';";
-        }
-
-
-    }
-    else
-    {
-        if (!context.Response.Headers.ContainsKey("Content-Security-Policy"))
-        {
-            context.Response.Headers.ContentSecurityPolicy =
-
-            "default-src 'self'; " +
-            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " +
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-            "style-src-attr 'self' 'unsafe-inline'; " +
-            $"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {selfOrigin}; " +
-            $"script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com {selfOrigin}; " +
-            "img-src 'self' data: blob: https:; " +
-            $"connect-src 'self' {selfOrigin} wss://{hostWithPort}; " +
-            "media-src 'self'; " +
-            "object-src 'none'; " +
-            "base-uri 'self'; " +
-            "form-action 'self'; " +
-            "frame-ancestors 'none';";
-
-            context.Response.Headers["Permissions-Policy"] =
-                "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=()";
-        }
-
-    }
-
-    await next();
-});
-
+app.UseSecurityHeaders(headerPolicies);
 
 if (app.Environment.IsDevelopment())
 {
